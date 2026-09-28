@@ -14,8 +14,11 @@ for an unattended slice loop.
 
 - [x] Slice 1 — repo skeleton + test harness
 - [x] Slice 2 — core types: `Verdict`, `Finding`, `VerdictResult`
-- [ ] Slice 3 — first check: sanctions/watchlist screening against a free
-      list (OFAC SDN), one subject in, one `Finding` out
+- [x] Slice 3 — first check: sanctions/watchlist screening, exact + alias
+      matching against a local fixture list. **Deferred from this slice:**
+      ingesting the real, published OFAC SDN list — its own item below.
+- [ ] Slice 3b — real OFAC SDN ingestion: fetch the published list, parse it
+      into `SanctionsEntry` records, feed Slice 3's matcher for real
 - [ ] Slice 4 — identity/legitimacy check against a free registry lookup
 - [ ] Slice 5 — combine checks into one verdict (`PROCEED`/`HOLD`/`RED_FLAG`)
       with a trust score
