@@ -1,0 +1,20 @@
+{
+  "subject": {
+    "name": "Meridian Robotics Ltd.",
+    "registration_id": "UK09456213"
+  },
+  "sanctions_list_path": "fixtures/golden/sanctions_sample.json",
+  "registry": {
+    "UK09456213": {
+      "name": "Meridian Robotics Ltd.",
+      "status": "active",
+      "jurisdiction": "UK"
+    }
+  },
+  "delivery_records": [
+    { "subject": "Meridian Robotics Ltd.", "on_time": true },
+    { "subject": "Meridian Robotics Ltd.", "on_time": true },
+    { "subject": "Meridian Robotics Ltd.", "on_time": false }
+  ],
+  "document_text": "Section 3: Termination. Either party may terminate with 30 days notice. Section 4: Liability Cap. Total liability is capped at the contract value."
+}
