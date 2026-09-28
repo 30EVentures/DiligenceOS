@@ -13,7 +13,7 @@ ready for real regulatory or dollar stakes — that's Phase 1+, out of scope
 for an unattended slice loop.
 
 - [x] Slice 1 — repo skeleton + test harness
-- [ ] Slice 2 — core types: `Verdict`, `Finding`, `VerdictResult`
+- [x] Slice 2 — core types: `Verdict`, `Finding`, `VerdictResult`
 - [ ] Slice 3 — first check: sanctions/watchlist screening against a free
       list (OFAC SDN), one subject in, one `Finding` out
 - [ ] Slice 4 — identity/legitimacy check against a free registry lookup
