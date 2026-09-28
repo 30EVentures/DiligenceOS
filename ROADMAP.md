@@ -28,8 +28,8 @@ for an unattended slice loop.
       DiligenceOS's own implementation (see `CLAUDE.md` Boundaries on why
       this isn't shared code with anything else). Not yet wired into
       `assemble_verdict` — a deliberate open call, see the slice spec.
-- [ ] Slice 7 — track record: a self-hosted ledger of past verdicts a
-      counterparty can be scored against
+- [x] Slice 7 — track record: in-memory `Ledger` of `DeliveryRecord`s,
+      flags when the late ratio exceeds a threshold (no durable storage yet)
 - [ ] Slice 8 — document red-flag scan on a supplied contract/terms file
 - [ ] Slice 9 — glue: one command runs a subject + transaction through all
       checks and returns a verdict
