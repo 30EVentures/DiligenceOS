@@ -24,9 +24,10 @@ for an unattended slice loop.
       `RegistryLookup` (no real Companies House/OpenCorporates client yet)
 - [x] Slice 5 — verdict assembly: sanctions flag always wins as `RED_FLAG`,
       any other flag is `HOLD`, trust score docked per flag and clamped
-- [ ] Slice 6 — evidence discipline: every `Finding` carries a re-checkable
-      citation, not a bare claim (DiligenceOS's own implementation — see
-      `CLAUDE.md` Boundaries on why this isn't shared code with anything else)
+- [x] Slice 6 — evidence discipline: `verify_citation` + `require_citable`,
+      DiligenceOS's own implementation (see `CLAUDE.md` Boundaries on why
+      this isn't shared code with anything else). Not yet wired into
+      `assemble_verdict` — a deliberate open call, see the slice spec.
 - [ ] Slice 7 — track record: a self-hosted ledger of past verdicts a
       counterparty can be scored against
 - [ ] Slice 8 — document red-flag scan on a supplied contract/terms file
