@@ -20,7 +20,8 @@ for an unattended slice loop.
 - [x] Slice 3b — real OFAC SDN ingestion: parses the real SDN.CSV column
       format + best-effort a.k.a. extraction. `fetch_sdn_list()` exists for
       a human to run; deliberately not exercised by the test suite (network)
-- [ ] Slice 4 — identity/legitimacy check against a free registry lookup
+- [x] Slice 4 — identity/legitimacy check, against an injected
+      `RegistryLookup` (no real Companies House/OpenCorporates client yet)
 - [ ] Slice 5 — combine checks into one verdict (`PROCEED`/`HOLD`/`RED_FLAG`)
       with a trust score
 - [ ] Slice 6 — evidence discipline: every `Finding` carries a re-checkable
