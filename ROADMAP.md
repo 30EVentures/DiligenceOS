@@ -32,8 +32,9 @@ for an unattended slice loop.
       flags when the late ratio exceeds a threshold (no durable storage yet)
 - [x] Slice 8 — document red-flag scan: keyword-presence check for required
       clause phrases, stated-limits (not clause-quality review)
-- [ ] Slice 9 — glue: one command runs a subject + transaction through all
-      checks and returns a verdict
+- [x] Slice 9 — glue: `python3 -m diligenceos <request.json>` runs all
+      checks and prints a verdict; `serialize.py` added now that a real
+      caller (the CLI) needs a wire format
 - [ ] Slice 10 — demo: a verdict actually gates a release (small, local,
       illustrative — not a real payment rail)
 
