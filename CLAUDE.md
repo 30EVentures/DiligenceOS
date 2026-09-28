@@ -48,8 +48,7 @@ decision. `ROADMAP.md` here is the working, slice-level version.
 - **No shared code with AnalystOS or Concord/DepositX.** Capabilities that
   look similar (citation verification, an escrow-style release gate) are
   reimplemented here from scratch, informed by the design, never imported or
-  copy-pasted with attribution intact. See `docs/decisions.md` once it
-  exists for why.
+  copy-pasted with attribution intact. See `docs/decisions.md` for why.
 - `fixtures/golden/` is the regression set, once real fixtures exist. Add
   cases; do not edit existing ones.
 - Dependencies: none yet. When a slice's explicit point is adding one, pin an
@@ -58,7 +57,6 @@ decision. `ROADMAP.md` here is the working, slice-level version.
 ## Where things are
 
 - `diligenceos/`          — the code
-- `docs/decisions.md`     — dated log of choices and why (create when the
-  first real decision needs recording)
+- `docs/decisions.md`     — dated log of choices and why
 - `specs/<slice>/spec.md` — what each slice does and how it's checked
 - `ROADMAP.md`            — working queue, slice by slice
