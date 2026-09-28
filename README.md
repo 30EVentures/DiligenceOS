@@ -13,4 +13,12 @@ compliance decisions yet. See `ROADMAP.md`.
 
 ## Getting started
 
-See `CLAUDE.md` for how to run and test this repo.
+```
+python3 -m diligenceos
+```
+
+Opens a local web front end at `http://127.0.0.1:8000` — enter a subject
+name, a registration id, and optional contract text, get a verdict back.
+Runs against a bundled sample dataset, not real registries or sanctions
+data. See `CLAUDE.md` for how to run tests and the batch (JSON in, JSON
+out) mode.
