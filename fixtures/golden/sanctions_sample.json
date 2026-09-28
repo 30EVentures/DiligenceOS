@@ -1,0 +1,17 @@
+[
+  {
+    "name": "Northwind Trading Co.",
+    "program": "FICTIONAL-TEST-1",
+    "aliases": ["Northwind Trading Company", "NW Trading"]
+  },
+  {
+    "name": "Ilsa Marchetti",
+    "program": "FICTIONAL-TEST-2",
+    "aliases": []
+  },
+  {
+    "name": "Cobalt Ferry Logistics Ltd.",
+    "program": "FICTIONAL-TEST-1",
+    "aliases": ["Cobalt Ferry Logistics"]
+  }
+]
