@@ -35,11 +35,20 @@ for an unattended slice loop.
 - [x] Slice 9 — glue: `python3 -m diligenceos <request.json>` runs all
       checks and prints a verdict; `serialize.py` added now that a real
       caller (the CLI) needs a wire format
-- [ ] Slice 10 — demo: a verdict actually gates a release (small, local,
-      illustrative — not a real payment rail)
+- [x] Slice 10 — demo: `apply_verdict()` gates an `EscrowGate` on the
+      verdict (`PROCEED` releases, `HOLD`/`RED_FLAG` hold, release is
+      one-way) — small, local, illustrative, not a real payment rail
 
-**Milestone done when:** one real use case works end to end, with 3–5 real
-pilot users, on free/cheap data only.
+**Phase 0 build complete (11/11, including 3b).** 66 tests passing. The
+loop is provably real: `python3 -m diligenceos fixtures/golden/sample_request.json`
+runs all four checks and prints a verdict; wiring that verdict into
+`apply_verdict()` demonstrates the release-gating pattern end to end.
+
+**Milestone still open:** none of this has been run by a real pilot user
+yet. "One real use case works end to end, with 3–5 real pilot users, on
+free/cheap data only" is a usage milestone, not a code milestone — it needs
+a real person outside this loop trying it on a real (if low-stakes)
+subject. That's the actual next step, not another slice.
 
 ## Later (not started, not scoped)
 
