@@ -30,7 +30,8 @@ for an unattended slice loop.
       `assemble_verdict` — a deliberate open call, see the slice spec.
 - [x] Slice 7 — track record: in-memory `Ledger` of `DeliveryRecord`s,
       flags when the late ratio exceeds a threshold (no durable storage yet)
-- [ ] Slice 8 — document red-flag scan on a supplied contract/terms file
+- [x] Slice 8 — document red-flag scan: keyword-presence check for required
+      clause phrases, stated-limits (not clause-quality review)
 - [ ] Slice 9 — glue: one command runs a subject + transaction through all
       checks and returns a verdict
 - [ ] Slice 10 — demo: a verdict actually gates a release (small, local,
