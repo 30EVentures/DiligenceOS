@@ -22,8 +22,8 @@ for an unattended slice loop.
       a human to run; deliberately not exercised by the test suite (network)
 - [x] Slice 4 — identity/legitimacy check, against an injected
       `RegistryLookup` (no real Companies House/OpenCorporates client yet)
-- [ ] Slice 5 — combine checks into one verdict (`PROCEED`/`HOLD`/`RED_FLAG`)
-      with a trust score
+- [x] Slice 5 — verdict assembly: sanctions flag always wins as `RED_FLAG`,
+      any other flag is `HOLD`, trust score docked per flag and clamped
 - [ ] Slice 6 — evidence discipline: every `Finding` carries a re-checkable
       citation, not a bare claim (DiligenceOS's own implementation — see
       `CLAUDE.md` Boundaries on why this isn't shared code with anything else)
