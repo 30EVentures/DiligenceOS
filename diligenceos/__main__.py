@@ -1,49 +1,23 @@
-"""python3 -m diligenceos <request.json> — run the pipeline, print the verdict."""
+"""python3 -m diligenceos [request.json]
+
+No argument: starts the local web front end (blocks; see diligenceos.webapp).
+One argument: batch mode, unchanged since Slice 9 — runs the pipeline once
+against a request file and prints the verdict as JSON.
+"""
 
 from __future__ import annotations
 
 import json
 import sys
 
-from diligenceos.identity import RegistryRecord
+from diligenceos.loaders import build_ledger, build_registry_lookup
 from diligenceos.pipeline import run_diligence
 from diligenceos.sanctions import SanctionsList, load_sanctions_list
 from diligenceos.serialize import verdict_result_to_dict
-from diligenceos.track_record import DeliveryRecord, Ledger
 
 
-def _build_registry_lookup(registry: dict) -> callable:
-    records = {
-        reg_id: RegistryRecord(
-            name=entry["name"],
-            registration_id=reg_id,
-            status=entry["status"],
-            jurisdiction=entry.get("jurisdiction", ""),
-        )
-        for reg_id, entry in registry.items()
-    }
-    return records.get
-
-
-def _build_ledger(delivery_records: list) -> Ledger:
-    ledger = Ledger()
-    for item in delivery_records:
-        ledger.record(
-            DeliveryRecord(
-                subject=item["subject"],
-                on_time=item["on_time"],
-                note=item.get("note", ""),
-            )
-        )
-    return ledger
-
-
-def main(argv: list[str]) -> int:
-    if len(argv) != 2:
-        print("usage: python3 -m diligenceos <request.json>", file=sys.stderr)
-        return 2
-
-    request = json.loads(open(argv[1]).read())
+def _run_batch(request_path: str) -> int:
+    request = json.loads(open(request_path).read())
     subject = request["subject"]
 
     sanctions_list = (
@@ -51,8 +25,8 @@ def main(argv: list[str]) -> int:
         if request.get("sanctions_list_path")
         else SanctionsList()
     )
-    registry_lookup = _build_registry_lookup(request.get("registry", {}))
-    ledger = _build_ledger(request.get("delivery_records", []))
+    registry_lookup = build_registry_lookup(request.get("registry", {}))
+    ledger = build_ledger(request.get("delivery_records", []))
 
     result = run_diligence(
         name=subject["name"],
@@ -64,6 +38,20 @@ def main(argv: list[str]) -> int:
     )
     print(json.dumps(verdict_result_to_dict(result), indent=2))
     return 0
+
+
+def main(argv: list[str]) -> int:
+    if len(argv) == 1:
+        from diligenceos import webapp
+
+        webapp.serve()
+        return 0
+
+    if len(argv) == 2:
+        return _run_batch(argv[1])
+
+    print("usage: python3 -m diligenceos [request.json]", file=sys.stderr)
+    return 2
 
 
 if __name__ == "__main__":

@@ -14,6 +14,17 @@ decision. `ROADMAP.md` here is the working, slice-level version.
 - Language: Python 3 (developed on 3.14). No third-party dependencies yet —
   when a slice needs one, it's added deliberately (see Boundaries) and this
   section gains a venv setup step.
+- **The web front end is the default entry point** (since Slice 11):
+
+  ```
+  python3 -m diligenceos
+  ```
+
+  Starts a local server at `http://127.0.0.1:8000` (override with
+  `DILIGENCEOS_HOST`/`DILIGENCEOS_PORT`), stdlib WSGI only, `Ctrl-C` to
+  stop. The old batch mode still works unchanged:
+  `python3 -m diligenceos <request.json>` prints a verdict as JSON and
+  exits — used by scripts and by `tests/test_cli.py`.
 - Tests:
 
   ```

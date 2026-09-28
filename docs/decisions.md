@@ -4,6 +4,28 @@ Dated, one entry per real decision. Not a changelog — the code and commit
 history already say what changed; this says why, where "why" isn't obvious
 from reading the diff.
 
+## 2026-09-28 — Web front end is stdlib `wsgiref`, not Flask
+
+Slice 11 added a real, always-on local web UI, by explicit request ("a
+front end at all times going forward, not just a sample"). It's built on
+`wsgiref.simple_server`, part of the standard library, not a new
+dependency. Reason: `CLAUDE.md`'s dependency rule asks that a new one be
+added only when a slice's explicit point is adding it, and for a single
+form + result page, stdlib WSGI is enough — no templating engine, no
+routing library, nothing Flask would give beyond what a ~15-line dispatch
+function already does here. Revisit if the UI's needs actually outgrow
+this (sessions, multiple routes with path parameters, file uploads).
+
+## 2026-09-28 — No argument now means "serve", not "usage error"
+
+Before Slice 11, `python3 -m diligenceos` with no arguments printed a
+usage error. Now it starts the web server (blocking) instead, and the old
+one-argument batch mode is unchanged. This is a deliberate, backward-
+compatible-except-for-that-one-case behavior change: the front end is
+meant to be the default way to use this repo going forward, so its own
+command should be the one that starts it, not a flag or subcommand nobody
+remembers.
+
 ## 2026-09-28 — Repo identity kept separate from the personal GitHub account
 
 Local git config in this repo is `30E Ventures

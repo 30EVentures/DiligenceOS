@@ -50,6 +50,17 @@ free/cheap data only" is a usage milestone, not a code milestone — it needs
 a real person outside this loop trying it on a real (if low-stakes)
 subject. That's the actual next step, not another slice.
 
+## Frontend (added 2026-09-28, by request — outside Phase 0's original scope)
+
+- [x] Slice 11 — a persistent local web front end. `python3 -m diligenceos`
+      (no arguments) now starts it — the default way to use this repo going
+      forward, not a one-off demo. Stdlib `wsgiref`, no new dependency; runs
+      against the bundled sample dataset (see `docs/decisions.md`). The old
+      batch mode (`python3 -m diligenceos <request.json>`) is unchanged.
+- [ ] Slice 12 (not started, not asked for yet) — a way to edit the
+      registry/sanctions/ledger data through the UI instead of the fixed
+      bundled dataset, if that's ever wanted.
+
 ## Later (not started, not scoped)
 
 Phase 1 (real data licensing, liability posture, SMB customers) and beyond —
