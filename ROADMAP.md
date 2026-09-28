@@ -17,8 +17,9 @@ for an unattended slice loop.
 - [x] Slice 3 — first check: sanctions/watchlist screening, exact + alias
       matching against a local fixture list. **Deferred from this slice:**
       ingesting the real, published OFAC SDN list — its own item below.
-- [ ] Slice 3b — real OFAC SDN ingestion: fetch the published list, parse it
-      into `SanctionsEntry` records, feed Slice 3's matcher for real
+- [x] Slice 3b — real OFAC SDN ingestion: parses the real SDN.CSV column
+      format + best-effort a.k.a. extraction. `fetch_sdn_list()` exists for
+      a human to run; deliberately not exercised by the test suite (network)
 - [ ] Slice 4 — identity/legitimacy check against a free registry lookup
 - [ ] Slice 5 — combine checks into one verdict (`PROCEED`/`HOLD`/`RED_FLAG`)
       with a trust score
