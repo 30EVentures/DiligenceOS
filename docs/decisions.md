@@ -123,3 +123,15 @@ slice risks not being sure which one broke when a test fails. `fetch_sdn_list()`
 exists and is real, but stays untested by the automated suite — a live
 network call in `unittest discover` is a flaky test waiting to happen, and
 the published URL can move without this repo knowing.
+
+## 2026-09-29 — North star: infrastructure for the agentic internet
+
+Reason: the product's value to an agent is a verdict it can act on without
+a human in the loop, which only works if the verdict is structured,
+independently re-checkable, and bounded (money in integer minor units,
+authority that can narrow but never widen). Building the human UI first and
+bolting an API on later would bake in human-shaped assumptions, so Track A
+in `ROADMAP.md` puts the machine-verifiable core (receipts, API, evidence)
+ahead of more human-facing features. This is a design stance, not a
+commitment to adopt any particular external spec; formats here are our own,
+open and versioned so that interoperability stays possible later.
