@@ -35,6 +35,7 @@ def issue_receipt(
     subject: dict,
     inputs: dict,
     result: VerdictResult,
+    transaction: dict | None = None,
     issued_at: str | None = None,
 ) -> dict:
     wire = verdict_result_to_dict(result)
@@ -42,6 +43,7 @@ def issue_receipt(
         "schema": SCHEMA,
         "rules": RULES,
         "subject": subject,
+        "transaction": transaction,
         "inputs_digest": digest(inputs),
         "verdict": wire["verdict"],
         "trust_score": wire["trust_score"],

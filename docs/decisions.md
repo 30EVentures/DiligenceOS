@@ -174,3 +174,14 @@ is done by whoever holds the source text (`verify_receipt(sources=...)`),
 so the service is not the trusted party; sources it couldn't check are
 reported in `unchecked`, never silently skipped. Limit, stated: a digest
 shows which bytes were used, not that the source is authentic.
+
+## 2026-09-29 — Money is `Money(amount_minor, currency)`; the demo gate's API changed
+
+Floats can't hold most decimal amounts exactly, and anything an agent might
+act on must not round silently. `Money` rejects floats, bools, negatives and
+malformed currency codes at construction, so a bad amount fails at the edge
+(a `400` naming the field) instead of deep in a calculation. This changed
+Slice 10's `EscrowGate` (`held_amount: float` -> `held: Money`), the one
+tested API touched by Track A; only its own tests used the field. The
+transaction rides in the receipt, sealed by the id, so a verdict is bound to
+the deal it was issued for; it doesn't influence scoring yet.

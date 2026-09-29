@@ -4,13 +4,13 @@ from __future__ import annotations
 
 from dataclasses import dataclass, replace
 
-from diligenceos.types import Verdict, VerdictResult
+from diligenceos.types import Money, Verdict, VerdictResult
 
 
 @dataclass(frozen=True)
 class EscrowGate:
     subject: str
-    held_amount: float
+    held: Money
     released: bool = False
 
 

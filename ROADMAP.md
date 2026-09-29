@@ -93,7 +93,7 @@ a page. Every slice from here is checked against four questions:
 - [x] Slice 17 — evidence wired in: findings carry re-checkable evidence
       (quote + source digest); assembly refuses uncited flags except for
       explicitly exempted categories.
-- [ ] Slice 18 — money hygiene: `EscrowGate` moves from float to integer
+- [x] Slice 18 — money hygiene: `EscrowGate` moves from float to integer
       minor units; requests carry `amount_minor` + currency.
 - [ ] Slice 19 — authority that only narrows: a caller policy envelope
       (max amount, acceptable verdicts) and `narrow()`, checked against the

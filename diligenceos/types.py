@@ -18,6 +18,35 @@ class CheckStatus(Enum):
 
 
 @dataclass(frozen=True)
+class Money:
+    """Integer minor units (cents, pence) + currency. Never a float."""
+
+    amount_minor: int
+    currency: str
+
+    def __post_init__(self) -> None:
+        if isinstance(self.amount_minor, bool) or not isinstance(self.amount_minor, int):
+            raise ValueError("amount_minor must be an integer count of minor units")
+        if self.amount_minor < 0:
+            raise ValueError("amount_minor must not be negative")
+        if not (
+            isinstance(self.currency, str)
+            and len(self.currency) == 3
+            and self.currency.isascii()
+            and self.currency.isupper()
+            and self.currency.isalpha()
+        ):
+            raise ValueError("currency must be a 3-letter uppercase code, e.g. 'USD'")
+
+    def to_dict(self) -> dict:
+        return {"amount_minor": self.amount_minor, "currency": self.currency}
+
+    @classmethod
+    def from_dict(cls, data: dict) -> "Money":
+        return cls(amount_minor=data["amount_minor"], currency=data["currency"])
+
+
+@dataclass(frozen=True)
 class Evidence:
     """A re-checkable claim about a named source.
 
