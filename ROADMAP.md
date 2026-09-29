@@ -67,6 +67,42 @@ subject. That's the actual next step, not another slice.
       entirely. Verified by hand: added a record, killed the server, started
       a fresh process, checked that record — still resolved correctly.
 
+## North star (added 2026-09-29): infrastructure for the agentic internet
+
+DiligenceOS is not a human product that also happens to have an API. The
+caller is as likely an agent gating its own next action as a person reading
+a page. Every slice from here is checked against four questions:
+
+1. Does it work if the caller is an agent (structured in, structured out,
+   stable error shapes, no screen-scraping)?
+2. Is trust machine-verifiable — can a stranger re-check a verdict offline,
+   without trusting this server?
+3. Is money integer minor units, and does delegated authority only narrow,
+   never widen?
+4. Could it interoperate with neighbouring agent infrastructure (open,
+   versioned, schema'd documents rather than bespoke formats)?
+
+## Track A — agent-native (in order; each slice is one PR)
+
+- [ ] Slice 14 — this roadmap + the decision log entry (docs only)
+- [ ] Slice 15 — verdict receipt: canonical JSON, input digest, content-hash
+      id, and an offline `verify_receipt` that also recomputes the verdict
+      from the findings. Tamper-evident; not yet signed (see spec).
+- [ ] Slice 16 — machine API: `POST /v1/verdict`, `POST /v1/verify`,
+      `GET /v1/capabilities`, structured errors. Same server, same store.
+- [ ] Slice 17 — evidence wired in: findings carry re-checkable evidence
+      (quote + source digest); assembly refuses uncited flags except for
+      explicitly exempted categories.
+- [ ] Slice 18 — money hygiene: `EscrowGate` moves from float to integer
+      minor units; requests carry `amount_minor` + currency.
+- [ ] Slice 19 — authority that only narrows: a caller policy envelope
+      (max amount, acceptable verdicts) and `narrow()`, checked against the
+      receipt to yield an allow / escalate / deny decision.
+
+Later Track A candidates, unscoped: signed receipts (needs a deliberate
+crypto dependency), receipt chaining / an append-only log, freshness and
+revocation, a discoverable capability manifest.
+
 ## Later (not started, not scoped)
 
 Phase 1 (real data licensing, liability posture, SMB customers) and beyond —
