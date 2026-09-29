@@ -8,7 +8,8 @@ import re
 from datetime import datetime, timezone
 
 from diligenceos.pipeline import run_diligence
-from diligenceos.policy import Policy, WideningError, decide, effective_policy
+from diligenceos.auth import authenticate
+from diligenceos.policy import Policy, WideningError, decide, effective_policy, narrow
 from diligenceos.spend import try_spend
 from diligenceos.receipt_log import LogCorruptError
 from diligenceos.signing import LOG_HEAD_DOMAIN, SignerError, head_message
@@ -81,13 +82,13 @@ def _capabilities():
                 "response": {"decision": "ALLOW|ESCALATE|DENY", "reasons": ["string"], "effective_policy": "policy"},
             },
             "POST /v1/revoke": {
-                "request": {"receipt_id": "sha256:<64 hex>", "reason": "string"},
-                "response": {"receipt_id": "string", "reason": "string", "revoked_at": "iso8601"},
-                "note": "idempotent; unauthenticated (localhost only for now)",
+                "request": {"receipt_id | delegation_id": "sha256:<64 hex>", "reason": "string", "auth": "auth envelope, scope 'revoke'"},
+                "response": {"receipt_id | delegation_id": "string", "reason": "string", "revoked_at": "iso8601"},
+                "note": "idempotent; authenticated (401 unauthenticated / 403 forbidden)",
             },
             "GET /v1/revocations": {"response": {"revocations": "{receipt_id: {reason, revoked_at}}"}},
             "POST /v1/spend": {
-                "request": {"budget_id": "string", "receipt": "a receipt", "policy | policy_chain": "as /v1/decide", "sources": "optional"},
+                "request": {"budget_id": "string", "receipt": "a receipt", "policy | policy_chain": "as /v1/decide; optional if the credential carries a policy, and may then only narrow it", "sources": "optional", "auth": "auth envelope, scope 'spend'"},
                 "response": {
                     "decision": "ALLOW|ESCALATE|DENY", "reasons": ["string"], "spent_minor": "int",
                     "remaining_minor": "int", "already_committed": "bool", "effective_policy": "policy",
@@ -106,11 +107,19 @@ def _capabilities():
             "POST /v1/verdict headers": "X-DiligenceOS-Log-Seq, X-DiligenceOS-Log-Entry-Hash, X-DiligenceOS-Log-Conflict (only on a conflict)",
             "GET /v1/capabilities": {"response": "this document"},
         },
+        "auth": {
+            "envelope": {
+                "signer": "ed25519 id of the request key", "chain": "[delegation, ...] (empty = the operator)",
+                "issued_at": "iso8601, within 300s of the server", "nonce": "single-use string",
+                "signature": "over {path, body without auth, issued_at, nonce}, domain diligenceos.request/1",
+            },
+            "delegation": "diligenceos.delegation/1: scopes, policy?, budget_id?, expires; each link may only narrow",
+        },
         "errors": {
             "shape": {"error": {"code": "string", "message": "string", "field": "optional"}},
             "codes": [
                 "invalid_json", "invalid_request", "policy_widening", "not_found",
-                "method_not_allowed", "body_too_large", "log_unavailable", "signer_unavailable",
+                "method_not_allowed", "body_too_large", "log_unavailable", "signer_unavailable", "unauthenticated", "forbidden",
             ],
         },
     }
@@ -288,9 +297,12 @@ def _verify(body: bytes, store: Store):
     })
 
 
-def _resolve_policy(data: dict):
-    """(policy, None) or (None, error response). Accepts `policy` xor `policy_chain`."""
+def _resolve_policy(data: dict, *, required: bool = True):
+    """(policy, None) or (None, error response). Accepts `policy` xor `policy_chain`;
+    with required=False, neither is allowed and yields (None, None)."""
     raw_chain = data.get("policy_chain")
+    if not required and raw_chain is None and "policy" not in data:
+        return None, None
     if (raw_chain is None) == ("policy" not in data):
         return None, _error(400, "invalid_request", "give exactly one of policy or policy_chain", "policy")
     raw_chain = raw_chain if raw_chain is not None else [data["policy"]]
@@ -350,19 +362,45 @@ def _decide(body: bytes, store: Store):
     })
 
 
+def _authenticate(path: str, data: dict, store: Store, scope: str):
+    """(AuthResult, None) or (None, error response). Strips `auth` from `data`, which
+    must therefore be a dict; the signature covers everything else in it."""
+    auth = data.pop("auth", None)
+    if not isinstance(auth, dict):
+        return None, _error(401, "unauthenticated", "this endpoint requires an auth envelope", "auth")
+    try:
+        root = [store.signer.issuer_id]
+    except SignerError as exc:
+        return None, _signer_unavailable(exc)
+    result = authenticate(
+        path, data, auth, root_issuers=root, now=_now(),
+        revocations=store.revocations, remember_nonce=store.remember_nonce,
+    )
+    if not result.ok:
+        return None, _error(401, "unauthenticated", "; ".join(result.errors), "auth")
+    if scope not in result.scopes:
+        return None, _error(403, "forbidden", f"credential does not grant the {scope!r} scope", "auth")
+    return result, None
+
+
 def _revoke(body: bytes, store: Store):
     data, err = _parse_body(body)
     if err:
         return err
     if not isinstance(data, dict):
         return _error(400, "invalid_request", "body must be a JSON object")
-    receipt_id, reason = data.get("receipt_id"), data.get("reason")
+    _, err = _authenticate("/v1/revoke", data, store, "revoke")
+    if err:
+        return err
+    # a delegation id is revoked through the same list as a receipt id
+    key = "delegation_id" if "delegation_id" in data else "receipt_id"
+    receipt_id, reason = data.get(key), data.get("reason")
     if not isinstance(receipt_id, str) or not _RECEIPT_ID.match(receipt_id):
-        return _error(400, "invalid_request", "receipt_id must look like sha256:<64 hex>", "receipt_id")
+        return _error(400, "invalid_request", f"{key} must look like sha256:<64 hex>", key)
     if not isinstance(reason, str) or not reason.strip():
         return _error(400, "invalid_request", "reason is required", "reason")
     entry = store.revoke(receipt_id, reason.strip())
-    return _json(200, {"receipt_id": receipt_id, **entry})
+    return _json(200, {key: receipt_id, **entry})
 
 
 def _spend(body: bytes, store: Store):
@@ -371,12 +409,23 @@ def _spend(body: bytes, store: Store):
         return err
     if not isinstance(data, dict) or "receipt" not in data:
         return _error(400, "invalid_request", "body must be an object with a receipt", "receipt")
+    auth, err = _authenticate("/v1/spend", data, store, "spend")
+    if err:
+        return err
     budget_id = data.get("budget_id")
     if not isinstance(budget_id, str) or not budget_id.strip():
         return _error(400, "invalid_request", "budget_id is required", "budget_id")
-    policy, err = _resolve_policy(data)
+    if auth.budget_id is not None and budget_id.strip() != auth.budget_id:
+        return _error(403, "forbidden", f"credential is bound to budget {auth.budget_id!r}", "budget_id")
+    requested, err = _resolve_policy(data, required=auth.policy is None)
     if err:
         return err
+    if auth.policy is not None and requested is not None:
+        try:
+            narrow(auth.policy, requested)  # a caller may only ask for less than it holds
+        except WideningError as exc:
+            return _error(403, "forbidden", f"requested policy widens the credential's: {exc}", f"policy.{exc.axis}")
+    policy = requested if requested is not None else auth.policy
     sources, err = _sources_of(data)
     if err:
         return err
@@ -388,7 +437,7 @@ def _spend(body: bytes, store: Store):
         return err
     result = try_spend(
         store, budget_id.strip(), data["receipt"], policy, now=_now(), sources=sources,
-        trusted_issuers=trusted,
+        trusted_issuers=trusted, caller=auth.caller,
     )
     return _json(200, {
         "decision": result.decision.outcome.value,

@@ -32,6 +32,7 @@ class Store:
         self.persist_path = persist_path
         self._log: ReceiptLog | None = None
         self._signer: Signer | None = None
+        self._nonces: dict[str, datetime] = {}  # in memory only; see specs/slice-25
 
     @classmethod
     def seeded_from_sample(cls, persist_path: Path | None = None) -> "Store":
@@ -195,9 +196,23 @@ class Store:
             if e["currency"] == currency
         )
 
-    def commit_spend(self, budget_id: str, receipt_id: str, amount: Money) -> None:
-        self._spend.setdefault(budget_id, {})[receipt_id] = amount.to_dict()
+    def commit_spend(
+        self, budget_id: str, receipt_id: str, amount: Money, caller: str | None = None
+    ) -> None:
+        self._spend.setdefault(budget_id, {})[receipt_id] = {**amount.to_dict(), "caller": caller}
         self._maybe_save()
+
+    def remember_nonce(self, nonce: str, now: str, window_seconds: int = 600) -> bool:
+        """True if `nonce` was already seen inside the window; otherwise records it.
+        Entries older than the window are dropped (auth already rejects stale requests)."""
+        moment = datetime.fromisoformat(now)
+        self._nonces = {
+            n: t for n, t in self._nonces.items() if (moment - t).total_seconds() < window_seconds
+        }
+        if nonce in self._nonces:
+            return True
+        self._nonces[nonce] = moment
+        return False
 
     def _state_dict(self) -> dict:
         # to_dict() stays the checks' data (and the data_digest input); revocations

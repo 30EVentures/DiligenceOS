@@ -99,7 +99,7 @@ a page. Every slice from here is checked against four questions:
       (max amount, acceptable verdicts) and `narrow()`, checked against the
       receipt to yield an allow / escalate / deny decision.
 
-**Track A, part 2** (20–23 done; 24–26 proposed, not started):
+**Track A, part 2** (20–23 and 25 done; 24 and 26 proposed, not started):
 
 - [x] Slice 20 — `EscrowGate` consumes a `Decision` (ALLOW releases;
       ESCALATE/DENY hold), so the release path can't bypass the policy.
@@ -109,15 +109,16 @@ a page. Every slice from here is checked against four questions:
 - [x] Slice 22 — freshness and revocation: default `expires` on receipts,
       a revocation list a verifier can consult, spend accumulation against
       a policy cap across calls. (Built: 24h default TTL, `/v1/revoke`,
-      `/v1/revocations`, `/v1/spend`; still unauthenticated — see Slice 25.)
+      `/v1/revocations`, `/v1/spend`; authenticated since Slice 25.)
 - [x] Slice 23 — an append-only, hash-chained log of issued receipts, so an
       issuer can't quietly reissue a different verdict for the same inputs.
 - [ ] Slice 24 — a discoverable capability manifest at a stable path, once
       the formats above have settled enough to publish.
-- [ ] Slice 25 — caller identity: who is *calling* `/v1/revoke` and
-      `/v1/spend` (delegated agent credentials that narrow, verifiable with
-      the same signing machinery). Signed receipts (Slice 21) authenticate
-      the *issuer*; they don't authenticate the caller.
+- [x] Slice 25 — caller identity: `/v1/revoke` and `/v1/spend` now
+      require a signed request from the operator or from a delegate holding a
+      signed credential chain that can only narrow (scopes, expiry, budget,
+      policy). Signed receipts (Slice 21) authenticate the *issuer*; this
+      authenticates the *caller*. CLI: `keygen`, `delegate`, `sign-request`.
 - [ ] Slice 26 — sign revocation and log entries (only heads are signed
       today); witness/anchor signed heads somewhere outside the operator.
 

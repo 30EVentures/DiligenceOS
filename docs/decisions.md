@@ -286,3 +286,49 @@ has to be pinned out of band. **Not done, stated:** key rotation, key
 revocation, a key directory, keychain/HSM storage, and authenticating the
 *caller* of `/v1/revoke` and `/v1/spend` (Slice 25 — signatures identify the
 issuer, not who is asking).
+
+## 2026-09-29 — Callers authenticate with a signed request and a credential chain that only narrows
+
+**Problem.** Slice 21 proved who *issued* a receipt; `/v1/revoke` and
+`/v1/spend` were still open to anyone who could reach the server.
+
+**Two separate proofs, on purpose.** (1) A *delegation chain* says what a
+key is allowed to do: signed links from the operator down to the caller,
+each of which may only narrow the one above it — scopes, expiry, the budget
+it is bound to, and the Slice 19 `Policy` (verified with the same `narrow()`
+that already existed, so there is one definition of "narrower" in the
+codebase). (2) A *signed request* says the caller holds the key the last
+link names. Without (2) a credential is a bearer token: anyone who copies
+it, from a log or a shared file, is the agent. The request signature covers
+the path, the body (minus `auth`), the time and a nonce, so a signed spend
+can't be replayed as a revoke, against another body, or later than five
+minutes; nonces are single-use.
+
+**Operator is the empty chain.** A request signed by the server's own key
+with no credential has all scopes and no policy limit. That keeps the model
+to one mechanism instead of a separate admin path (a shared token would have
+been the alternative; it can't be delegated, narrowed or attributed).
+
+**A credential's policy *is* the policy for spend.** The request may carry a
+policy only to narrow it. Letting the caller pick their own cap would make
+the credential's cap decorative. The caller's id is recorded on each spend
+entry so a budget can be audited by who drew on it.
+
+**Revocation reuses the list from Slice 22.** Any delegation id in the
+revocations list invalidates that link and, because a chain is verified end
+to end, everything delegated below it, immediately. Ids are content hashes,
+so receipt and delegation ids share one namespace without ambiguity;
+`/v1/revoke` accepts `delegation_id` for clarity.
+
+**Refused at creation.** `delegate` verifies the chain it is about to emit
+and refuses a widening child, naming the axis, rather than minting a
+credential that would only fail at use.
+
+**Stated limits.** `/v1/decide`, `/v1/verify`, `/v1/verdict` and the log/
+revocation reads stay open (they compute or expose no authority). The nonce
+cache is in memory (replays of these two idempotent endpoints are harmless
+if it is forgotten by a restart inside the window). Delegations are not
+logged, and only the operator can revoke one. No key rotation or directory;
+keys are plain files. The chain depth cap (4) and the five-minute skew are
+guesses. Slice 26 (signing revocation/log entries, witnessing heads) is
+what remains of the accountability story.

@@ -6,6 +6,7 @@ import tempfile
 import unittest
 from pathlib import Path
 
+from auth_helpers import as_operator
 from diligenceos import api
 from diligenceos.engine import assemble_verdict
 from diligenceos.gate import EscrowGate, release_if_allowed
@@ -154,6 +155,7 @@ class ApiSigningTest(unittest.TestCase):
         self._tmp.cleanup()
 
     def call(self, method, path, payload=None, store=None):
+        payload = as_operator(store or self.store, path, payload)
         body = json.dumps(payload).encode() if payload is not None else b""
         status, _, out = api.handle(method, path, body, store or self.store)
         return status, json.loads(out)

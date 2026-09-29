@@ -4,6 +4,7 @@ import tempfile
 import unittest
 from pathlib import Path
 
+from auth_helpers import as_operator
 from diligenceos import api
 from diligenceos.engine import assemble_verdict
 from diligenceos.gate import EscrowGate, release_if_allowed
@@ -129,6 +130,7 @@ class ApiTest(unittest.TestCase):
         self.pol = policy(cap=50_000_000).to_dict()
 
     def call(self, method, path, payload=None):
+        payload = as_operator(self.store, path, payload)
         body = json.dumps(payload).encode() if payload is not None else b""
         status, _, out = api.handle(method, path, body, self.store)
         return status, json.loads(out)

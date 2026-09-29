@@ -11,6 +11,21 @@ action (a payment, a signature, an offer) on the verdict.
 Status: pre-alpha. Nothing here is production-ready or licensed for real
 compliance decisions yet. See `ROADMAP.md`.
 
+## Callers and credentials
+
+`/v1/revoke` and `/v1/spend` need a signed request. The operator (the
+server's own key, `~/.diligenceos/issuer.key`) can sign directly; anyone
+else needs a credential the operator (or a delegate) minted, which can only
+be narrowed as it is passed on:
+
+```
+.venv/bin/python -m diligenceos keygen agent.key            # prints the agent's id
+.venv/bin/python -m diligenceos delegate --subject <id> --scopes spend \
+    --max-amount 30000000 --currency USD --min-trust 70 --budget q4 > chain.json
+.venv/bin/python -m diligenceos sign-request --key agent.key --chain chain.json \
+    --path /v1/spend body.json | curl -s -X POST localhost:8000/v1/spend --data-binary @-
+```
+
 ## Getting started
 
 ```
