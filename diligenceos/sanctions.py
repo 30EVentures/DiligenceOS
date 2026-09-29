@@ -6,9 +6,11 @@ import json
 from dataclasses import dataclass
 from pathlib import Path
 
-from diligenceos.types import CheckStatus, Finding
+from diligenceos.evidence import text_digest
+from diligenceos.types import CheckStatus, Evidence, Finding
 
 CATEGORY = "sanctions"
+SOURCE = "store:sanctions_entries"
 
 
 @dataclass(frozen=True)
@@ -21,6 +23,13 @@ class SanctionsEntry:
 @dataclass(frozen=True)
 class SanctionsList:
     entries: tuple[SanctionsEntry, ...] = ()
+
+    def source_text(self) -> str:
+        """Canonical dump of the list — the text a sanctions Evidence cites."""
+        return json.dumps(
+            [{"name": e.name, "program": e.program, "aliases": list(e.aliases)} for e in self.entries],
+            sort_keys=True, separators=(",", ":"), ensure_ascii=False,
+        )
 
     def match(self, name: str) -> SanctionsEntry | None:
         needle = name.strip().casefold()
@@ -52,4 +61,11 @@ def screen_subject(name: str, sanctions_list: SanctionsList) -> Finding:
         category=CATEGORY,
         status=CheckStatus.FLAG,
         detail=f"matches {match.name!r} on the {match.program} list",
+        evidence=(
+            Evidence(
+                source=SOURCE,
+                source_digest=text_digest(sanctions_list.source_text()),
+                quote=match.name,
+            ),
+        ),
     )

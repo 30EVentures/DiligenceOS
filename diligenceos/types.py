@@ -18,11 +18,30 @@ class CheckStatus(Enum):
 
 
 @dataclass(frozen=True)
+class Evidence:
+    """A re-checkable claim about a named source.
+
+    Exactly one of `quote` (must appear in the source) or `absent` (must not).
+    `source_digest` pins which bytes of the source the claim was made against.
+    """
+
+    source: str
+    source_digest: str
+    quote: str | None = None
+    absent: str | None = None
+
+    def __post_init__(self) -> None:
+        if (self.quote is None) == (self.absent is None):
+            raise ValueError("evidence needs exactly one of quote or absent")
+
+
+@dataclass(frozen=True)
 class Finding:
     category: str
     status: CheckStatus
     detail: str | None = None
     evidence_url: str | None = None
+    evidence: tuple[Evidence, ...] = ()
 
     def __post_init__(self) -> None:
         if self.status is CheckStatus.FLAG and not self.detail:

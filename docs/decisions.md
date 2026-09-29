@@ -160,3 +160,17 @@ shape with stable `code`s (and a `field` when one input is at fault) so a
 caller can handle them without parsing prose. The receipt's `inputs_digest`
 covers a digest of the store's data as well as the request, since the same
 request against different data legitimately yields a different verdict.
+
+## 2026-09-29 — Evidence enforced in the pipeline, per-claim, verified by the holder of the source
+
+Settles the Slice 6 open question. Enforcement lives in `run_diligence`
+(once, over all findings, before assembly) rather than inside each check:
+a check can't forget to police itself, and the exemption list
+(`identity`, `track_record`) sits in one visible constant. Evidence is a
+per-claim structure — a `quote` that must appear or a phrase that must be
+`absent`, pinned to a `source_digest` — because "this clause is missing"
+is the main document finding and an absence can't be quoted. Verification
+is done by whoever holds the source text (`verify_receipt(sources=...)`),
+so the service is not the trusted party; sources it couldn't check are
+reported in `unchecked`, never silently skipped. Limit, stated: a digest
+shows which bytes were used, not that the source is authentic.

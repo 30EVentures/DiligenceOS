@@ -50,8 +50,8 @@ def _capabilities():
                 "response": "receipt (schema above)",
             },
             "POST /v1/verify": {
-                "request": "a receipt",
-                "response": {"valid": "bool", "expired": "bool", "errors": ["string"]},
+                "request": "a receipt, or {receipt, sources?: {source_id: text}} to also re-check evidence",
+                "response": {"valid": "bool", "expired": "bool", "errors": ["string"], "unchecked": ["source ids not re-checked"]},
             },
             "GET /v1/capabilities": {"response": "this document"},
         },
@@ -115,8 +115,19 @@ def _verify(body: bytes):
     if err:
         return err
     now = datetime.now(timezone.utc).replace(microsecond=0).isoformat()
-    check = verify_receipt(data, now=now)
-    return _json(200, {"valid": check.valid, "expired": check.expired, "errors": list(check.errors)})
+    sources = None
+    if isinstance(data, dict) and "receipt" in data:  # envelope: {"receipt", "sources"?}
+        sources = data.get("sources")
+        if sources is not None and not (
+            isinstance(sources, dict) and all(isinstance(v, str) for v in sources.values())
+        ):
+            return _error(400, "invalid_request", "sources must map source ids to text", "sources")
+        data = data["receipt"]
+    check = verify_receipt(data, now=now, sources=sources)
+    return _json(200, {
+        "valid": check.valid, "expired": check.expired,
+        "errors": list(check.errors), "unchecked": list(check.unchecked),
+    })
 
 
 def handle(method: str, path: str, body: bytes, store: Store):

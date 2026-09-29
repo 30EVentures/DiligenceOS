@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from diligenceos.types import CheckStatus, Finding, VerdictResult
+from diligenceos.types import CheckStatus, Evidence, Finding, VerdictResult
 
 
 def finding_to_dict(finding: Finding) -> dict:
@@ -11,6 +11,10 @@ def finding_to_dict(finding: Finding) -> dict:
         "status": finding.status.value,
         "detail": finding.detail,
         "evidence_url": finding.evidence_url,
+        "evidence": [
+            {"source": e.source, "source_digest": e.source_digest, "quote": e.quote, "absent": e.absent}
+            for e in finding.evidence
+        ],
     }
 
 
@@ -29,4 +33,11 @@ def finding_from_dict(data: dict) -> Finding:
         status=CheckStatus(data["status"]),
         detail=data.get("detail"),
         evidence_url=data.get("evidence_url"),
+        evidence=tuple(
+            Evidence(
+                source=e["source"], source_digest=e["source_digest"],
+                quote=e.get("quote"), absent=e.get("absent"),
+            )
+            for e in data.get("evidence", [])
+        ),
     )
