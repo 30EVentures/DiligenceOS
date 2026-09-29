@@ -8,6 +8,7 @@ from dataclasses import dataclass, field
 from datetime import datetime, timezone
 
 from diligenceos.engine import assemble_verdict
+from diligenceos.evidence import verify_evidence
 from diligenceos.serialize import finding_from_dict, verdict_result_to_dict
 from diligenceos.types import VerdictResult
 
@@ -56,13 +57,17 @@ class ReceiptCheck:
     valid: bool
     expired: bool = False
     errors: tuple[str, ...] = field(default_factory=tuple)
+    unchecked: tuple[str, ...] = field(default_factory=tuple)
 
 
-def verify_receipt(receipt, *, now: str | None = None) -> ReceiptCheck:
+def verify_receipt(
+    receipt, *, now: str | None = None, sources: dict[str, str] | None = None
+) -> ReceiptCheck:
     if not isinstance(receipt, dict):
         return ReceiptCheck(False, errors=("receipt must be a JSON object",))
 
     errors: list[str] = []
+    unchecked: list[str] = []
     if receipt.get("schema") != SCHEMA:
         errors.append(f"unknown schema {receipt.get('schema')!r}")
     if receipt.get("rules") != RULES:
@@ -77,6 +82,12 @@ def verify_receipt(receipt, *, now: str | None = None) -> ReceiptCheck:
 
     try:
         findings = [finding_from_dict(f) for f in receipt["findings"]]
+        for finding in findings:
+            for ev in finding.evidence:
+                if sources is not None and ev.source in sources:
+                    errors.extend(verify_evidence(ev, sources[ev.source]))
+                elif ev.source not in unchecked:
+                    unchecked.append(ev.source)
         replayed = assemble_verdict(findings)
         if replayed.verdict.value != receipt.get("verdict"):
             errors.append(
@@ -99,4 +110,6 @@ def verify_receipt(receipt, *, now: str | None = None) -> ReceiptCheck:
         except (TypeError, ValueError):
             errors.append("expires/now is not an ISO-8601 timestamp")
 
-    return ReceiptCheck(valid=not errors, expired=expired, errors=tuple(errors))
+    return ReceiptCheck(
+        valid=not errors, expired=expired, errors=tuple(errors), unchecked=tuple(unchecked)
+    )

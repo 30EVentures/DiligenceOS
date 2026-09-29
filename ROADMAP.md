@@ -90,7 +90,7 @@ a page. Every slice from here is checked against four questions:
       from the findings. Tamper-evident; not yet signed (see spec).
 - [x] Slice 16 — machine API: `POST /v1/verdict`, `POST /v1/verify`,
       `GET /v1/capabilities`, structured errors. Same server, same store.
-- [ ] Slice 17 — evidence wired in: findings carry re-checkable evidence
+- [x] Slice 17 — evidence wired in: findings carry re-checkable evidence
       (quote + source digest); assembly refuses uncited flags except for
       explicitly exempted categories.
 - [ ] Slice 18 — money hygiene: `EscrowGate` moves from float to integer
