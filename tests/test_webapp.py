@@ -48,6 +48,19 @@ class WebappTestCase(unittest.TestCase):
         self._tmpdir.cleanup()
 
 
+class MachineApiWiringTest(WebappTestCase):
+    def test_v1_paths_are_served_as_json(self):
+        status, headers, body = call_app("GET", "/v1/capabilities")
+        self.assertEqual(status, "200 OK")
+        self.assertEqual(headers["Content-Type"], "application/json")
+        self.assertIn('"verdicts"', body)
+
+    def test_v1_errors_carry_reason_phrase(self):
+        status, _, body = call_app("GET", "/v1/nope")
+        self.assertEqual(status, "404 Not Found")
+        self.assertIn("not_found", body)
+
+
 class GetFormTest(WebappTestCase):
     def test_get_root_renders_the_form(self):
         status, _, body = call_app("GET", "/")
