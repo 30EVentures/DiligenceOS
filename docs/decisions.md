@@ -135,3 +135,16 @@ in `ROADMAP.md` puts the machine-verifiable core (receipts, API, evidence)
 ahead of more human-facing features. This is a design stance, not a
 commitment to adopt any particular external spec; formats here are our own,
 open and versioned so that interoperability stays possible later.
+
+## 2026-09-29 — Receipts are hash-sealed but unsigned, and verification replays the rules
+
+Slice 15's receipt id is a sha256 over canonical JSON. That alone is
+forgeable by anyone who can recompute a hash, so `verify_receipt` also
+replays `assemble_verdict` over the receipt's own findings and rejects a
+verdict or score that doesn't follow. The result: a stranger can confirm
+internal consistency and rule-compliance offline, but not *who* issued it.
+Signing is deferred rather than faked: the stdlib has no asymmetric
+signatures and HMAC would need a shared secret, which defeats third-party
+verification. It gets its own slice with a deliberately chosen, pinned
+dependency. `RULES = "verdict-rules/1"` is in every receipt so a future
+change to penalty weights doesn't silently invalidate old ones.
