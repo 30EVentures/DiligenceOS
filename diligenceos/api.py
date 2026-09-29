@@ -407,11 +407,13 @@ def _spend(body: bytes, store: Store):
     data, err = _parse_body(body)
     if err:
         return err
-    if not isinstance(data, dict) or "receipt" not in data:
-        return _error(400, "invalid_request", "body must be an object with a receipt", "receipt")
-    auth, err = _authenticate("/v1/spend", data, store, "spend")
+    if not isinstance(data, dict):
+        return _error(400, "invalid_request", "body must be a JSON object")
+    auth, err = _authenticate("/v1/spend", data, store, "spend")  # before any field validation
     if err:
         return err
+    if "receipt" not in data:
+        return _error(400, "invalid_request", "body must be an object with a receipt", "receipt")
     budget_id = data.get("budget_id")
     if not isinstance(budget_id, str) or not budget_id.strip():
         return _error(400, "invalid_request", "budget_id is required", "budget_id")
