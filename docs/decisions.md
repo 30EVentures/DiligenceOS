@@ -148,3 +148,15 @@ signatures and HMAC would need a shared secret, which defeats third-party
 verification. It gets its own slice with a deliberately chosen, pinned
 dependency. `RULES = "verdict-rules/1"` is in every receipt so a future
 change to penalty weights doesn't silently invalidate old ones.
+
+## 2026-09-29 — The machine API is a pure handler; a failed verification is a 200
+
+`api.handle()` takes and returns plain values and knows nothing about WSGI,
+so the whole contract is unit-tested without a server; `webapp.app` only
+delegates `/v1/*` to it. `/v1/verify` answers `200 {"valid": false, ...}`
+for a forged receipt: the call succeeded, the *document* failed, and an
+agent should branch on `valid`, not on HTTP status. Errors use one JSON
+shape with stable `code`s (and a `field` when one input is at fault) so a
+caller can handle them without parsing prose. The receipt's `inputs_digest`
+covers a digest of the store's data as well as the request, since the same
+request against different data legitimately yields a different verdict.

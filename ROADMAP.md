@@ -88,7 +88,7 @@ a page. Every slice from here is checked against four questions:
 - [x] Slice 15 — verdict receipt: canonical JSON, input digest, content-hash
       id, and an offline `verify_receipt` that also recomputes the verdict
       from the findings. Tamper-evident; not yet signed (see spec).
-- [ ] Slice 16 — machine API: `POST /v1/verdict`, `POST /v1/verify`,
+- [x] Slice 16 — machine API: `POST /v1/verdict`, `POST /v1/verify`,
       `GET /v1/capabilities`, structured errors. Same server, same store.
 - [ ] Slice 17 — evidence wired in: findings carry re-checkable evidence
       (quote + source digest); assembly refuses uncited flags except for
