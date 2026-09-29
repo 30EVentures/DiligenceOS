@@ -1,4 +1,4 @@
-"""python3 -m diligenceos [request.json]
+"""python3 -m diligenceos [request.json | keygen | delegate | sign-request ...]
 
 No argument: starts the local web front end (blocks; see diligenceos.webapp).
 One argument: batch mode, unchanged since Slice 9 — runs the pipeline once
@@ -46,6 +46,11 @@ def main(argv: list[str]) -> int:
 
         webapp.serve()
         return 0
+
+    from diligenceos import tools
+
+    if argv[1] in tools.COMMANDS:
+        return tools.main(argv[1:])
 
     if len(argv) == 2:
         return _run_batch(argv[1])

@@ -19,7 +19,7 @@ class SpendResult:
 
 def try_spend(
     store: Store, budget_id: str, receipt, policy: Policy, *, now: str | None = None,
-    sources=None, trusted_issuers=None,
+    sources=None, trusted_issuers=None, caller: str | None = None,
 ) -> SpendResult:
     cap = policy.max_amount
     spent = store.spent(budget_id, cap.currency)
@@ -43,5 +43,5 @@ def try_spend(
         )
         return SpendResult(Decision(Outcome.ESCALATE, (reason,)), spent, remaining)
 
-    store.commit_spend(budget_id, receipt["id"], amount)
+    store.commit_spend(budget_id, receipt["id"], amount, caller=caller)
     return SpendResult(decision, spent + amount.amount_minor, remaining - amount.amount_minor)
