@@ -14,6 +14,7 @@ from pathlib import Path
 from diligenceos.identity import RegistryLookup, RegistryRecord
 from diligenceos.sanctions import SanctionsEntry, SanctionsList
 from diligenceos.receipt_log import ReceiptLog
+from diligenceos.signing import Signer
 from diligenceos.track_record import DeliveryRecord, Ledger
 from diligenceos.types import Money
 
@@ -30,6 +31,7 @@ class Store:
         self._spend: dict[str, dict[str, dict]] = {}  # budget -> receipt id -> Money dict
         self.persist_path = persist_path
         self._log: ReceiptLog | None = None
+        self._signer: Signer | None = None
 
     @classmethod
     def seeded_from_sample(cls, persist_path: Path | None = None) -> "Store":
@@ -148,6 +150,17 @@ class Store:
                 for d in self._ledger.all_records()
             ],
         }
+
+    @property
+    def signer(self) -> Signer:
+        """issuer.key beside the store file (an ephemeral in-memory key if the store
+        has no path). Raises SignerError, every time, if the file is unusable."""
+        if self._signer is None:
+            self._signer = (
+                Signer.load_or_create(self.persist_path.with_name("issuer.key"))
+                if self.persist_path else Signer.generate()
+            )
+        return self._signer
 
     @property
     def log(self) -> ReceiptLog:

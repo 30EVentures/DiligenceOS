@@ -93,11 +93,17 @@ class Decision:
 
 
 def decide(
-    receipt, policy: Policy, *, now: str | None = None, sources=None, revocations=None
+    receipt, policy: Policy, *, now: str | None = None, sources=None, revocations=None,
+    trusted_issuers=None,
 ) -> Decision:
-    check = verify_receipt(receipt, now=now, sources=sources, revocations=revocations)
+    check = verify_receipt(
+        receipt, now=now, sources=sources, revocations=revocations,
+        trusted_issuers=trusted_issuers,
+    )
     if not check.valid:
         return Decision(Outcome.DENY, tuple(f"receipt invalid: {e}" for e in check.errors))
+    if check.trusted is False:
+        return Decision(Outcome.DENY, ("receipt is not validly signed by a trusted issuer",))
     if check.revoked:
         return Decision(Outcome.DENY, (f"receipt was revoked: {check.revoked_reason}",))
     if receipt["verdict"] == Verdict.RED_FLAG.value:

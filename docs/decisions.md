@@ -251,3 +251,38 @@ receipt's own id. Honest limit: an operator who controls the file can still
 rewrite the whole chain, and a dropped tail is only detectable by someone
 holding an earlier head. The log becomes evidence against the operator only
 once heads are signed and witnessed elsewhere (Slice 21 onward).
+
+## 2026-09-29 — Signed receipts; first dependency: `cryptography` (owner-approved)
+
+**Why a dependency at all.** Third-party verifiability is the point of a
+receipt, and the stdlib can't provide it: it has no asymmetric signatures,
+and an HMAC needs a secret the verifier would also have to hold — which
+makes the verifier able to forge. **Why `cryptography`, not hand-rolled
+Ed25519 or a smaller lib.** Rolling our own signature code is the one thing
+not to do in a trust product (timing side channels, subtle malleability);
+`cryptography` is the maintained, widely audited standard binding and ships
+wheels for our Python. Pinned exactly with its two transitive deps
+(`cffi`, `pycparser`) in `requirements.txt`. The cost, accepted: the repo is
+no longer stdlib-only, so tests and the server run from a venv, and the
+always-on server on port 8000 must be started from `.venv/bin/python`.
+
+**Design.** The issuer id *is* the public key (`ed25519:<hex>`), so a
+receipt is self-describing and the check needs no directory. The signature
+covers the receipt `id`, which already commits to every field including
+`issuer`, so swapping the claimed issuer breaks the id and re-sealing the id
+breaks the signature. Signatures are domain-separated (`receipt/1` vs
+`log-head/1`) so one purpose can't be replayed as another. Keys live in a
+0600 file beside the store (outside the repo); a bad key file is a `503`,
+never silently regenerated — a new key would be a new, unannounced identity.
+
+**The line that matters: valid vs. trusted.** A receipt signed by *any*
+key is internally valid. It is *trusted* only if the verifier's own list
+names that issuer. So `verify` reports `trusted` separately, `decide`/gate/
+spend DENY untrusted receipts once given a list, and the API defaults the
+list to the server's own key — so a stranger's perfectly valid receipt can't
+release money here, while a caller can still pass `trusted_issuers` to
+accept other issuers. The `issuer` field and `/v1/issuer` are claims; trust
+has to be pinned out of band. **Not done, stated:** key rotation, key
+revocation, a key directory, keychain/HSM storage, and authenticating the
+*caller* of `/v1/revoke` and `/v1/spend` (Slice 25 — signatures identify the
+issuer, not who is asking).

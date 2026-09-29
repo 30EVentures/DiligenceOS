@@ -11,9 +11,16 @@ decision. `ROADMAP.md` here is the working, slice-level version.
 ## How to run
 
 - Repo lives at `~/DiligenceOS`.
-- Language: Python 3 (developed on 3.14). No third-party dependencies yet —
-  when a slice needs one, it's added deliberately (see Boundaries) and this
-  section gains a venv setup step.
+- Language: Python 3 (developed on 3.14). Since Slice 21 there is one
+  third-party dependency (`cryptography`, for Ed25519 signing; see
+  `requirements.txt` and `docs/decisions.md`). Set up the venv once, and use
+  `.venv/bin/python` (or `source .venv/bin/activate`) for everything below —
+  the server and the tests won't import without it:
+
+  ```
+  python3 -m venv .venv
+  .venv/bin/python -m pip install -r requirements.txt
+  ```
 - **The web front end is the default entry point** (since Slice 11):
 
   ```
@@ -62,7 +69,7 @@ decision. `ROADMAP.md` here is the working, slice-level version.
   copy-pasted with attribution intact. See `docs/decisions.md` for why.
 - `fixtures/golden/` is the regression set, once real fixtures exist. Add
   cases; do not edit existing ones.
-- Dependencies: none yet. When a slice's explicit point is adding one, pin an
+- Dependencies: exactly one so far (`cryptography`, Slice 21, owner-approved). When a slice's explicit point is adding one, pin an
   exact version in `requirements.txt` and record *why* in `docs/decisions.md`.
 
 ## Where things are
