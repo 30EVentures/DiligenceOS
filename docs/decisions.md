@@ -332,3 +332,49 @@ logged, and only the operator can revoke one. No key rotation or directory;
 keys are plain files. The chain depth cap (4) and the five-minute skew are
 guesses. Slice 26 (signing revocation/log entries, witnessing heads) is
 what remains of the accountability story.
+
+## 2026-09-29 — Signed entries, revocations in the log, and a witness; why the server can't audit itself
+
+**Signed entries.** Each new log entry carries `kind` and `issuer` inside
+its hashed body, plus a `signature` over `entry_hash` (excluded from the
+hash, or it would sign itself). One entry plus its signature is now a
+self-contained statement — "this issuer logged this at position n" —
+that can be shown to someone without handing over the whole file. Logs
+written before this slice load and verify unchanged; their entries are
+simply unsigned (`require_signed` exists for verifiers who want to refuse
+them), so no migration was needed.
+
+**Revocations moved into the log.** They were a JSON field the operator
+could quietly delete, which meant "revoked" was only as strong as the
+operator's honesty on the day. Now `Store.revoke` appends a signed entry
+naming the caller (Slice 25's authenticated identity) *before* touching
+the index, and fails closed if the log or key is unusable — an unattested
+revocation is worse than an error. The index stays as a fast lookup;
+`/v1/revocations` returns the backing signed entries with it.
+
+**The limit that motivates the witness.** Every check the server can run on
+itself — chain, per-entry signatures, signed head — passes for an operator
+who rewrites history and re-hashes and re-signs the whole file, because the
+rewrite is internally consistent and signed by the real key. (Demonstrated
+live: `/v1/log/verify` said valid after a rewrite.) The only thing that
+distinguishes it from the truth is *memory held by someone else*. A witness
+stores the last head it accepted and requires the new log to have the same
+hash at the same position (never shorter). It writes state only on success,
+so a bad round can't become the new baseline, and it exits 3 so it can sit
+in cron or monitoring. It cosigns `(issuer, length, head_hash)` so a
+verifier can hold the issuer's signature plus independent witnesses'
+signatures on one head.
+
+**Cosignatures are allow-listed.** `POST /v1/log/cosign` accepts only
+witnesses named in `DILIGENCEOS_WITNESSES` (empty = none) and only for a head
+the log really has. Open submission would let anyone fill the store with
+throwaway keys; the allow-list costs the operator one env var and costs the
+verifier nothing, since verifiers pin the witness ids they trust regardless.
+
+**Stated limits.** A witness that first looks *after* a rewrite can't know
+(shown in the tests); the guarantee starts at its first observation, and it
+is only as independent as whoever runs it — a witness on the operator's own
+machine proves the mechanism, not the independence. No gossip between
+witnesses, no public log, no trusted timestamps. Delegation issuance is
+still unlogged. Track A is otherwise complete apart from Slice 24 (a
+discoverable manifest), deliberately last.

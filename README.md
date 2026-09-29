@@ -26,6 +26,25 @@ be narrowed as it is passed on:
     --path /v1/spend body.json | curl -s -X POST localhost:8000/v1/spend --data-binary @-
 ```
 
+## Witnessing the log
+
+The server's own log check (`/v1/log/verify`) can't catch the operator
+rewriting history and re-signing it — a rewrite that is internally
+consistent *is* valid. A witness can, because it remembers what it saw:
+
+```
+.venv/bin/python -m diligenceos keygen witness.key
+.venv/bin/python -m diligenceos witness --url http://127.0.0.1:8000 \
+    --issuer <the issuer id you pinned> --key witness.key --state witness.json
+```
+
+Exit `0`: the log is an append-only extension of what this witness saw last,
+and the witness cosigned the head. Exit `3`: it is not (history rewritten or
+truncated) — investigate. To be worth anything the witness must be run by
+someone other than the operator, who keeps its own state file. Add
+`--submit` and list the witness in the server's `DILIGENCEOS_WITNESSES` to
+have cosignatures served with `/v1/log/head`.
+
 ## Getting started
 
 ```

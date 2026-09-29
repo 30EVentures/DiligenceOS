@@ -15,6 +15,7 @@ from diligenceos.identity import RegistryLookup, RegistryRecord
 from diligenceos.sanctions import SanctionsEntry, SanctionsList
 from diligenceos.receipt_log import ReceiptLog
 from diligenceos.signing import Signer
+from diligenceos.witness import verify_cosignature
 from diligenceos.track_record import DeliveryRecord, Ledger
 from diligenceos.types import Money
 
@@ -32,6 +33,7 @@ class Store:
         self.persist_path = persist_path
         self._log: ReceiptLog | None = None
         self._signer: Signer | None = None
+        self._cosignatures: dict[str, dict[str, dict]] = {}  # head hash -> witness -> doc
         self._nonces: dict[str, datetime] = {}  # in memory only; see specs/slice-25
 
     @classmethod
@@ -86,6 +88,7 @@ class Store:
             )
         store._revocations = dict(data.get("revocations", {}))
         store._spend = {b: dict(v) for b, v in data.get("spend", {}).items()}
+        store._cosignatures = {h: dict(v) for h, v in data.get("cosignatures", {}).items()}
         store.persist_path = persist_path
         return store
 
@@ -176,15 +179,39 @@ class Store:
     def revocations(self) -> dict[str, dict]:
         return dict(self._revocations)
 
-    def revoke(self, receipt_id: str, reason: str) -> dict:
-        """Idempotent: revoking twice keeps the first reason and time."""
+    def revoke(self, receipt_id: str, reason: str, *, by: str | None = None) -> dict:
+        """Idempotent: revoking twice keeps the first reason and time. The revocation
+        is appended to the signed log *first*, so if the log or key is unusable this
+        raises (LogCorruptError / SignerError) instead of recording an unattested one."""
         if receipt_id not in self._revocations:
+            entry = self.log.append_revocation(receipt_id, reason, by, signer=self.signer)
             self._revocations[receipt_id] = {
                 "reason": reason,
-                "revoked_at": datetime.now(timezone.utc).replace(microsecond=0).isoformat(),
+                "revoked_at": entry["logged_at"],
+                "revoked_by": by,
+                "log_seq": entry["seq"],
             }
             self._maybe_save()
         return self._revocations[receipt_id]
+
+    def cosignatures_for(self, head_hash: str) -> list[dict]:
+        return list(self._cosignatures.get(head_hash, {}).values())
+
+    def add_cosignature(self, doc: dict, allowed_witnesses) -> None:
+        """Raises ValueError, saying why, unless `doc` is a valid cosignature by a listed
+        witness of a head this log really has (or had)."""
+        if not verify_cosignature(doc):
+            raise ValueError("cosignature does not verify")
+        if doc["witness"] not in set(allowed_witnesses):
+            raise ValueError("witness is not listed with this server")
+        if doc["issuer"] != self.signer.issuer_id:
+            raise ValueError("cosignature is for a different issuer")
+        if not isinstance(doc["length"], int) or self.log.head_at(doc["length"]) != doc["head_hash"]:
+            raise ValueError("this log never had that head")
+        self._cosignatures.setdefault(doc["head_hash"], {})[doc["witness"]] = {
+            k: doc[k] for k in ("issuer", "length", "head_hash", "witness", "signature")
+        }
+        self._maybe_save()
 
     def spend_entry(self, budget_id: str, receipt_id: str) -> Money | None:
         entry = self._spend.get(budget_id, {}).get(receipt_id)
@@ -217,7 +244,10 @@ class Store:
     def _state_dict(self) -> dict:
         # to_dict() stays the checks' data (and the data_digest input); revocations
         # and spend are operational state that must not change what a verdict covers.
-        return {**self.to_dict(), "revocations": self._revocations, "spend": self._spend}
+        return {
+            **self.to_dict(), "revocations": self._revocations, "spend": self._spend,
+            "cosignatures": self._cosignatures,
+        }
 
     def _maybe_save(self) -> None:
         if self.persist_path is not None:
