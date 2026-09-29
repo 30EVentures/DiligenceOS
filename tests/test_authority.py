@@ -190,6 +190,15 @@ class ApiAuthTest(unittest.TestCase):
             self.assertEqual((status, out["error"]["code"]), (401, "unauthenticated"), path)
         self.assertEqual(self.raw("POST", "/v1/revoke", {"auth": "nope"})[0], 401)
 
+    def test_authentication_comes_before_validation(self):
+        # an unauthenticated caller must learn nothing about what a valid body looks like
+        for path in ("/v1/spend", "/v1/revoke"):
+            for body in ({}, {"budget_id": ""}, {"receipt": 5}, {"reason": 1}):
+                status, out = self.raw("POST", path, body)
+                self.assertEqual((status, out["error"]["code"]), (401, "unauthenticated"), (path, body))
+        status, out = self.raw("POST", "/v1/spend", [1])  # not even an object: still not a validation answer we vary
+        self.assertEqual(status, 400)
+
     def test_operator_can_revoke_and_spend(self):
         p = pol().to_dict()
         self.assertEqual(self.spend(self.op, [], policy=p)[1]["decision"], "ALLOW")
