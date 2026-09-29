@@ -199,3 +199,14 @@ three outcomes rather than two so "a human should look" (ESCALATE) is
 distinct from "never" (DENY): a limit breach is ESCALATE, an unverifiable
 receipt or RED_FLAG is DENY. Stated limit: nothing yet proves who issued a
 policy; signatures (Slice 21) close that.
+
+## 2026-09-29 — The gate computes its own decision and binds the receipt to the deal
+
+`release_if_allowed` takes a receipt and a policy, not a pre-made
+`Decision`: if the caller supplied the decision, the gate would be trusting
+the caller to have run the policy. It also refuses a genuine, in-policy
+receipt issued for a *different* subject or amount, because a valid receipt
+is a statement about one deal, not a bearer token. That mismatch is DENY
+(not ESCALATE): a human re-reading it wouldn't change what it is. The old
+`apply_verdict` stays, marked demo-only, rather than being deleted — it is
+a tested API and removal is the owner's call.
