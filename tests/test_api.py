@@ -52,6 +52,31 @@ class VerdictTest(unittest.TestCase):
         self.assertEqual(json.loads(out)["verdict"], "RED_FLAG")
 
 
+class TransactionTest(unittest.TestCase):
+    def test_transaction_is_echoed_and_sealed(self):
+        req = {**GOOD, "transaction": {"amount_minor": 24000000, "currency": "USD"}}
+        status, _, receipt = call("POST", "/v1/verdict", req)
+        self.assertEqual(status, 200)
+        self.assertEqual(receipt["transaction"], {"amount_minor": 24000000, "currency": "USD"})
+        receipt["transaction"]["amount_minor"] = 1
+        self.assertFalse(call("POST", "/v1/verify", receipt)[2]["valid"])
+
+    def test_no_transaction_is_null(self):
+        self.assertIsNone(call("POST", "/v1/verdict", GOOD)[2]["transaction"])
+
+    def test_bad_transactions_name_the_field(self):
+        for tx, field in (
+            ({"amount_minor": 12.5, "currency": "USD"}, "transaction.amount_minor"),
+            ({"amount_minor": True, "currency": "USD"}, "transaction.amount_minor"),
+            ({"amount_minor": -5, "currency": "USD"}, "transaction.amount_minor"),
+            ({"amount_minor": 5, "currency": "usd"}, "transaction.currency"),
+            ({"currency": "USD"}, "transaction.amount_minor"),
+            ("100 USD", "transaction"),
+        ):
+            status, _, body = call("POST", "/v1/verdict", {**GOOD, "transaction": tx})
+            self.assertEqual((status, body["error"]["field"]), (400, field), tx)
+
+
 class ErrorShapeTest(unittest.TestCase):
     def assert_error(self, resp, status, code, field=None):
         got_status, _, body = resp

@@ -8,7 +8,7 @@ from datetime import datetime, timezone
 from diligenceos.pipeline import run_diligence
 from diligenceos.receipt import RULES, SCHEMA, digest, issue_receipt, verify_receipt
 from diligenceos.store import Store
-from diligenceos.types import CheckStatus, Verdict
+from diligenceos.types import CheckStatus, Money, Verdict
 
 MAX_BODY_BYTES = 1024 * 1024
 CATEGORIES = ("sanctions", "identity", "track_record", "document_scan")
@@ -46,6 +46,7 @@ def _capabilities():
                 "request": {
                     "subject": {"name": "string", "registration_id": "string"},
                     "document_text": "string, optional",
+                    "transaction": {"amount_minor": "integer minor units, never a float", "currency": "3-letter uppercase code"},
                 },
                 "response": "receipt (schema above)",
             },
@@ -91,6 +92,18 @@ def _verdict(body: bytes, store: Store):
     if document_text is not None and not isinstance(document_text, str):
         return _error(400, "invalid_request", "document_text must be a string", "document_text")
 
+    transaction = None
+    raw_tx = data.get("transaction")
+    if raw_tx is not None:
+        if not isinstance(raw_tx, dict):
+            return _error(400, "invalid_request", "transaction must be an object", "transaction")
+        for key in ("amount_minor", "currency"):
+            try:
+                Money(**{"amount_minor": 0, "currency": "USD", **{key: raw_tx.get(key)}})
+            except ValueError as exc:
+                return _error(400, "invalid_request", str(exc), f"transaction.{key}")
+        transaction = Money.from_dict(raw_tx).to_dict()
+
     name, reg = subject["name"].strip(), subject["registration_id"].strip()
     result = run_diligence(
         name=name,
@@ -103,10 +116,11 @@ def _verdict(body: bytes, store: Store):
     inputs = {
         "subject": {"name": name, "registration_id": reg},
         "document_text": document_text,
+        "transaction": transaction,
         "data_digest": digest(store.to_dict()),
     }
     return _json(200, issue_receipt(
-        subject=inputs["subject"], inputs=inputs, result=result,
+        subject=inputs["subject"], inputs=inputs, result=result, transaction=transaction,
     ))
 
 
