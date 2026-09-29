@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from diligenceos.types import Finding, VerdictResult
+from diligenceos.types import CheckStatus, Finding, VerdictResult
 
 
 def finding_to_dict(finding: Finding) -> dict:
@@ -21,3 +21,12 @@ def verdict_result_to_dict(result: VerdictResult) -> dict:
         "findings": [finding_to_dict(f) for f in result.findings],
         "expires": result.expires,
     }
+
+
+def finding_from_dict(data: dict) -> Finding:
+    return Finding(
+        category=data["category"],
+        status=CheckStatus(data["status"]),
+        detail=data.get("detail"),
+        evidence_url=data.get("evidence_url"),
+    )

@@ -84,8 +84,8 @@ a page. Every slice from here is checked against four questions:
 
 ## Track A — agent-native (in order; each slice is one PR)
 
-- [ ] Slice 14 — this roadmap + the decision log entry (docs only)
-- [ ] Slice 15 — verdict receipt: canonical JSON, input digest, content-hash
+- [x] Slice 14 — this roadmap + the decision log entry (docs only)
+- [x] Slice 15 — verdict receipt: canonical JSON, input digest, content-hash
       id, and an offline `verify_receipt` that also recomputes the verdict
       from the findings. Tamper-evident; not yet signed (see spec).
 - [ ] Slice 16 — machine API: `POST /v1/verdict`, `POST /v1/verify`,
