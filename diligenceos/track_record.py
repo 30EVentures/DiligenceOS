@@ -26,6 +26,9 @@ class Ledger:
     def for_subject(self, subject: str) -> tuple[DeliveryRecord, ...]:
         return tuple(r for r in self._records if r.subject == subject)
 
+    def all_records(self) -> tuple[DeliveryRecord, ...]:
+        return tuple(self._records)
+
 
 def check_track_record(subject: str, ledger: Ledger, *, late_threshold: float = 0.4) -> Finding:
     records = ledger.for_subject(subject)

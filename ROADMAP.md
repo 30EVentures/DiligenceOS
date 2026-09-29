@@ -57,9 +57,11 @@ subject. That's the actual next step, not another slice.
       forward, not a one-off demo. Stdlib `wsgiref`, no new dependency; runs
       against the bundled sample dataset (see `docs/decisions.md`). The old
       batch mode (`python3 -m diligenceos <request.json>`) is unchanged.
-- [ ] Slice 12 (not started, not asked for yet) — a way to edit the
-      registry/sanctions/ledger data through the UI instead of the fixed
-      bundled dataset, if that's ever wanted.
+- [x] Slice 12 — `/data` lists and adds sanctions entries, registry records,
+      and delivery records through a shared `Store`; an addition is
+      checkable through `/verdict` immediately, in the same running
+      process. Still in-memory only — nothing survives a restart (see
+      `docs/decisions.md`).
 
 ## Later (not started, not scoped)
 
