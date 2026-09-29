@@ -6,6 +6,7 @@ import json
 from datetime import datetime, timezone
 
 from diligenceos.pipeline import run_diligence
+from diligenceos.policy import Policy, WideningError, decide, effective_policy
 from diligenceos.receipt import RULES, SCHEMA, digest, issue_receipt, verify_receipt
 from diligenceos.store import Store
 from diligenceos.types import CheckStatus, Money, Verdict
@@ -16,6 +17,7 @@ CATEGORIES = ("sanctions", "identity", "track_record", "document_scan")
 _ROUTES = {
     "/v1/verdict": "POST",
     "/v1/verify": "POST",
+    "/v1/decide": "POST",
     "/v1/capabilities": "GET",
 }
 
@@ -54,12 +56,20 @@ def _capabilities():
                 "request": "a receipt, or {receipt, sources?: {source_id: text}} to also re-check evidence",
                 "response": {"valid": "bool", "expired": "bool", "errors": ["string"], "unchecked": ["source ids not re-checked"]},
             },
+            "POST /v1/decide": {
+                "request": {
+                    "receipt": "a receipt",
+                    "policy | policy_chain": "{max_amount: {amount_minor, currency}, acceptable_verdicts: [PROCEED|HOLD], min_trust_score: 0-100}; a chain may only narrow",
+                    "sources": "optional, as for /v1/verify",
+                },
+                "response": {"decision": "ALLOW|ESCALATE|DENY", "reasons": ["string"], "effective_policy": "policy"},
+            },
             "GET /v1/capabilities": {"response": "this document"},
         },
         "errors": {
             "shape": {"error": {"code": "string", "message": "string", "field": "optional"}},
             "codes": [
-                "invalid_json", "invalid_request", "not_found",
+                "invalid_json", "invalid_request", "policy_widening", "not_found",
                 "method_not_allowed", "body_too_large",
             ],
         },
@@ -144,6 +154,43 @@ def _verify(body: bytes):
     })
 
 
+def _decide(body: bytes):
+    data, err = _parse_body(body)
+    if err:
+        return err
+    if not isinstance(data, dict) or "receipt" not in data:
+        return _error(400, "invalid_request", "body must be an object with a receipt", "receipt")
+    raw_chain = data.get("policy_chain")
+    if (raw_chain is None) == ("policy" not in data):
+        return _error(400, "invalid_request", "give exactly one of policy or policy_chain", "policy")
+    raw_chain = raw_chain if raw_chain is not None else [data["policy"]]
+    if not isinstance(raw_chain, list) or not raw_chain:
+        return _error(400, "invalid_request", "policy_chain must be a non-empty list", "policy_chain")
+    chain = []
+    for i, raw in enumerate(raw_chain):
+        try:
+            chain.append(Policy.from_dict(raw))
+        except ValueError as exc:
+            return _error(400, "invalid_request", str(exc), f"policy_chain[{i}]" if "policy_chain" in data else "policy")
+    try:
+        policy = effective_policy(chain)
+    except WideningError as exc:
+        where = f"policy_chain[{exc.link}]"
+        return _error(400, "policy_widening", f"{where}: {exc}", f"{where}.{exc.axis}")
+    sources = data.get("sources")
+    if sources is not None and not (
+        isinstance(sources, dict) and all(isinstance(v, str) for v in sources.values())
+    ):
+        return _error(400, "invalid_request", "sources must map source ids to text", "sources")
+    now = datetime.now(timezone.utc).replace(microsecond=0).isoformat()
+    decision = decide(data["receipt"], policy, now=now, sources=sources)
+    return _json(200, {
+        "decision": decision.outcome.value,
+        "reasons": list(decision.reasons),
+        "effective_policy": policy.to_dict(),
+    })
+
+
 def handle(method: str, path: str, body: bytes, store: Store):
     expected = _ROUTES.get(path)
     if expected is None:
@@ -157,4 +204,6 @@ def handle(method: str, path: str, body: bytes, store: Store):
         return _json(200, _capabilities())
     if path == "/v1/verdict":
         return _verdict(body, store)
+    if path == "/v1/decide":
+        return _decide(body)
     return _verify(body)

@@ -95,13 +95,23 @@ a page. Every slice from here is checked against four questions:
       explicitly exempted categories.
 - [x] Slice 18 — money hygiene: `EscrowGate` moves from float to integer
       minor units; requests carry `amount_minor` + currency.
-- [ ] Slice 19 — authority that only narrows: a caller policy envelope
+- [x] Slice 19 — authority that only narrows: a caller policy envelope
       (max amount, acceptable verdicts) and `narrow()`, checked against the
       receipt to yield an allow / escalate / deny decision.
 
-Later Track A candidates, unscoped: signed receipts (needs a deliberate
-crypto dependency), receipt chaining / an append-only log, freshness and
-revocation, a discoverable capability manifest.
+**Track A, part 2 — proposed, not started (needs the owner's call where noted):**
+
+- [ ] Slice 20 — `EscrowGate` consumes a `Decision` (ALLOW releases;
+      ESCALATE/DENY hold), so the release path can't bypass the policy.
+- [ ] Slice 21 — signed receipts. Needs a deliberate, pinned crypto
+      dependency (Ed25519) — **owner's call**, per `CLAUDE.md` Boundaries.
+- [ ] Slice 22 — freshness and revocation: default `expires` on receipts,
+      a revocation list a verifier can consult, spend accumulation against
+      a policy cap across calls.
+- [ ] Slice 23 — an append-only, hash-chained log of issued receipts, so an
+      issuer can't quietly reissue a different verdict for the same inputs.
+- [ ] Slice 24 — a discoverable capability manifest at a stable path, once
+      the formats above have settled enough to publish.
 
 ## Later (not started, not scoped)
 
