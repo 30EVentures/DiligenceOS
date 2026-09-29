@@ -92,10 +92,14 @@ class Decision:
     reasons: tuple[str, ...]
 
 
-def decide(receipt, policy: Policy, *, now: str | None = None, sources=None) -> Decision:
-    check = verify_receipt(receipt, now=now, sources=sources)
+def decide(
+    receipt, policy: Policy, *, now: str | None = None, sources=None, revocations=None
+) -> Decision:
+    check = verify_receipt(receipt, now=now, sources=sources, revocations=revocations)
     if not check.valid:
         return Decision(Outcome.DENY, tuple(f"receipt invalid: {e}" for e in check.errors))
+    if check.revoked:
+        return Decision(Outcome.DENY, (f"receipt was revoked: {check.revoked_reason}",))
     if receipt["verdict"] == Verdict.RED_FLAG.value:
         return Decision(Outcome.DENY, ("verdict is RED_FLAG",))
 

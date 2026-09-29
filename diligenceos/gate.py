@@ -32,9 +32,10 @@ class GateOutcome:
 
 
 def release_if_allowed(
-    gate: EscrowGate, receipt, policy: Policy, *, now: str | None = None, sources=None
+    gate: EscrowGate, receipt, policy: Policy, *, now: str | None = None, sources=None,
+    revocations=None,
 ) -> GateOutcome:
-    decision = decide(receipt, policy, now=now, sources=sources)
+    decision = decide(receipt, policy, now=now, sources=sources, revocations=revocations)
 
     if decision.outcome is not Outcome.DENY and isinstance(receipt, dict):
         mismatches = []

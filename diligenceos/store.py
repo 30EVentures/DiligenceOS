@@ -8,11 +8,13 @@ entirely (see docs/decisions.md).
 from __future__ import annotations
 
 import json
+from datetime import datetime, timezone
 from pathlib import Path
 
 from diligenceos.identity import RegistryLookup, RegistryRecord
 from diligenceos.sanctions import SanctionsEntry, SanctionsList
 from diligenceos.track_record import DeliveryRecord, Ledger
+from diligenceos.types import Money
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
 DEFAULT_REQUEST_PATH = REPO_ROOT / "fixtures" / "golden" / "sample_request.json"
@@ -23,6 +25,8 @@ class Store:
         self._sanctions_entries: list[SanctionsEntry] = []
         self._registry: dict[str, RegistryRecord] = {}
         self._ledger = Ledger()
+        self._revocations: dict[str, dict] = {}
+        self._spend: dict[str, dict[str, dict]] = {}  # budget -> receipt id -> Money dict
         self.persist_path = persist_path
 
     @classmethod
@@ -75,6 +79,8 @@ class Store:
             store.add_delivery_record(
                 subject=item["subject"], on_time=item["on_time"], note=item.get("note", "")
             )
+        store._revocations = dict(data.get("revocations", {}))
+        store._spend = {b: dict(v) for b, v in data.get("spend", {}).items()}
         store.persist_path = persist_path
         return store
 
@@ -141,10 +147,43 @@ class Store:
             ],
         }
 
+    @property
+    def revocations(self) -> dict[str, dict]:
+        return dict(self._revocations)
+
+    def revoke(self, receipt_id: str, reason: str) -> dict:
+        """Idempotent: revoking twice keeps the first reason and time."""
+        if receipt_id not in self._revocations:
+            self._revocations[receipt_id] = {
+                "reason": reason,
+                "revoked_at": datetime.now(timezone.utc).replace(microsecond=0).isoformat(),
+            }
+            self._maybe_save()
+        return self._revocations[receipt_id]
+
+    def spend_entry(self, budget_id: str, receipt_id: str) -> Money | None:
+        entry = self._spend.get(budget_id, {}).get(receipt_id)
+        return Money.from_dict(entry) if entry else None
+
+    def spent(self, budget_id: str, currency: str) -> int:
+        return sum(
+            e["amount_minor"] for e in self._spend.get(budget_id, {}).values()
+            if e["currency"] == currency
+        )
+
+    def commit_spend(self, budget_id: str, receipt_id: str, amount: Money) -> None:
+        self._spend.setdefault(budget_id, {})[receipt_id] = amount.to_dict()
+        self._maybe_save()
+
+    def _state_dict(self) -> dict:
+        # to_dict() stays the checks' data (and the data_digest input); revocations
+        # and spend are operational state that must not change what a verdict covers.
+        return {**self.to_dict(), "revocations": self._revocations, "spend": self._spend}
+
     def _maybe_save(self) -> None:
         if self.persist_path is not None:
             self._save()
 
     def _save(self) -> None:
         self.persist_path.parent.mkdir(parents=True, exist_ok=True)
-        self.persist_path.write_text(json.dumps(self.to_dict(), indent=2))
+        self.persist_path.write_text(json.dumps(self._state_dict(), indent=2))
