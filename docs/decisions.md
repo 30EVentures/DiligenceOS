@@ -4,6 +4,28 @@ Dated, one entry per real decision. Not a changelog — the code and commit
 history already say what changed; this says why, where "why" isn't obvious
 from reading the diff.
 
+## 2026-09-28 — Editable data stays in-memory, not written to a file
+
+Slice 12 made the sanctions list, registry, and delivery ledger editable
+through the web UI. Additions still don't survive a process restart.
+Reason: writing back to `fixtures/golden/sample_request.json` (or a new
+file) would quietly turn a checked-in fixture into mutable runtime state —
+the next `git status` would show uncommitted changes nobody remembers
+making, and the "sample dataset" stops being a reliable, reviewable
+starting point. A real durable store (its own file format, or a database)
+is a decision worth making deliberately, once there's an actual reason
+in-memory-per-process isn't enough — not a side effect of adding a form.
+
+## 2026-09-28 — `Store` reuses `Ledger` directly, only adds what was missing
+
+`Store` doesn't wrap or reimplement Slice 7's `Ledger` — it holds one and
+calls its existing `record()` method. The only change made to
+`track_record.py` was adding `Ledger.all_records()`, because the `/data`
+page is the first caller that ever needed every record instead of one
+subject's. Reusing what already worked, and extending it by exactly the
+one method a real caller needed, beat writing a parallel structure that
+could drift from the checked, tested one.
+
 ## 2026-09-28 — Web front end is stdlib `wsgiref`, not Flask
 
 Slice 11 added a real, always-on local web UI, by explicit request ("a
