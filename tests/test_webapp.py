@@ -1,5 +1,8 @@
 import io
+import os
+import tempfile
 import unittest
+from pathlib import Path
 from urllib.parse import urlencode
 
 from diligenceos import webapp
@@ -25,12 +28,24 @@ def call_app(method: str, path: str, form: dict | None = None):
 
 
 class WebappTestCase(unittest.TestCase):
-    """Resets the module-level Store before each test so additions in one
-    test never leak into another — the Store is a real, shared, mutable
-    singleton per process, same as it would be in a real running server."""
+    """Resets the module-level Store before each test, pointed at a fresh
+    temp file, so additions in one test never leak into another via the
+    real Store singleton or its persisted file (Slice 13) — and never
+    touch the real ~/.diligenceos/store.json."""
 
     def setUp(self):
+        self._tmpdir = tempfile.TemporaryDirectory()
+        self._old_env = os.environ.get("DILIGENCEOS_DATA_PATH")
+        os.environ["DILIGENCEOS_DATA_PATH"] = str(Path(self._tmpdir.name) / "store.json")
         webapp._store = None
+
+    def tearDown(self):
+        if self._old_env is None:
+            os.environ.pop("DILIGENCEOS_DATA_PATH", None)
+        else:
+            os.environ["DILIGENCEOS_DATA_PATH"] = self._old_env
+        webapp._store = None
+        self._tmpdir.cleanup()
 
 
 class GetFormTest(WebappTestCase):

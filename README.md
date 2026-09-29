@@ -19,6 +19,8 @@ python3 -m diligenceos
 
 Opens a local web front end at `http://127.0.0.1:8000` — enter a subject
 name, a registration id, and optional contract text, get a verdict back.
-Runs against a bundled sample dataset, not real registries or sanctions
-data. See `CLAUDE.md` for how to run tests and the batch (JSON in, JSON
-out) mode.
+Visit `/data` to add sanctions entries, registry records, or delivery
+records of your own — additions are checkable immediately and persist
+across restarts in `~/.diligenceos/store.json`. Still not real registries
+or sanctions data — everything starts from a bundled sample dataset. See
+`CLAUDE.md` for how to run tests and the batch (JSON in, JSON out) mode.

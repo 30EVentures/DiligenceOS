@@ -62,6 +62,10 @@ subject. That's the actual next step, not another slice.
       checkable through `/verdict` immediately, in the same running
       process. Still in-memory only — nothing survives a restart (see
       `docs/decisions.md`).
+- [x] Slice 13 — `Store` is durable: `~/.diligenceos/store.json` by
+      default (`DILIGENCEOS_DATA_PATH` to override), outside this repo
+      entirely. Verified by hand: added a record, killed the server, started
+      a fresh process, checked that record — still resolved correctly.
 
 ## Later (not started, not scoped)
 

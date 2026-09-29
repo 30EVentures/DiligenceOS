@@ -1,4 +1,7 @@
+import json
+import tempfile
 import unittest
+from pathlib import Path
 
 from diligenceos.store import Store
 from diligenceos.types import CheckStatus
@@ -13,6 +16,11 @@ class SeededFromSampleTest(unittest.TestCase):
         self.assertGreater(len(store.sanctions_entries), 0)
         self.assertGreater(len(store.registry_records), 0)
         self.assertGreater(len(store.delivery_records), 0)
+
+    def test_with_no_persist_path_writes_nothing(self):
+        # Slice 12's original shape must keep working unmodified.
+        store = Store.seeded_from_sample()
+        self.assertIsNone(store.persist_path)
 
 
 class AddSanctionsEntryTest(unittest.TestCase):
@@ -54,6 +62,48 @@ class AddDeliveryRecordTest(unittest.TestCase):
         store.add_delivery_record(subject="A", on_time=True)
         store.add_delivery_record(subject="B", on_time=False, note="late once")
         self.assertEqual(len(store.delivery_records), 2)
+
+
+class PersistenceTest(unittest.TestCase):
+    def setUp(self):
+        self._tmpdir = tempfile.TemporaryDirectory()
+        self.path = Path(self._tmpdir.name) / "store.json"
+
+    def tearDown(self):
+        self._tmpdir.cleanup()
+
+    def test_add_writes_to_disk_immediately(self):
+        store = Store(persist_path=self.path)
+        store.add_registry_record(registration_id="US1", name="A", status="active")
+        self.assertTrue(self.path.exists())
+        on_disk = json.loads(self.path.read_text())
+        self.assertIn("US1", on_disk["registry"])
+
+    def test_load_or_seed_creates_the_file_on_first_run(self):
+        self.assertFalse(self.path.exists())
+        store = Store.load_or_seed(self.path)
+        self.assertTrue(self.path.exists())
+        self.assertGreater(len(store.registry_records), 0)  # seeded from the sample
+
+    def test_load_or_seed_reads_back_a_previous_run(self):
+        first = Store.load_or_seed(self.path)
+        first.add_registry_record(registration_id="US1", name="Round Trip Ltd.", status="active")
+
+        second = Store.load_or_seed(self.path)
+        finding = check_identity("Round Trip Ltd.", "US1", second.registry_lookup())
+        self.assertEqual(finding.status, CheckStatus.PASS)
+
+    def test_seeded_from_sample_writes_the_full_seed_to_disk(self):
+        seeded = Store.seeded_from_sample(persist_path=self.path)
+        on_disk = json.loads(self.path.read_text())
+        self.assertEqual(len(on_disk["sanctions_entries"]), len(seeded.sanctions_entries))
+        self.assertEqual(len(on_disk["registry"]), len(seeded.registry_records))
+        self.assertEqual(len(on_disk["delivery_records"]), len(seeded.delivery_records))
+
+    def test_with_no_persist_path_still_works_unmodified(self):
+        store = Store()
+        store.add_registry_record(registration_id="US1", name="A", status="active")
+        self.assertFalse(self.path.exists())  # nothing written anywhere
 
 
 if __name__ == "__main__":
