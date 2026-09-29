@@ -10,6 +10,7 @@ from datetime import datetime, timezone
 from diligenceos.pipeline import run_diligence
 from diligenceos.policy import Policy, WideningError, decide, effective_policy
 from diligenceos.spend import try_spend
+from diligenceos.receipt_log import LogCorruptError
 from diligenceos.receipt import RULES, SCHEMA, digest, issue_receipt, verify_receipt
 from diligenceos.store import Store
 from diligenceos.types import CheckStatus, Money, Verdict
@@ -26,6 +27,11 @@ _ROUTES = {
     "/v1/revoke": "POST",
     "/v1/revocations": "GET",
     "/v1/spend": "POST",
+    "/v1/log/head": "GET",
+    "/v1/log/entries": "GET",
+    "/v1/log/conflicts": "GET",
+    "/v1/log/verify": "GET",
+    "/v1/log/lookup": "POST",
     "/v1/capabilities": "GET",
 }
 
@@ -86,13 +92,22 @@ def _capabilities():
                 },
                 "note": "commits on ALLOW; cumulative per budget_id; idempotent per receipt id",
             },
+            "GET /v1/log/head": {"response": {"length": "int", "head_hash": "string"}},
+            "GET /v1/log/entries": {"response": {"entries": ["log entry"], "head_hash": "string"}},
+            "GET /v1/log/conflicts": {"response": {"conflicts": ["log entry with conflict_with set"]}},
+            "GET /v1/log/verify": {"response": {"valid": "bool", "errors": ["string"], "length": "int", "head_hash": "string"}},
+            "POST /v1/log/lookup": {
+                "request": {"receipt_id": "sha256:<64 hex>"},
+                "response": {"entry": "log entry", "head_hash": "string"},
+            },
+            "POST /v1/verdict headers": "X-DiligenceOS-Log-Seq, X-DiligenceOS-Log-Entry-Hash, X-DiligenceOS-Log-Conflict (only on a conflict)",
             "GET /v1/capabilities": {"response": "this document"},
         },
         "errors": {
             "shape": {"error": {"code": "string", "message": "string", "field": "optional"}},
             "codes": [
                 "invalid_json", "invalid_request", "policy_widening", "not_found",
-                "method_not_allowed", "body_too_large",
+                "method_not_allowed", "body_too_large", "log_unavailable",
             ],
         },
     }
@@ -105,6 +120,39 @@ def _parse_body(body: bytes):
         return json.loads(body.decode("utf-8")), None
     except (UnicodeDecodeError, ValueError) as exc:
         return None, _error(400, "invalid_json", f"body is not valid JSON: {exc}")
+
+
+def _log_unavailable(exc: Exception):
+    return _error(503, "log_unavailable", str(exc))
+
+
+def _log_endpoint(path: str, body: bytes, store: Store):
+    try:
+        log = store.log
+    except LogCorruptError as exc:
+        return _log_unavailable(exc)
+    if path == "/v1/log/head":
+        return _json(200, {"length": len(log.entries), "head_hash": log.head})
+    if path == "/v1/log/entries":
+        return _json(200, {"entries": log.entries, "head_hash": log.head})
+    if path == "/v1/log/conflicts":
+        return _json(200, {"conflicts": log.conflicts()})
+    if path == "/v1/log/verify":
+        errors = log.verify()
+        return _json(200, {
+            "valid": not errors, "errors": errors,
+            "length": len(log.entries), "head_hash": log.head,
+        })
+    data, err = _parse_body(body)  # /v1/log/lookup
+    if err:
+        return err
+    receipt_id = data.get("receipt_id") if isinstance(data, dict) else None
+    if not isinstance(receipt_id, str) or not _RECEIPT_ID.match(receipt_id):
+        return _error(400, "invalid_request", "receipt_id must look like sha256:<64 hex>", "receipt_id")
+    entry = log.lookup(receipt_id)
+    if entry is None:
+        return _error(404, "not_found", "receipt is not in the log", "receipt_id")
+    return _json(200, {"entry": entry, "head_hash": log.head})
 
 
 def _ttl_seconds() -> int:
@@ -162,10 +210,22 @@ def _verdict(body: bytes, store: Store):
         "transaction": transaction,
         "data_digest": digest(store.to_dict()),
     }
-    return _json(200, issue_receipt(
+    try:
+        log = store.log
+    except LogCorruptError as exc:
+        return _log_unavailable(exc)  # fail closed: no receipt without a log entry
+    receipt = issue_receipt(
         subject=inputs["subject"], inputs=inputs, result=result, transaction=transaction,
         ttl_seconds=_ttl_seconds(),
-    ))
+    )
+    entry = log.append(receipt)
+    headers = [
+        ("X-DiligenceOS-Log-Seq", str(entry["seq"])),
+        ("X-DiligenceOS-Log-Entry-Hash", entry["entry_hash"]),
+    ]
+    if entry["conflict_with"] is not None:
+        headers.append(("X-DiligenceOS-Log-Conflict", str(entry["conflict_with"])))
+    return _json(200, receipt, headers)
 
 
 def _verify(body: bytes, store: Store):
@@ -296,6 +356,8 @@ def handle(method: str, path: str, body: bytes, store: Store):
         )
     if path == "/v1/capabilities":
         return _json(200, _capabilities())
+    if path.startswith("/v1/log/"):
+        return _log_endpoint(path, body, store)
     if path == "/v1/verdict":
         return _verdict(body, store)
     if path == "/v1/decide":

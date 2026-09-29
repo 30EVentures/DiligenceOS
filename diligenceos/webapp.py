@@ -197,7 +197,8 @@ def _data_body(store: Store, error: str | None = None) -> str:
 </fieldset>"""
 
 
-_REASONS = {200: "OK", 400: "Bad Request", 404: "Not Found", 405: "Method Not Allowed", 413: "Payload Too Large"}
+_REASONS = {200: "OK", 400: "Bad Request", 404: "Not Found", 405: "Method Not Allowed", 413: "Payload Too Large",
+            503: "Service Unavailable"}
 
 _store: Store | None = None
 

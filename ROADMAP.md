@@ -109,7 +109,7 @@ a page. Every slice from here is checked against four questions:
       a revocation list a verifier can consult, spend accumulation against
       a policy cap across calls. (Built: 24h default TTL, `/v1/revoke`,
       `/v1/revocations`, `/v1/spend`; unauthenticated until Slice 21.)
-- [ ] Slice 23 — an append-only, hash-chained log of issued receipts, so an
+- [x] Slice 23 — an append-only, hash-chained log of issued receipts, so an
       issuer can't quietly reissue a different verdict for the same inputs.
 - [ ] Slice 24 — a discoverable capability manifest at a stable path, once
       the formats above have settled enough to publish.
