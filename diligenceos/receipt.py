@@ -5,7 +5,7 @@ from __future__ import annotations
 import hashlib
 import json
 from dataclasses import dataclass, field
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 
 from diligenceos.engine import assemble_verdict
 from diligenceos.evidence import verify_evidence
@@ -37,8 +37,13 @@ def issue_receipt(
     result: VerdictResult,
     transaction: dict | None = None,
     issued_at: str | None = None,
+    ttl_seconds: int | None = None,
 ) -> dict:
     wire = verdict_result_to_dict(result)
+    issued = issued_at or _now()
+    expires = wire["expires"]
+    if expires is None and ttl_seconds:
+        expires = (datetime.fromisoformat(issued) + timedelta(seconds=ttl_seconds)).isoformat()
     body = {
         "schema": SCHEMA,
         "rules": RULES,
@@ -48,8 +53,8 @@ def issue_receipt(
         "verdict": wire["verdict"],
         "trust_score": wire["trust_score"],
         "findings": wire["findings"],
-        "issued_at": issued_at or _now(),
-        "expires": wire["expires"],
+        "issued_at": issued,
+        "expires": expires,
     }
     return {**body, "id": digest(body)}
 
@@ -60,10 +65,16 @@ class ReceiptCheck:
     expired: bool = False
     errors: tuple[str, ...] = field(default_factory=tuple)
     unchecked: tuple[str, ...] = field(default_factory=tuple)
+    revoked: bool = False
+    revoked_reason: str | None = None
 
 
 def verify_receipt(
-    receipt, *, now: str | None = None, sources: dict[str, str] | None = None
+    receipt,
+    *,
+    now: str | None = None,
+    sources: dict[str, str] | None = None,
+    revocations: dict[str, dict] | None = None,
 ) -> ReceiptCheck:
     if not isinstance(receipt, dict):
         return ReceiptCheck(False, errors=("receipt must be a JSON object",))
@@ -112,6 +123,9 @@ def verify_receipt(
         except (TypeError, ValueError):
             errors.append("expires/now is not an ISO-8601 timestamp")
 
+    revocation = (revocations or {}).get(receipt.get("id"))
     return ReceiptCheck(
-        valid=not errors, expired=expired, errors=tuple(errors), unchecked=tuple(unchecked)
+        valid=not errors, expired=expired, errors=tuple(errors), unchecked=tuple(unchecked),
+        revoked=revocation is not None,
+        revoked_reason=revocation.get("reason") if revocation else None,
     )

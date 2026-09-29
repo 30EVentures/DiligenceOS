@@ -210,3 +210,22 @@ is a statement about one deal, not a bearer token. That mismatch is DENY
 (not ESCALATE): a human re-reading it wouldn't change what it is. The old
 `apply_verdict` stays, marked demo-only, rather than being deleted — it is
 a tested API and removal is the owner's call.
+
+## 2026-09-29 — Standing is separate from integrity; a policy cap is a budget
+
+`verify_receipt` keeps *integrity* (`valid`) apart from *standing*
+(`expired`, `revoked`): a revoked receipt is still an authentic document, and
+collapsing the two would make "was this forged?" unanswerable once anything
+is revoked. `decide()` is where standing bites (revoked -> DENY, expired ->
+ESCALATE: a fresh check may well pass, so a human/agent should re-run, not
+give up). Revocations and spend live in the persisted store file but *not*
+in `Store.to_dict()`, which is what `data_digest` covers: revoking a receipt
+must not change what any verdict was issued against. Spend is committed per
+`budget_id`, idempotent per receipt id (presenting a receipt twice, or
+replaying it, spends once), and only on ALLOW; a payment that would push
+the budget past the cap is ESCALATE with the running total in the reason.
+Stated limits: `/v1/revoke` and `/v1/spend` are unauthenticated and
+budgets are caller-named, so this is safe on localhost only; revoking does
+not claw back spend already committed. Both are what signed issuers and
+delegated identities (Slice 21 onward) are for. The 24h default TTL is a
+guess, adjustable with `DILIGENCEOS_RECEIPT_TTL_SECONDS`, not calibrated.

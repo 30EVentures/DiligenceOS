@@ -105,9 +105,10 @@ a page. Every slice from here is checked against four questions:
       ESCALATE/DENY hold), so the release path can't bypass the policy.
 - [ ] Slice 21 — signed receipts. Needs a deliberate, pinned crypto
       dependency (Ed25519) — **owner's call**, per `CLAUDE.md` Boundaries.
-- [ ] Slice 22 — freshness and revocation: default `expires` on receipts,
+- [x] Slice 22 — freshness and revocation: default `expires` on receipts,
       a revocation list a verifier can consult, spend accumulation against
-      a policy cap across calls.
+      a policy cap across calls. (Built: 24h default TTL, `/v1/revoke`,
+      `/v1/revocations`, `/v1/spend`; unauthenticated until Slice 21.)
 - [ ] Slice 23 — an append-only, hash-chained log of issued receipts, so an
       issuer can't quietly reissue a different verdict for the same inputs.
 - [ ] Slice 24 — a discoverable capability manifest at a stable path, once
