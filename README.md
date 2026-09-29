@@ -14,7 +14,9 @@ compliance decisions yet. See `ROADMAP.md`.
 ## Getting started
 
 ```
-python3 -m diligenceos
+python3 -m venv .venv
+.venv/bin/python -m pip install -r requirements.txt
+.venv/bin/python -m diligenceos
 ```
 
 Opens a local web front end at `http://127.0.0.1:8000` — enter a subject

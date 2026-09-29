@@ -11,6 +11,7 @@ from diligenceos.pipeline import run_diligence
 from diligenceos.policy import Policy, WideningError, decide, effective_policy
 from diligenceos.spend import try_spend
 from diligenceos.receipt_log import LogCorruptError
+from diligenceos.signing import LOG_HEAD_DOMAIN, SignerError, head_message
 from diligenceos.receipt import RULES, SCHEMA, digest, issue_receipt, verify_receipt
 from diligenceos.store import Store
 from diligenceos.types import CheckStatus, Money, Verdict
@@ -23,6 +24,7 @@ CATEGORIES = ("sanctions", "identity", "track_record", "document_scan")
 _ROUTES = {
     "/v1/verdict": "POST",
     "/v1/verify": "POST",
+    "/v1/issuer": "GET",
     "/v1/decide": "POST",
     "/v1/revoke": "POST",
     "/v1/revocations": "GET",
@@ -67,8 +69,8 @@ def _capabilities():
                 "response": "receipt (schema above)",
             },
             "POST /v1/verify": {
-                "request": "a receipt, or {receipt, sources?: {source_id: text}} to also re-check evidence",
-                "response": {"valid": "bool (integrity)", "expired": "bool", "revoked": "bool", "revoked_reason": "string|null", "errors": ["string"], "unchecked": ["source ids not re-checked"]},
+                "request": "a receipt, or {receipt, sources?: {source_id: text}, trusted_issuers?: [issuer ids; default: this server]}",
+                "response": {"signed": "bool", "issuer": "string|null", "trusted": "bool (issuer in trusted_issuers)", "valid": "bool (integrity)", "expired": "bool", "revoked": "bool", "revoked_reason": "string|null", "errors": ["string"], "unchecked": ["source ids not re-checked"]},
             },
             "POST /v1/decide": {
                 "request": {
@@ -92,7 +94,8 @@ def _capabilities():
                 },
                 "note": "commits on ALLOW; cumulative per budget_id; idempotent per receipt id",
             },
-            "GET /v1/log/head": {"response": {"length": "int", "head_hash": "string"}},
+            "GET /v1/issuer": {"response": {"issuer": "ed25519:<hex>", "algorithm": "ed25519"}},
+            "GET /v1/log/head": {"response": {"length": "int", "head_hash": "string", "issuer": "string", "signature": "signed <length>:<head_hash>"}},
             "GET /v1/log/entries": {"response": {"entries": ["log entry"], "head_hash": "string"}},
             "GET /v1/log/conflicts": {"response": {"conflicts": ["log entry with conflict_with set"]}},
             "GET /v1/log/verify": {"response": {"valid": "bool", "errors": ["string"], "length": "int", "head_hash": "string"}},
@@ -107,7 +110,7 @@ def _capabilities():
             "shape": {"error": {"code": "string", "message": "string", "field": "optional"}},
             "codes": [
                 "invalid_json", "invalid_request", "policy_widening", "not_found",
-                "method_not_allowed", "body_too_large", "log_unavailable",
+                "method_not_allowed", "body_too_large", "log_unavailable", "signer_unavailable",
             ],
         },
     }
@@ -126,13 +129,35 @@ def _log_unavailable(exc: Exception):
     return _error(503, "log_unavailable", str(exc))
 
 
+def _signer_unavailable(exc: Exception):
+    return _error(503, "signer_unavailable", str(exc))
+
+
+def _trusted_issuers(data: dict, store: Store):
+    """(list, None) or (None, error). Default: only this server's own issuer."""
+    given = data.get("trusted_issuers")
+    if given is None:
+        return [store.signer.issuer_id], None
+    if not (isinstance(given, list) and all(isinstance(x, str) for x in given)):
+        return None, _error(400, "invalid_request", "trusted_issuers must be a list of issuer ids", "trusted_issuers")
+    return given, None
+
+
 def _log_endpoint(path: str, body: bytes, store: Store):
     try:
         log = store.log
     except LogCorruptError as exc:
         return _log_unavailable(exc)
     if path == "/v1/log/head":
-        return _json(200, {"length": len(log.entries), "head_hash": log.head})
+        try:
+            signer = store.signer
+        except SignerError as exc:
+            return _signer_unavailable(exc)
+        length = len(log.entries)
+        return _json(200, {
+            "length": length, "head_hash": log.head, "issuer": signer.issuer_id,
+            "signature": signer.sign(LOG_HEAD_DOMAIN, head_message(length, log.head)),
+        })
     if path == "/v1/log/entries":
         return _json(200, {"entries": log.entries, "head_hash": log.head})
     if path == "/v1/log/conflicts":
@@ -212,11 +237,14 @@ def _verdict(body: bytes, store: Store):
     }
     try:
         log = store.log
+        signer = store.signer
     except LogCorruptError as exc:
         return _log_unavailable(exc)  # fail closed: no receipt without a log entry
+    except SignerError as exc:
+        return _signer_unavailable(exc)
     receipt = issue_receipt(
         subject=inputs["subject"], inputs=inputs, result=result, transaction=transaction,
-        ttl_seconds=_ttl_seconds(),
+        ttl_seconds=_ttl_seconds(), signer=signer,
     )
     entry = log.append(receipt)
     headers = [
@@ -233,6 +261,7 @@ def _verify(body: bytes, store: Store):
     if err:
         return err
     now = datetime.now(timezone.utc).replace(microsecond=0).isoformat()
+    body_obj = data  # the envelope, if any, carries sources and trusted_issuers
     sources = None
     if isinstance(data, dict) and "receipt" in data:  # envelope: {"receipt", "sources"?}
         sources = data.get("sources")
@@ -241,8 +270,18 @@ def _verify(body: bytes, store: Store):
         ):
             return _error(400, "invalid_request", "sources must map source ids to text", "sources")
         data = data["receipt"]
-    check = verify_receipt(data, now=now, sources=sources, revocations=store.revocations)
+    trusted_source = body_obj if isinstance(body_obj, dict) else {}
+    try:
+        trusted, err = _trusted_issuers(trusted_source, store)
+    except SignerError as exc:
+        return _signer_unavailable(exc)
+    if err:
+        return err
+    check = verify_receipt(
+        data, now=now, sources=sources, revocations=store.revocations, trusted_issuers=trusted,
+    )
     return _json(200, {
+        "signed": check.signed, "issuer": check.issuer, "trusted": check.trusted,
         "valid": check.valid, "expired": check.expired,
         "revoked": check.revoked, "revoked_reason": check.revoked_reason,
         "errors": list(check.errors), "unchecked": list(check.unchecked),
@@ -294,8 +333,15 @@ def _decide(body: bytes, store: Store):
     sources, err = _sources_of(data)
     if err:
         return err
+    try:
+        trusted, err = _trusted_issuers(data, store)
+    except SignerError as exc:
+        return _signer_unavailable(exc)
+    if err:
+        return err
     decision = decide(
-        data["receipt"], policy, now=_now(), sources=sources, revocations=store.revocations
+        data["receipt"], policy, now=_now(), sources=sources, revocations=store.revocations,
+        trusted_issuers=trusted,
     )
     return _json(200, {
         "decision": decision.outcome.value,
@@ -334,7 +380,16 @@ def _spend(body: bytes, store: Store):
     sources, err = _sources_of(data)
     if err:
         return err
-    result = try_spend(store, budget_id.strip(), data["receipt"], policy, now=_now(), sources=sources)
+    try:
+        trusted, err = _trusted_issuers(data, store)
+    except SignerError as exc:
+        return _signer_unavailable(exc)
+    if err:
+        return err
+    result = try_spend(
+        store, budget_id.strip(), data["receipt"], policy, now=_now(), sources=sources,
+        trusted_issuers=trusted,
+    )
     return _json(200, {
         "decision": result.decision.outcome.value,
         "reasons": list(result.decision.reasons),
@@ -356,6 +411,12 @@ def handle(method: str, path: str, body: bytes, store: Store):
         )
     if path == "/v1/capabilities":
         return _json(200, _capabilities())
+    if path == "/v1/issuer":
+        try:
+            return _json(200, {"issuer": store.signer.issuer_id, "algorithm": "ed25519",
+                               "note": "a claim, not a trust anchor: pin this key out of band"})
+        except SignerError as exc:
+            return _signer_unavailable(exc)
     if path.startswith("/v1/log/"):
         return _log_endpoint(path, body, store)
     if path == "/v1/verdict":

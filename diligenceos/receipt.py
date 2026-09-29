@@ -10,6 +10,7 @@ from datetime import datetime, timedelta, timezone
 from diligenceos.engine import assemble_verdict
 from diligenceos.evidence import verify_evidence
 from diligenceos.serialize import finding_from_dict, verdict_result_to_dict
+from diligenceos.signing import RECEIPT_DOMAIN, Signer, verify_signature
 from diligenceos.types import VerdictResult
 
 SCHEMA = "diligenceos.receipt/1"
@@ -38,6 +39,7 @@ def issue_receipt(
     transaction: dict | None = None,
     issued_at: str | None = None,
     ttl_seconds: int | None = None,
+    signer: Signer | None = None,
 ) -> dict:
     wire = verdict_result_to_dict(result)
     issued = issued_at or _now()
@@ -55,8 +57,12 @@ def issue_receipt(
         "findings": wire["findings"],
         "issued_at": issued,
         "expires": expires,
+        "issuer": signer.issuer_id if signer else None,
     }
-    return {**body, "id": digest(body)}
+    receipt_id = digest(body)
+    if signer is None:
+        return {**body, "id": receipt_id}
+    return {**body, "id": receipt_id, "signature": signer.sign(RECEIPT_DOMAIN, receipt_id)}
 
 
 @dataclass(frozen=True)
@@ -67,6 +73,9 @@ class ReceiptCheck:
     unchecked: tuple[str, ...] = field(default_factory=tuple)
     revoked: bool = False
     revoked_reason: str | None = None
+    signed: bool = False
+    issuer: str | None = None
+    trusted: bool | None = None  # None: no trust list was supplied
 
 
 def verify_receipt(
@@ -75,6 +84,7 @@ def verify_receipt(
     now: str | None = None,
     sources: dict[str, str] | None = None,
     revocations: dict[str, dict] | None = None,
+    trusted_issuers=None,
 ) -> ReceiptCheck:
     if not isinstance(receipt, dict):
         return ReceiptCheck(False, errors=("receipt must be a JSON object",))
@@ -86,7 +96,7 @@ def verify_receipt(
     if receipt.get("rules") != RULES:
         errors.append(f"unknown rules {receipt.get('rules')!r}")
 
-    body = {k: v for k, v in receipt.items() if k != "id"}
+    body = {k: v for k, v in receipt.items() if k not in ("id", "signature")}
     try:
         if receipt.get("id") != digest(body):
             errors.append("id does not match the document contents")
@@ -115,6 +125,19 @@ def verify_receipt(
     except (KeyError, TypeError, ValueError, AttributeError) as exc:
         errors.append(f"findings unreadable: {exc}")
 
+    signed = False
+    if "signature" in receipt:
+        signed = verify_signature(
+            receipt.get("issuer"), RECEIPT_DOMAIN, str(receipt.get("id")), receipt["signature"]
+        )
+        if not signed:
+            errors.append("signature does not verify for this issuer and receipt id")
+    elif receipt.get("issuer") is not None:
+        errors.append("receipt names an issuer but carries no signature")
+    trusted = None
+    if trusted_issuers is not None:
+        trusted = signed and receipt.get("issuer") in set(trusted_issuers)
+
     expired = False
     expires = receipt.get("expires")
     if expires and now:
@@ -127,5 +150,6 @@ def verify_receipt(
     return ReceiptCheck(
         valid=not errors, expired=expired, errors=tuple(errors), unchecked=tuple(unchecked),
         revoked=revocation is not None,
+        signed=signed, issuer=receipt.get("issuer") if signed else None, trusted=trusted,
         revoked_reason=revocation.get("reason") if revocation else None,
     )

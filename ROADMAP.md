@@ -99,20 +99,27 @@ a page. Every slice from here is checked against four questions:
       (max amount, acceptable verdicts) and `narrow()`, checked against the
       receipt to yield an allow / escalate / deny decision.
 
-**Track A, part 2 — proposed, not started (needs the owner's call where noted):**
+**Track A, part 2** (20–23 done; 24–26 proposed, not started):
 
 - [x] Slice 20 — `EscrowGate` consumes a `Decision` (ALLOW releases;
       ESCALATE/DENY hold), so the release path can't bypass the policy.
-- [ ] Slice 21 — signed receipts. Needs a deliberate, pinned crypto
-      dependency (Ed25519) — **owner's call**, per `CLAUDE.md` Boundaries.
+- [x] Slice 21 — signed receipts (Ed25519 via the pinned `cryptography`
+      dependency, owner-approved): receipts and log heads are signed;
+      verifiers pin the issuers they trust.
 - [x] Slice 22 — freshness and revocation: default `expires` on receipts,
       a revocation list a verifier can consult, spend accumulation against
       a policy cap across calls. (Built: 24h default TTL, `/v1/revoke`,
-      `/v1/revocations`, `/v1/spend`; unauthenticated until Slice 21.)
+      `/v1/revocations`, `/v1/spend`; still unauthenticated — see Slice 25.)
 - [x] Slice 23 — an append-only, hash-chained log of issued receipts, so an
       issuer can't quietly reissue a different verdict for the same inputs.
 - [ ] Slice 24 — a discoverable capability manifest at a stable path, once
       the formats above have settled enough to publish.
+- [ ] Slice 25 — caller identity: who is *calling* `/v1/revoke` and
+      `/v1/spend` (delegated agent credentials that narrow, verifiable with
+      the same signing machinery). Signed receipts (Slice 21) authenticate
+      the *issuer*; they don't authenticate the caller.
+- [ ] Slice 26 — sign revocation and log entries (only heads are signed
+      today); witness/anchor signed heads somewhere outside the operator.
 
 ## Later (not started, not scoped)
 

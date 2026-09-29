@@ -18,13 +18,17 @@ class SpendResult:
 
 
 def try_spend(
-    store: Store, budget_id: str, receipt, policy: Policy, *, now: str | None = None, sources=None
+    store: Store, budget_id: str, receipt, policy: Policy, *, now: str | None = None,
+    sources=None, trusted_issuers=None,
 ) -> SpendResult:
     cap = policy.max_amount
     spent = store.spent(budget_id, cap.currency)
     remaining = max(0, cap.amount_minor - spent)
 
-    decision = decide(receipt, policy, now=now, sources=sources, revocations=store.revocations)
+    decision = decide(
+        receipt, policy, now=now, sources=sources, revocations=store.revocations,
+        trusted_issuers=trusted_issuers,
+    )
     if decision.outcome is not Outcome.ALLOW:
         return SpendResult(decision, spent, remaining)
 
