@@ -35,6 +35,7 @@ _ROUTES = {
     "/v1/log/conflicts": "GET",
     "/v1/log/verify": "GET",
     "/v1/log/lookup": "POST",
+    "/v1/log/cosign": "POST",
     "/v1/capabilities": "GET",
 }
 
@@ -86,7 +87,7 @@ def _capabilities():
                 "response": {"receipt_id | delegation_id": "string", "reason": "string", "revoked_at": "iso8601"},
                 "note": "idempotent; authenticated (401 unauthenticated / 403 forbidden)",
             },
-            "GET /v1/revocations": {"response": {"revocations": "{receipt_id: {reason, revoked_at}}"}},
+            "GET /v1/revocations": {"response": {"revocations": "{id: {reason, revoked_at, revoked_by, log_seq}}", "entries": "the signed log entries (kind=revocation) that back them"}},
             "POST /v1/spend": {
                 "request": {"budget_id": "string", "receipt": "a receipt", "policy | policy_chain": "as /v1/decide; optional if the credential carries a policy, and may then only narrow it", "sources": "optional", "auth": "auth envelope, scope 'spend'"},
                 "response": {
@@ -96,7 +97,12 @@ def _capabilities():
                 "note": "commits on ALLOW; cumulative per budget_id; idempotent per receipt id",
             },
             "GET /v1/issuer": {"response": {"issuer": "ed25519:<hex>", "algorithm": "ed25519"}},
-            "GET /v1/log/head": {"response": {"length": "int", "head_hash": "string", "issuer": "string", "signature": "signed <length>:<head_hash>"}},
+            "GET /v1/log/head": {"response": {"length": "int", "head_hash": "string", "issuer": "string", "signature": "signed <length>:<head_hash>", "cosignatures": "witness cosignatures for this head"}},
+            "POST /v1/log/cosign": {
+                "request": {"issuer": "string", "length": "int", "head_hash": "string", "witness": "ed25519 id", "signature": "string"},
+                "response": {"accepted": True},
+                "note": "accepted only from witnesses listed in DILIGENCEOS_WITNESSES, for a head this log really has",
+            },
             "GET /v1/log/entries": {"response": {"entries": ["log entry"], "head_hash": "string"}},
             "GET /v1/log/conflicts": {"response": {"conflicts": ["log entry with conflict_with set"]}},
             "GET /v1/log/verify": {"response": {"valid": "bool", "errors": ["string"], "length": "int", "head_hash": "string"}},
@@ -166,7 +172,24 @@ def _log_endpoint(path: str, body: bytes, store: Store):
         return _json(200, {
             "length": length, "head_hash": log.head, "issuer": signer.issuer_id,
             "signature": signer.sign(LOG_HEAD_DOMAIN, head_message(length, log.head)),
+            "cosignatures": store.cosignatures_for(log.head),
         })
+    if path == "/v1/log/cosign":
+        data, err = _parse_body(body)
+        if err:
+            return err
+        if not isinstance(data, dict):
+            return _error(400, "invalid_request", "body must be a cosignature object")
+        allowed = [w.strip() for w in os.environ.get("DILIGENCEOS_WITNESSES", "").split(",") if w.strip()]
+        if not allowed:
+            return _error(403, "forbidden", "no witnesses are configured on this server", "witness")
+        try:
+            store.add_cosignature(data, allowed)
+        except SignerError as exc:
+            return _signer_unavailable(exc)
+        except ValueError as exc:
+            return _error(400, "invalid_request", str(exc), "cosignature")
+        return _json(200, {"accepted": True})
     if path == "/v1/log/entries":
         return _json(200, {"entries": log.entries, "head_hash": log.head})
     if path == "/v1/log/conflicts":
@@ -255,7 +278,7 @@ def _verdict(body: bytes, store: Store):
         subject=inputs["subject"], inputs=inputs, result=result, transaction=transaction,
         ttl_seconds=_ttl_seconds(), signer=signer,
     )
-    entry = log.append(receipt)
+    entry = log.append(receipt, signer=signer)
     headers = [
         ("X-DiligenceOS-Log-Seq", str(entry["seq"])),
         ("X-DiligenceOS-Log-Entry-Hash", entry["entry_hash"]),
@@ -389,7 +412,7 @@ def _revoke(body: bytes, store: Store):
         return err
     if not isinstance(data, dict):
         return _error(400, "invalid_request", "body must be a JSON object")
-    _, err = _authenticate("/v1/revoke", data, store, "revoke")
+    auth, err = _authenticate("/v1/revoke", data, store, "revoke")
     if err:
         return err
     # a delegation id is revoked through the same list as a receipt id
@@ -399,7 +422,12 @@ def _revoke(body: bytes, store: Store):
         return _error(400, "invalid_request", f"{key} must look like sha256:<64 hex>", key)
     if not isinstance(reason, str) or not reason.strip():
         return _error(400, "invalid_request", "reason is required", "reason")
-    entry = store.revoke(receipt_id, reason.strip())
+    try:
+        entry = store.revoke(receipt_id, reason.strip(), by=auth.caller)
+    except LogCorruptError as exc:
+        return _log_unavailable(exc)  # fail closed: no revocation without a log entry
+    except SignerError as exc:
+        return _signer_unavailable(exc)
     return _json(200, {key: receipt_id, **entry})
 
 
@@ -479,5 +507,9 @@ def handle(method: str, path: str, body: bytes, store: Store):
     if path == "/v1/spend":
         return _spend(body, store)
     if path == "/v1/revocations":
-        return _json(200, {"revocations": store.revocations})
+        try:
+            entries = store.log.revocation_entries()
+        except LogCorruptError as exc:
+            return _log_unavailable(exc)
+        return _json(200, {"revocations": store.revocations, "entries": entries})
     return _verify(body, store)

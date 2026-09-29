@@ -99,7 +99,7 @@ a page. Every slice from here is checked against four questions:
       (max amount, acceptable verdicts) and `narrow()`, checked against the
       receipt to yield an allow / escalate / deny decision.
 
-**Track A, part 2** (20–23 and 25 done; 24 and 26 proposed, not started):
+**Track A, part 2** (20–23, 25 and 26 done; 24 proposed, not started):
 
 - [x] Slice 20 — `EscrowGate` consumes a `Decision` (ALLOW releases;
       ESCALATE/DENY hold), so the release path can't bypass the policy.
@@ -119,8 +119,11 @@ a page. Every slice from here is checked against four questions:
       signed credential chain that can only narrow (scopes, expiry, budget,
       policy). Signed receipts (Slice 21) authenticate the *issuer*; this
       authenticates the *caller*. CLI: `keygen`, `delegate`, `sign-request`.
-- [ ] Slice 26 — sign revocation and log entries (only heads are signed
-      today); witness/anchor signed heads somewhere outside the operator.
+- [x] Slice 26 — every log entry is signed; revocations are signed,
+      attributed entries *in* the log; an independent `witness` remembers
+      heads and refuses (exit 3) a history that isn't an append-only
+      extension of the last one, cosigning what it accepts. Only useful once
+      someone other than the operator runs it.
 
 ## Later (not started, not scoped)
 

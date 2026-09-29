@@ -3,8 +3,10 @@
     python -m diligenceos keygen KEYFILE
     python -m diligenceos delegate --subject ID --scopes spend [--key F] [--chain F] ...
     python -m diligenceos sign-request --key F --path /v1/spend [--chain F] BODYFILE|-
+    python -m diligenceos witness --url U --issuer ID --key F --state F [--submit]
 
-Everything prints JSON on stdout; errors go to stderr with exit status 2.
+Everything prints JSON on stdout; errors go to stderr with exit status 2
+(`witness` exits 3 when it finds the log inconsistent with what it saw before).
 """
 
 from __future__ import annotations
@@ -21,7 +23,7 @@ from diligenceos.policy import Policy
 from diligenceos.signing import Signer, SignerError
 from diligenceos.types import Money, Verdict
 
-COMMANDS = ("keygen", "delegate", "sign-request")
+COMMANDS = ("keygen", "delegate", "sign-request", "witness")
 
 
 def _operator_key_path() -> Path:
@@ -78,6 +80,42 @@ def _sign_request(args) -> int:
     return 0
 
 
+def _witness(args) -> int:
+    import urllib.error
+    import urllib.request
+
+    from diligenceos.witness import run_witness
+
+    base = args.url.rstrip("/")
+
+    def fetch(path: str) -> dict:
+        with urllib.request.urlopen(base + path, timeout=15) as resp:
+            return json.load(resp)
+
+    def submit(cosignature: dict) -> str:
+        req = urllib.request.Request(
+            base + "/v1/log/cosign", data=json.dumps(cosignature).encode(),
+            headers={"Content-Type": "application/json"}, method="POST",
+        )
+        try:
+            with urllib.request.urlopen(req, timeout=15):
+                return "cosignature accepted by the server"
+        except urllib.error.HTTPError as exc:
+            reason = json.load(exc).get("error", {}).get("message", exc.reason)
+            return f"server did not store the cosignature ({exc.code}: {reason})"
+
+    signer = Signer.load_or_create(Path(args.key).expanduser())
+    try:
+        code, message, cosignature = run_witness(
+            fetch, Path(args.state).expanduser(), signer, args.issuer,
+            submit=submit if args.submit else None,
+        )
+    except urllib.error.URLError as exc:
+        raise ValueError(f"could not reach {base}: {exc.reason}") from exc
+    print(json.dumps({"ok": code == 0, "message": message, "cosignature": cosignature}))
+    return code
+
+
 def main(argv: list[str]) -> int:
     parser = argparse.ArgumentParser(prog="python -m diligenceos")
     sub = parser.add_subparsers(dest="command", required=True)
@@ -105,6 +143,14 @@ def main(argv: list[str]) -> int:
     p.add_argument("--chain", help="credential chain (JSON file or -); omit for the operator")
     p.add_argument("body", help="request body JSON file, or - for stdin")
     p.set_defaults(run=_sign_request)
+
+    p = sub.add_parser("witness", help="check the log extends what you last saw, and cosign it")
+    p.add_argument("--url", required=True, help="server base URL, e.g. http://127.0.0.1:8000")
+    p.add_argument("--issuer", required=True, help="the issuer id you pinned out of band")
+    p.add_argument("--key", required=True, help="the witness's own key file (see `keygen`)")
+    p.add_argument("--state", required=True, help="where this witness remembers heads")
+    p.add_argument("--submit", action="store_true", help="also POST the cosignature to the server")
+    p.set_defaults(run=_witness)
 
     try:
         args = parser.parse_args(argv)
