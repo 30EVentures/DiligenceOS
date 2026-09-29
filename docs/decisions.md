@@ -229,3 +229,25 @@ budgets are caller-named, so this is safe on localhost only; revoking does
 not claw back spend already committed. Both are what signed issuers and
 delegated identities (Slice 21 onward) are for. The 24h default TTL is a
 guess, adjustable with `DILIGENCEOS_RECEIPT_TTL_SECONDS`, not calibrated.
+
+## 2026-09-29 — A hash-chained receipt log; conflicts are recorded, not blocked; the log fails closed
+
+Every receipt `/v1/verdict` issues is appended to `receipts.jsonl` (beside
+the store file), each entry hashing the one before it. A chain rather than
+a Merkle tree: at this size the simplicity is worth more than logarithmic
+proofs, and `verify_chain` is a dozen lines a stranger can reimplement.
+Because receipts carry `issued_at`, re-issuing the same request legitimately
+produces a different receipt id, so equivocation is defined on the
+*outcome*: same `inputs_digest` (which already covers request, transaction
+and a digest of the store data) but a different verdict/score/findings.
+That is flagged inside the hashed entry (`conflict_with`) and cannot be
+removed without breaking the chain. It is flagged, not refused, because
+the log can't know whether the cause was a legitimate rules change or a
+fault — it only guarantees the discrepancy stays visible. The log fails
+closed: a file that fails verification stops `/v1/verdict` (503) instead of
+extending a broken history. The receipt body is untouched; log position is
+returned in response headers because any extra body field would break the
+receipt's own id. Honest limit: an operator who controls the file can still
+rewrite the whole chain, and a dropped tail is only detectable by someone
+holding an earlier head. The log becomes evidence against the operator only
+once heads are signed and witnessed elsewhere (Slice 21 onward).
