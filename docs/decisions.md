@@ -185,3 +185,17 @@ Slice 10's `EscrowGate` (`held_amount: float` -> `held: Money`), the one
 tested API touched by Track A; only its own tests used the field. The
 transaction rides in the receipt, sealed by the id, so a verdict is bound to
 the deal it was issued for; it doesn't influence scoring yet.
+
+## 2026-09-29 — Delegated authority is checked axis by axis; RED_FLAG is not delegable
+
+`narrow()` compares a child policy to its parent on each axis (currency,
+cap, acceptable verdicts, trust floor) and raises naming the one that
+widened, so a rejected delegation says exactly why. A chain is folded link
+by link — comparing each link to its immediate parent is enough because
+"at least as narrow as the previous" is transitive. `RED_FLAG` cannot appear
+in `acceptable_verdicts` at all: a sanctions hit is the one outcome no
+policy, at any level, may wave through (mirrors Slice 5). `decide()` uses
+three outcomes rather than two so "a human should look" (ESCALATE) is
+distinct from "never" (DENY): a limit breach is ESCALATE, an unverifiable
+receipt or RED_FLAG is DENY. Stated limit: nothing yet proves who issued a
+policy; signatures (Slice 21) close that.
