@@ -101,7 +101,7 @@ a page. Every slice from here is checked against four questions:
 
 **Track A, part 2 — proposed, not started (needs the owner's call where noted):**
 
-- [ ] Slice 20 — `EscrowGate` consumes a `Decision` (ALLOW releases;
+- [x] Slice 20 — `EscrowGate` consumes a `Decision` (ALLOW releases;
       ESCALATE/DENY hold), so the release path can't bypass the policy.
 - [ ] Slice 21 — signed receipts. Needs a deliberate, pinned crypto
       dependency (Ed25519) — **owner's call**, per `CLAUDE.md` Boundaries.
