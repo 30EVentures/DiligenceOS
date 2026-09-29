@@ -4,6 +4,27 @@ Dated, one entry per real decision. Not a changelog — the code and commit
 history already say what changed; this says why, where "why" isn't obvious
 from reading the diff.
 
+## 2026-09-28 — Persistence lives outside the repo entirely, not in a fixture
+
+Slice 13 made `Store` durable: `~/.diligenceos/store.json` by default,
+overridable via `DILIGENCEOS_DATA_PATH`. It's a real file now, but
+deliberately still not inside `~/DiligenceOS` at all — the concern from
+Slice 12's original "stay in-memory" decision (below) was never really
+about persistence itself, it was about a checked-in fixture silently
+becoming mutable state. Writing to a path outside the repo keeps that
+concern resolved while still giving real, felt persistence across
+restarts, which stopped being optional the moment this became a tool
+someone actually restarts and expects to still work.
+
+One test-isolation bug this caused and fixed in the same slice: the real
+subprocess test in `tests/test_cli.py` (`ServeModeTest`) launches an actual
+`python3 -m diligenceos` process, which reads real environment variables —
+without also overriding `DILIGENCEOS_DATA_PATH` there, that test was
+silently reading and writing the real `~/.diligenceos/store.json` on every
+run. Caught by noticing the file existed with fresh sample-seed content
+right after a test run that should have touched nothing outside temp
+directories. Fixed by giving that test its own temp path too.
+
 ## 2026-09-28 — Editable data stays in-memory, not written to a file
 
 Slice 12 made the sanctions list, registry, and delivery ledger editable

@@ -1,8 +1,9 @@
 """A small, dependency-free web front end for DiligenceOS (stdlib WSGI only).
 
-Runs against an in-memory Store seeded from the bundled Phase 0 sample
-dataset, editable at /data — additions are checkable immediately, but
-nothing survives a process restart. See docs/decisions.md.
+Runs against a Store seeded from the bundled Phase 0 sample dataset,
+editable at /data — additions are checkable immediately and, since
+Slice 13, persisted to DILIGENCEOS_DATA_PATH (default
+~/.diligenceos/store.json), outside this repo. See docs/decisions.md.
 """
 
 from __future__ import annotations
@@ -10,12 +11,15 @@ from __future__ import annotations
 import html
 import os
 import sys
+from pathlib import Path
 from urllib.parse import parse_qsl
 from wsgiref.simple_server import make_server
 
 from diligenceos.pipeline import run_diligence
 from diligenceos.store import Store
 from diligenceos.types import CheckStatus, Verdict, VerdictResult
+
+DEFAULT_DATA_PATH = "~/.diligenceos/store.json"
 
 _VERDICT_STYLE = {
     Verdict.PROCEED: ("#1E6B45", "#DCEEE1"),
@@ -195,10 +199,14 @@ def _data_body(store: Store, error: str | None = None) -> str:
 _store: Store | None = None
 
 
+def _data_path() -> Path:
+    return Path(os.environ.get("DILIGENCEOS_DATA_PATH", DEFAULT_DATA_PATH)).expanduser()
+
+
 def _get_store() -> Store:
     global _store
     if _store is None:
-        _store = Store.seeded_from_sample()
+        _store = Store.load_or_seed(_data_path())
     return _store
 
 
