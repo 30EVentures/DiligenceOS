@@ -135,3 +135,67 @@ in `ROADMAP.md` puts the machine-verifiable core (receipts, API, evidence)
 ahead of more human-facing features. This is a design stance, not a
 commitment to adopt any particular external spec; formats here are our own,
 open and versioned so that interoperability stays possible later.
+
+## 2026-09-29 — Receipts are hash-sealed but unsigned, and verification replays the rules
+
+Slice 15's receipt id is a sha256 over canonical JSON. That alone is
+forgeable by anyone who can recompute a hash, so `verify_receipt` also
+replays `assemble_verdict` over the receipt's own findings and rejects a
+verdict or score that doesn't follow. The result: a stranger can confirm
+internal consistency and rule-compliance offline, but not *who* issued it.
+Signing is deferred rather than faked: the stdlib has no asymmetric
+signatures and HMAC would need a shared secret, which defeats third-party
+verification. It gets its own slice with a deliberately chosen, pinned
+dependency. `RULES = "verdict-rules/1"` is in every receipt so a future
+change to penalty weights doesn't silently invalidate old ones.
+
+## 2026-09-29 — The machine API is a pure handler; a failed verification is a 200
+
+`api.handle()` takes and returns plain values and knows nothing about WSGI,
+so the whole contract is unit-tested without a server; `webapp.app` only
+delegates `/v1/*` to it. `/v1/verify` answers `200 {"valid": false, ...}`
+for a forged receipt: the call succeeded, the *document* failed, and an
+agent should branch on `valid`, not on HTTP status. Errors use one JSON
+shape with stable `code`s (and a `field` when one input is at fault) so a
+caller can handle them without parsing prose. The receipt's `inputs_digest`
+covers a digest of the store's data as well as the request, since the same
+request against different data legitimately yields a different verdict.
+
+## 2026-09-29 — Evidence enforced in the pipeline, per-claim, verified by the holder of the source
+
+Settles the Slice 6 open question. Enforcement lives in `run_diligence`
+(once, over all findings, before assembly) rather than inside each check:
+a check can't forget to police itself, and the exemption list
+(`identity`, `track_record`) sits in one visible constant. Evidence is a
+per-claim structure — a `quote` that must appear or a phrase that must be
+`absent`, pinned to a `source_digest` — because "this clause is missing"
+is the main document finding and an absence can't be quoted. Verification
+is done by whoever holds the source text (`verify_receipt(sources=...)`),
+so the service is not the trusted party; sources it couldn't check are
+reported in `unchecked`, never silently skipped. Limit, stated: a digest
+shows which bytes were used, not that the source is authentic.
+
+## 2026-09-29 — Money is `Money(amount_minor, currency)`; the demo gate's API changed
+
+Floats can't hold most decimal amounts exactly, and anything an agent might
+act on must not round silently. `Money` rejects floats, bools, negatives and
+malformed currency codes at construction, so a bad amount fails at the edge
+(a `400` naming the field) instead of deep in a calculation. This changed
+Slice 10's `EscrowGate` (`held_amount: float` -> `held: Money`), the one
+tested API touched by Track A; only its own tests used the field. The
+transaction rides in the receipt, sealed by the id, so a verdict is bound to
+the deal it was issued for; it doesn't influence scoring yet.
+
+## 2026-09-29 — Delegated authority is checked axis by axis; RED_FLAG is not delegable
+
+`narrow()` compares a child policy to its parent on each axis (currency,
+cap, acceptable verdicts, trust floor) and raises naming the one that
+widened, so a rejected delegation says exactly why. A chain is folded link
+by link — comparing each link to its immediate parent is enough because
+"at least as narrow as the previous" is transitive. `RED_FLAG` cannot appear
+in `acceptable_verdicts` at all: a sanctions hit is the one outcome no
+policy, at any level, may wave through (mirrors Slice 5). `decide()` uses
+three outcomes rather than two so "a human should look" (ESCALATE) is
+distinct from "never" (DENY): a limit breach is ESCALATE, an unverifiable
+receipt or RED_FLAG is DENY. Stated limit: nothing yet proves who issued a
+policy; signatures (Slice 21) close that.

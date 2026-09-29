@@ -15,6 +15,7 @@ from pathlib import Path
 from urllib.parse import parse_qsl
 from wsgiref.simple_server import make_server
 
+from diligenceos import api
 from diligenceos.pipeline import run_diligence
 from diligenceos.store import Store
 from diligenceos.types import CheckStatus, Verdict, VerdictResult
@@ -196,6 +197,8 @@ def _data_body(store: Store, error: str | None = None) -> str:
 </fieldset>"""
 
 
+_REASONS = {200: "OK", 400: "Bad Request", 404: "Not Found", 405: "Method Not Allowed", 413: "Payload Too Large"}
+
 _store: Store | None = None
 
 
@@ -234,6 +237,17 @@ def app(environ, start_response):
     method = environ.get("REQUEST_METHOD", "GET")
     path = environ.get("PATH_INFO", "/")
     store = _get_store()
+
+    if path.startswith("/v1/"):
+        try:
+            length = int(environ.get("CONTENT_LENGTH") or 0)
+        except ValueError:
+            length = 0
+        # read one byte past the cap so an oversize body is detected, not truncated
+        body = environ["wsgi.input"].read(min(length, api.MAX_BODY_BYTES + 1)) if length else b""
+        status, headers, payload = api.handle(method, path, body, store)
+        start_response(f"{status} {_REASONS.get(status, 'Error')}", headers)
+        return [payload]
 
     if method == "GET" and path == "/":
         return _html_response(

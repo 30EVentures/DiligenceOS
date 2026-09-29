@@ -1,7 +1,7 @@
 import unittest
 
 from diligenceos.gate import EscrowGate, apply_verdict
-from diligenceos.types import Verdict, VerdictResult
+from diligenceos.types import Money, Verdict, VerdictResult
 
 
 def result(verdict, trust_score=85):
@@ -10,12 +10,12 @@ def result(verdict, trust_score=85):
 
 class ApplyVerdictTest(unittest.TestCase):
     def setUp(self):
-        self.gate = EscrowGate(subject="Meridian Robotics Ltd.", held_amount=240000.0)
+        self.gate = EscrowGate(subject="Meridian Robotics Ltd.", held=Money(24000000, "USD"))
 
     def test_proceed_releases_a_held_gate(self):
         released = apply_verdict(self.gate, result(Verdict.PROCEED))
         self.assertTrue(released.released)
-        self.assertEqual(released.held_amount, 240000.0)
+        self.assertEqual(released.held, Money(24000000, "USD"))
 
     def test_hold_keeps_the_gate_held(self):
         still_held = apply_verdict(self.gate, result(Verdict.HOLD, trust_score=95))
@@ -33,7 +33,7 @@ class ApplyVerdictTest(unittest.TestCase):
         released = apply_verdict(self.gate, result(Verdict.PROCEED))
         released_again = apply_verdict(released, result(Verdict.PROCEED))
         self.assertTrue(released_again.released)
-        self.assertEqual(released_again.held_amount, released.held_amount)
+        self.assertEqual(released_again.held, released.held)
 
 
 if __name__ == "__main__":
