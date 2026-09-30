@@ -378,3 +378,48 @@ machine proves the mechanism, not the independence. No gossip between
 witnesses, no public log, no trusted timestamps. Delegation issuance is
 still unlogged. Track A is otherwise complete apart from Slice 24 (a
 discoverable manifest), deliberately last.
+
+## 2026-09-30 — A signed manifest whose sufficiency is tested; at `/v1/manifest`, not `/.well-known/`
+
+**What it is for.** `/v1/capabilities` says what the endpoints accept. The
+manifest says what a stranger needs to *trust* the output: who operates the
+service, which key to pin, and for every signed or hashed document how to
+verify it — what the id covers, the exact domain string that separates one
+signature purpose from another, the canonical-JSON and digest rules, and the
+verdict-replay rules with their constants. It is signed by the issuer so
+tampering in transit is detectable by anyone who has pinned the key.
+
+**Nothing in it is typed twice.** Every schema id, domain string and limit is
+read from the module that enforces it (and the verdict weights from the
+engine), and a test asserts they agree, so the manifest cannot quietly drift
+from the code. The one constant I had to extract to make that true was the
+base trust score.
+
+**Sufficiency is a test, not a claim.** A documentation-style manifest can
+look complete and still omit the rule an implementer needs. So the test suite
+contains a reference verifier that uses only `json`, `hashlib`, and the raw
+Ed25519 primitive — none of this repo's verification code — and must verify
+real receipts (PROCEED, HOLD and RED_FLAG, with the verdict replayed), log
+entries with their chain links, a log head and a delegation, using only what
+the manifest says, and must reject tampered ones. While writing it the
+manifest said only "re-run the verdict rules"; that was not enough to
+implement, so the weights and the decision rule were added. If someone changes
+the receipt format and forgets the manifest, this test fails.
+
+**Only the operator is named.** The operator is the entity name
+(`30E Ventures`, overridable for a self-hosting operator via
+`DILIGENCEOS_OPERATOR_NAME`); no person, no contact address. A test asserts
+the served bytes contain none of the identifiers the brand-separation and
+public-identity rules forbid.
+
+**Path.** `/v1/manifest`, deliberately not `/.well-known/...`. Publishing at a
+well-known location is a statement to the wider ecosystem, and whether to make
+it — and in what format — is an explicit owner decision that has not been
+made. Adding an alias later is one line.
+
+**Limits, stated.** The manifest proves nothing to someone who hasn't pinned
+the issuer key; it lets a holder of the key detect tampering and tells them
+how to verify. No key rotation or manifest history. Schemas are prose plus
+identifiers rather than JSON Schema files. It describes the format that
+exists; it does not certify that a given operator's deployment is honest —
+that is what witnesses are for.

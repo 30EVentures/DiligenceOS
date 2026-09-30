@@ -99,7 +99,7 @@ a page. Every slice from here is checked against four questions:
       (max amount, acceptable verdicts) and `narrow()`, checked against the
       receipt to yield an allow / escalate / deny decision.
 
-**Track A, part 2** (20–23, 25 and 26 done; 24 proposed, not started):
+**Track A, part 2** (20–26 all done):
 
 - [x] Slice 20 — `EscrowGate` consumes a `Decision` (ALLOW releases;
       ESCALATE/DENY hold), so the release path can't bypass the policy.
@@ -112,8 +112,12 @@ a page. Every slice from here is checked against four questions:
       `/v1/revocations`, `/v1/spend`; authenticated since Slice 25.)
 - [x] Slice 23 — an append-only, hash-chained log of issued receipts, so an
       issuer can't quietly reissue a different verdict for the same inputs.
-- [ ] Slice 24 — a discoverable capability manifest at a stable path, once
-      the formats above have settled enough to publish.
+- [x] Slice 24 — a signed manifest at `GET /v1/manifest`: operator, the key
+      to pin, every route, and for each signed/hashed document how to verify
+      it (schema, what is hashed, signature domain), plus a known-answer
+      vector. A test verifies real documents with a verifier that uses only
+      what the manifest says. Not published at `/.well-known/` — that is the
+      owner's call.
 - [x] Slice 25 — caller identity: `/v1/revoke` and `/v1/spend` now
       require a signed request from the operator or from a delegate holding a
       signed credential chain that can only narrow (scopes, expiry, budget,

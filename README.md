@@ -26,6 +26,14 @@ be narrowed as it is passed on:
     --path /v1/spend body.json | curl -s -X POST localhost:8000/v1/spend --data-binary @-
 ```
 
+## Discovering and verifying without trusting the server
+
+`GET /v1/manifest` returns a signed description of the service: who operates
+it, the issuer key to pin, every route, and for each signed document (receipt,
+delegation, request, log entry, log head, cosignature) exactly how to verify
+it, so you can write a verifier without reading this repo. It is a claim by
+the issuer — pin the key out of band before relying on anything it says.
+
 ## Witnessing the log
 
 The server's own log check (`/v1/log/verify`) can't catch the operator
