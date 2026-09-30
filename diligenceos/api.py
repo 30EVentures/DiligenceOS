@@ -8,7 +8,9 @@ import re
 from datetime import datetime, timezone
 
 from diligenceos.pipeline import run_diligence
-from diligenceos.auth import authenticate
+from diligenceos import manifest as manifest_doc
+from diligenceos.auth import MAX_SKEW_SECONDS, authenticate
+from diligenceos.delegation import MAX_CHAIN
 from diligenceos.policy import Policy, WideningError, decide, effective_policy, narrow
 from diligenceos.spend import try_spend
 from diligenceos.receipt_log import LogCorruptError
@@ -37,7 +39,9 @@ _ROUTES = {
     "/v1/log/lookup": "POST",
     "/v1/log/cosign": "POST",
     "/v1/capabilities": "GET",
+    "/v1/manifest": "GET",
 }
+AUTHENTICATED = ("/v1/revoke", "/v1/spend")
 
 
 def _json(status: int, payload, extra_headers=()):
@@ -96,6 +100,7 @@ def _capabilities():
                 },
                 "note": "commits on ALLOW; cumulative per budget_id; idempotent per receipt id",
             },
+            "GET /v1/manifest": {"response": "{manifest, issuer, signature}: who runs this, the key to pin, and how to verify every signed document"},
             "GET /v1/issuer": {"response": {"issuer": "ed25519:<hex>", "algorithm": "ed25519"}},
             "GET /v1/log/head": {"response": {"length": "int", "head_hash": "string", "issuer": "string", "signature": "signed <length>:<head_hash>", "cosignatures": "witness cosignatures for this head"}},
             "POST /v1/log/cosign": {
@@ -140,6 +145,28 @@ def _parse_body(body: bytes):
         return None, _error(400, "invalid_json", f"body is not valid JSON: {exc}")
 
 
+def _witnesses() -> list[str]:
+    return [w.strip() for w in os.environ.get("DILIGENCEOS_WITNESSES", "").split(",") if w.strip()]
+
+
+def _manifest(store: Store):
+    try:
+        signer = store.signer
+    except SignerError as exc:
+        return _signer_unavailable(exc)
+    doc = manifest_doc.build_manifest(
+        issuer_id=signer.issuer_id, routes=_ROUTES, authenticated=AUTHENTICATED,
+        witnesses=_witnesses(), generated_at=_now(),
+        limits={
+            "max_body_bytes": MAX_BODY_BYTES,
+            "request_clock_skew_seconds": MAX_SKEW_SECONDS,
+            "max_delegation_chain": MAX_CHAIN,
+            "default_receipt_ttl_seconds": _ttl_seconds(),
+        },
+    )
+    return _json(200, manifest_doc.sign_manifest(doc, signer))
+
+
 def _log_unavailable(exc: Exception):
     return _error(503, "log_unavailable", str(exc))
 
@@ -180,7 +207,7 @@ def _log_endpoint(path: str, body: bytes, store: Store):
             return err
         if not isinstance(data, dict):
             return _error(400, "invalid_request", "body must be a cosignature object")
-        allowed = [w.strip() for w in os.environ.get("DILIGENCEOS_WITNESSES", "").split(",") if w.strip()]
+        allowed = _witnesses()
         if not allowed:
             return _error(403, "forbidden", "no witnesses are configured on this server", "witness")
         try:
@@ -490,6 +517,8 @@ def handle(method: str, path: str, body: bytes, store: Store):
         )
     if path == "/v1/capabilities":
         return _json(200, _capabilities())
+    if path == "/v1/manifest":
+        return _manifest(store)
     if path == "/v1/issuer":
         try:
             return _json(200, {"issuer": store.signer.issuer_id, "algorithm": "ed25519",

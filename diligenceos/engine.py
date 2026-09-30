@@ -9,12 +9,13 @@ from diligenceos.types import CheckStatus, Finding, Verdict, VerdictResult
 
 SANCTIONS_PENALTY = 40
 OTHER_PENALTY = 15
+DEFAULT_BASE_TRUST_SCORE = 85
 
 
 def assemble_verdict(
     findings: Iterable[Finding],
     *,
-    base_trust_score: int = 85,
+    base_trust_score: int = DEFAULT_BASE_TRUST_SCORE,
 ) -> VerdictResult:
     findings = tuple(findings)
     flagged = [f for f in findings if f.status is CheckStatus.FLAG]
