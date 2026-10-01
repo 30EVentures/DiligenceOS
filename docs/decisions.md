@@ -4,6 +4,65 @@ Dated, one entry per real decision. Not a changelog — the code and commit
 history already say what changed; this says why, where "why" isn't obvious
 from reading the diff.
 
+## 2026-10-01 — Security hardening: four auth/authority gaps closed
+
+An external audit of this code found four real gaps. All four are fixed in
+one pass; none change what a well-behaved caller can already do.
+
+**1. `/v1/spend` no longer accepts `trusted_issuers` from the request body.**
+A delegate holding only the `spend` scope could submit a receipt it signed
+itself and list its own key in `trusted_issuers` — the server honored that
+and allowed the spend. `_server_trusted_issuers(store)` now always returns
+the operator's own issuer id, full stop; the field is ignored on this
+endpoint. This is the same principle already stated below for the
+credential's policy: the trust root is the operator's, not the caller's,
+for anything that commits real spend.
+
+**2. `/v1/verify` no longer reads `trusted_issuers` out of the receipt being
+verified.** Posted bare (no envelope), the whole body *is* the receipt —
+`trusted_source` used to default to that same object, so a forged receipt
+could carry its own `trusted_issuers` field naming itself trusted and get
+back `trusted: true` for itself (even though `valid: false`, a caller
+checking only `trusted` would be fooled). `trusted_source` is now `{}` for
+a bare receipt and only ever the wrapping envelope's own fields
+(`{"receipt", "sources"?, "trusted_issuers"?}`) otherwise — never the
+object under test.
+
+**3. `/data/*` writes now require `DILIGENCEOS_ADMIN_TOKEN`.** These HTML
+routes directly rewrite the sanctions/registry/delivery dataset every
+verdict is checked against, and had no auth of any kind. The full
+Ed25519 signed-request scheme (`auth.py`) doesn't fit a plain HTML
+`<form>` without inventing client-side crypto or a session layer, so this
+took the documented "at minimum" option: a shared operator token, compared
+with `hmac.compare_digest`, required on all three write routes. **Fails
+closed** — with no token configured, every write is refused outright,
+there is no "no auth configured, allow everyone" fallback, since an open
+default would be the same bug with extra steps. `GET /data` (viewing) and
+`/verdict` (checking) are unaffected; this is about writes only.
+
+**4. `/v1/revoke` now scopes a delegate's authority to what it actually
+created.** Any delegate holding `revoke` could revoke *any* receipt or
+delegation — including ones it never issued, siblings, or its own parent.
+`specs/slice-26/spec.md` admitted this gap outright ("no per-delegate
+revocation of only their own issuances"); `docs/decisions.md`'s own
+2026-09-29 entry claimed "only the operator can revoke one," which the
+code didn't actually enforce. Now: a **receipt** can only be revoked by the
+operator (receipts are always issued with this server's own key, never a
+delegate's, so no delegate ever "issued" one). A **delegation** can be
+revoked by the operator by id alone, or by the delegate that issued it —
+but only by submitting the signed delegation object itself, not just its
+id, since the server never stores delegations and has no other way to
+check who its `delegator` really is. The object's `id` and `signature` are
+re-verified server-side before the authorship check runs, so a forged or
+edited delegation is refused (400), not silently trusted.
+
+**Why fix these together, as a patch rather than a slice.** None of the
+four change the documented, intended behavior for a well-behaved caller —
+they close gaps between what the docs already claimed and what the code
+actually did. That's a bug-fix pass, the same shape as the 2026-09-29
+"`/v1/spend` authenticates before validating the body" fix, not a new
+capability — so it isn't a numbered slice.
+
 ## 2026-09-28 — Persistence lives outside the repo entirely, not in a fixture
 
 Slice 13 made `Store` durable: `~/.diligenceos/store.json` by default,

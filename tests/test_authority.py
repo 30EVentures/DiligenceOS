@@ -10,9 +10,10 @@ from diligenceos import api, tools
 from diligenceos.auth import authenticate, sign_request
 from diligenceos.delegation import extend_chain, issue_delegation, verify_chain
 from diligenceos.policy import Policy
+from diligenceos.receipt import digest, issue_receipt
 from diligenceos.signing import Signer
 from diligenceos.store import Store
-from diligenceos.types import Money, Verdict
+from diligenceos.types import Money, Verdict, VerdictResult
 
 NOW = "2026-09-29T12:00:00+00:00"
 LATER = "2026-09-30T12:00:00+00:00"
@@ -219,8 +220,13 @@ class ApiAuthTest(unittest.TestCase):
         self.assertEqual((status, out["error"]["code"]), (403, "forbidden"))
         rev = self.cred(scopes=("revoke",))
         self.assertEqual(self.spend(self.agent, rev, policy=pol().to_dict())[0], 403)
-        self.assertEqual(self.raw("POST", "/v1/revoke", self.signed(
-            self.agent, rev, "/v1/revoke", {"receipt_id": self.receipt["id"], "reason": "x"}))[0], 200)
+        # Holding the "revoke" scope is necessary but not sufficient: fixed
+        # 2026-10-01, this receipt was issued by the operator, not self.agent,
+        # so self.agent may not revoke it even with the right scope — see
+        # test_revoke_scope_is_restricted_to_what_was_actually_created below.
+        status, out = self.raw("POST", "/v1/revoke", self.signed(
+            self.agent, rev, "/v1/revoke", {"receipt_id": self.receipt["id"], "reason": "x"}))
+        self.assertEqual((status, out["error"]["code"]), (403, "forbidden"))
 
     def test_credential_policy_is_the_policy_and_the_caller_is_recorded(self):
         chain = self.cred(policy=pol(cap=30_000_000))
@@ -274,6 +280,105 @@ class ApiAuthTest(unittest.TestCase):
             status, out = self.spend(who, c, policy=pol().to_dict())
             self.assertEqual(status, 401)
             self.assertIn("revoked", out["error"]["message"])
+
+    # --- Regressions for the 2026-10-01 security hardening pass ---------------
+
+    def test_spend_ignores_a_self_supplied_trusted_issuers(self):
+        # Before the fix: a delegate could submit a receipt it signed ITSELF
+        # (empty findings replay to PROCEED/85, expires stays null) and list
+        # its own key in `trusted_issuers` in the request body — the server
+        # honored that and allowed the spend. trusted_issuers for /v1/spend
+        # must come from server config only now.
+        forged = issue_receipt(
+            subject={"name": "Meridian Robotics Ltd."}, inputs={},
+            result=VerdictResult(verdict=Verdict.PROCEED, trust_score=85, findings=()),
+            transaction=Money(24_000_000, "USD").to_dict(), issued_at=NOW, signer=self.agent,
+        )
+        self.assertIsNone(forged["expires"])
+        chain = self.cred(scopes=("spend",))
+        body = {
+            "budget_id": "q4", "receipt": forged, "policy": pol().to_dict(),
+            "trusted_issuers": [self.agent.issuer_id],
+        }
+        status, out = self.raw("POST", "/v1/spend", self.signed(self.agent, chain, "/v1/spend", body))
+        self.assertEqual(status, 200)  # a well-formed request; the *decision* must deny
+        self.assertEqual(out["decision"], "DENY")
+        self.assertIn("not validly signed by a trusted issuer", out["reasons"][0])
+
+    def test_verify_does_not_trust_a_receipt_that_names_itself_trusted(self):
+        # Before the fix: a bare (unwrapped) receipt could carry its own
+        # trusted_issuers field and certify itself. trusted_issuers may only
+        # come from the verifying caller's own envelope, never the object
+        # being verified.
+        forged = issue_receipt(
+            subject={"name": "Shadow Co."}, inputs={},
+            result=VerdictResult(verdict=Verdict.PROCEED, trust_score=85, findings=()),
+            issued_at=NOW, signer=self.agent,
+        )
+        forged["trusted_issuers"] = [self.agent.issuer_id]  # the attacker's own addition
+        status, out = self.raw("POST", "/v1/verify", forged)  # posted bare, no envelope
+        self.assertEqual(status, 200)
+        self.assertTrue(out["signed"])    # the agent's own signature is genuine
+        self.assertFalse(out["valid"])    # id no longer matches the (now tampered) contents
+        self.assertFalse(out["trusted"])  # must not trust the receipt's own say-so
+
+    def test_delegate_cannot_revoke_a_receipt_it_did_not_issue(self):
+        # Receipts are always issued with the operator's own key; holding
+        # "revoke" never makes a delegate the issuer of one.
+        rev = self.cred(scopes=("revoke",))
+        status, out = self.raw("POST", "/v1/revoke", self.signed(
+            self.agent, rev, "/v1/revoke", {"receipt_id": self.receipt["id"], "reason": "x"}))
+        self.assertEqual((status, out["error"]["code"]), (403, "forbidden"))
+
+    def test_delegate_can_revoke_a_delegation_it_issued_itself(self):
+        chain = self.cred(scopes=("spend", "revoke"))
+        exp = (datetime.now(timezone.utc) + timedelta(hours=1)).replace(microsecond=0).isoformat()
+        sub = extend_chain(chain, self.agent, delegate=self.sub.issuer_id, scopes=["spend"], expires=exp)
+        issued = sub[-1]  # the agent -> sub link; delegator == self.agent
+        body = {"delegation": issued, "reason": "sub-agent retired"}
+        status, out = self.raw("POST", "/v1/revoke", self.signed(self.agent, chain, "/v1/revoke", body))
+        self.assertEqual((status, out["delegation_id"]), (200, issued["id"]))
+        status, out = self.spend(self.sub, sub, policy=pol().to_dict())
+        self.assertEqual(status, 401)
+        self.assertIn("revoked", out["error"]["message"])
+
+    def test_delegate_cannot_revoke_a_delegation_it_did_not_issue(self):
+        chain = self.cred(scopes=("revoke",))  # operator -> agent
+        # by id alone: only the operator may revoke by id without proving authorship
+        status, out = self.raw("POST", "/v1/revoke", self.signed(
+            self.agent, chain, "/v1/revoke", {"delegation_id": chain[0]["id"], "reason": "x"}))
+        self.assertEqual((status, out["error"]["code"]), (403, "forbidden"))
+        # by submitting the object: the agent is this link's *delegate*, not its delegator
+        status, out = self.raw("POST", "/v1/revoke", self.signed(
+            self.agent, chain, "/v1/revoke", {"delegation": chain[0], "reason": "x"}))
+        self.assertEqual((status, out["error"]["code"]), (403, "forbidden"))
+
+    def test_delegate_cannot_revoke_a_siblings_delegation(self):
+        mine = self.cred(scopes=("revoke",), signer=self.agent)
+        theirs = self.cred(scopes=("spend",), signer=self.sub)  # operator -> sub; agent had no part in it
+        status, out = self.raw("POST", "/v1/revoke", self.signed(
+            self.agent, mine, "/v1/revoke", {"delegation": theirs[0], "reason": "x"}))
+        self.assertEqual((status, out["error"]["code"]), (403, "forbidden"))
+
+    def test_revoke_rejects_a_tampered_delegation_object(self):
+        chain = self.cred(scopes=("spend", "revoke"))
+        exp = (datetime.now(timezone.utc) + timedelta(hours=1)).replace(microsecond=0).isoformat()
+        sub = extend_chain(chain, self.agent, delegate=self.sub.issuer_id, scopes=["spend"], expires=exp)
+        issued = sub[-1]
+
+        edited_field_stale_id = {**issued, "scopes": ["spend", "revoke"]}  # id/signature now stale
+        status, out = self.raw("POST", "/v1/revoke", self.signed(
+            self.agent, chain, "/v1/revoke", {"delegation": edited_field_stale_id, "reason": "x"}))
+        self.assertEqual((status, out["error"]["code"]), (400, "invalid_request"))
+
+        # id recomputed to match the edit, but the signature is still the
+        # original one (over the old delegator/body) — must not verify
+        relinked = {k: v for k, v in issued.items() if k not in ("id", "signature")}
+        relinked["delegator"] = self.op.issuer_id
+        forged_signature = {**relinked, "id": digest(relinked), "signature": issued["signature"]}
+        status, out = self.raw("POST", "/v1/revoke", self.signed(
+            self.agent, chain, "/v1/revoke", {"delegation": forged_signature, "reason": "x"}))
+        self.assertEqual((status, out["error"]["code"]), (400, "invalid_request"))
 
     def test_expired_credential_is_rejected(self):
         chain = [issue_delegation(self.op, delegate=self.agent.issuer_id, scopes=["spend"],
