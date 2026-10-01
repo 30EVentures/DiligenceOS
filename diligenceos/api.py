@@ -10,11 +10,11 @@ from datetime import datetime, timezone
 from diligenceos.pipeline import run_diligence
 from diligenceos import manifest as manifest_doc
 from diligenceos.auth import MAX_SKEW_SECONDS, authenticate
-from diligenceos.delegation import MAX_CHAIN
+from diligenceos.delegation import DOMAIN as DELEGATION_DOMAIN, MAX_CHAIN
 from diligenceos.policy import Policy, WideningError, decide, effective_policy, narrow
 from diligenceos.spend import try_spend
 from diligenceos.receipt_log import LogCorruptError
-from diligenceos.signing import LOG_HEAD_DOMAIN, SignerError, head_message
+from diligenceos.signing import LOG_HEAD_DOMAIN, SignerError, head_message, verify_signature
 from diligenceos.receipt import RULES, SCHEMA, digest, issue_receipt, verify_receipt
 from diligenceos.store import Store
 from diligenceos.types import CheckStatus, Money, Verdict
@@ -87,9 +87,12 @@ def _capabilities():
                 "response": {"decision": "ALLOW|ESCALATE|DENY", "reasons": ["string"], "effective_policy": "policy"},
             },
             "POST /v1/revoke": {
-                "request": {"receipt_id | delegation_id": "sha256:<64 hex>", "reason": "string", "auth": "auth envelope, scope 'revoke'"},
+                "request": {
+                    "receipt_id | delegation_id | delegation": "sha256:<64 hex> (receipt_id/delegation_id), or the full signed delegation object, to prove authorship",
+                    "reason": "string", "auth": "auth envelope, scope 'revoke'",
+                },
                 "response": {"receipt_id | delegation_id": "string", "reason": "string", "revoked_at": "iso8601"},
-                "note": "idempotent; authenticated (401 unauthenticated / 403 forbidden)",
+                "note": "idempotent; authenticated (401 unauthenticated / 403 forbidden); only the operator may revoke a receipt or revoke a delegation by id alone; a delegate may revoke a delegation it issued itself by submitting the delegation object",
             },
             "GET /v1/revocations": {"response": {"revocations": "{id: {reason, revoked_at, revoked_by, log_seq}}", "entries": "the signed log entries (kind=revocation) that back them"}},
             "POST /v1/spend": {
@@ -176,13 +179,23 @@ def _signer_unavailable(exc: Exception):
 
 
 def _trusted_issuers(data: dict, store: Store):
-    """(list, None) or (None, error). Default: only this server's own issuer."""
+    """(list, None) or (None, error). `data` must be the verifying caller's own
+    request field — never the object being verified itself (that would let a
+    receipt certify its own trust). Default: only this server's own issuer."""
     given = data.get("trusted_issuers")
     if given is None:
         return [store.signer.issuer_id], None
     if not (isinstance(given, list) and all(isinstance(x, str) for x in given)):
         return None, _error(400, "invalid_request", "trusted_issuers must be a list of issuer ids", "trusted_issuers")
     return given, None
+
+
+def _server_trusted_issuers(store: Store) -> list[str]:
+    """The operator's own trust root for /v1/spend — server-side config only,
+    never influenced by the request body. A caller must never be able to name
+    itself (or anyone else) trusted for a call that commits real spend; see
+    docs/decisions.md, 2026-10-01."""
+    return [store.signer.issuer_id]
 
 
 def _log_endpoint(path: str, body: bytes, store: Store):
@@ -320,16 +333,20 @@ def _verify(body: bytes, store: Store):
     if err:
         return err
     now = datetime.now(timezone.utc).replace(microsecond=0).isoformat()
-    body_obj = data  # the envelope, if any, carries sources and trusted_issuers
     sources = None
-    if isinstance(data, dict) and "receipt" in data:  # envelope: {"receipt", "sources"?}
+    # trusted_issuers may only come from the caller's own envelope fields,
+    # never from the receipt being verified — otherwise a receipt posted
+    # bare (no envelope) could carry its own trusted_issuers and certify
+    # itself. A bare receipt gets no caller-supplied override at all.
+    trusted_source: dict = {}
+    if isinstance(data, dict) and "receipt" in data:  # envelope: {"receipt", "sources"?, "trusted_issuers"?}
         sources = data.get("sources")
         if sources is not None and not (
             isinstance(sources, dict) and all(isinstance(v, str) for v in sources.values())
         ):
             return _error(400, "invalid_request", "sources must map source ids to text", "sources")
+        trusted_source = data
         data = data["receipt"]
-    trusted_source = body_obj if isinstance(body_obj, dict) else {}
     try:
         trusted, err = _trusted_issuers(trusted_source, store)
     except SignerError as exc:
@@ -442,20 +459,69 @@ def _revoke(body: bytes, store: Store):
     auth, err = _authenticate("/v1/revoke", data, store, "revoke")
     if err:
         return err
-    # a delegation id is revoked through the same list as a receipt id
-    key = "delegation_id" if "delegation_id" in data else "receipt_id"
-    receipt_id, reason = data.get(key), data.get("reason")
-    if not isinstance(receipt_id, str) or not _RECEIPT_ID.match(receipt_id):
-        return _error(400, "invalid_request", f"{key} must look like sha256:<64 hex>", key)
+
+    reason = data.get("reason")
     if not isinstance(reason, str) or not reason.strip():
         return _error(400, "invalid_request", "reason is required", "reason")
+
+    # Scope: a delegate may only revoke something it (or something it issued)
+    # actually created — never the whole tree. Receipts are always issued
+    # with this server's own key, never a delegate's, so only the operator
+    # may revoke one. A delegation names its own delegator, so a delegate can
+    # revoke one of its own by presenting the signed object itself (the
+    # server never stores delegations, so it has no other way to check
+    # authorship); revoking by `delegation_id` alone is accepted only from
+    # the operator. See docs/decisions.md, 2026-10-01.
+    if "delegation" in data:
+        delegation = data.get("delegation")
+        if not isinstance(delegation, dict):
+            return _error(400, "invalid_request", "delegation must be an object", "delegation")
+        delegation_body = {k: v for k, v in delegation.items() if k not in ("id", "signature")}
+        claimed_id = delegation.get("id")
+        if not isinstance(claimed_id, str) or claimed_id != digest(delegation_body):
+            return _error(400, "invalid_request", "delegation id does not match its contents", "delegation")
+        if not verify_signature(
+            delegation.get("delegator"), DELEGATION_DOMAIN, claimed_id, delegation.get("signature")
+        ):
+            return _error(400, "invalid_request", "delegation signature does not verify", "delegation")
+        if not auth.is_root and delegation.get("delegator") != auth.caller:
+            return _error(
+                403, "forbidden",
+                "credential may only revoke a delegation it issued itself, not the whole tree",
+                "delegation",
+            )
+        key, target_id = "delegation_id", claimed_id
+    elif "delegation_id" in data:
+        if not auth.is_root:
+            return _error(
+                403, "forbidden",
+                "revoking a delegation by id alone requires the operator; a delegate must "
+                "submit the delegation object it issued (field 'delegation') instead",
+                "delegation_id",
+            )
+        target_id = data.get("delegation_id")
+        if not isinstance(target_id, str) or not _RECEIPT_ID.match(target_id):
+            return _error(400, "invalid_request", "delegation_id must look like sha256:<64 hex>", "delegation_id")
+        key = "delegation_id"
+    else:
+        if not auth.is_root:
+            return _error(
+                403, "forbidden",
+                "only the operator may revoke a receipt (receipts are always issued by the operator's key)",
+                "receipt_id",
+            )
+        target_id = data.get("receipt_id")
+        if not isinstance(target_id, str) or not _RECEIPT_ID.match(target_id):
+            return _error(400, "invalid_request", "receipt_id must look like sha256:<64 hex>", "receipt_id")
+        key = "receipt_id"
+
     try:
-        entry = store.revoke(receipt_id, reason.strip(), by=auth.caller)
+        entry = store.revoke(target_id, reason.strip(), by=auth.caller)
     except LogCorruptError as exc:
         return _log_unavailable(exc)  # fail closed: no revocation without a log entry
     except SignerError as exc:
         return _signer_unavailable(exc)
-    return _json(200, {key: receipt_id, **entry})
+    return _json(200, {key: target_id, **entry})
 
 
 def _spend(body: bytes, store: Store):
@@ -487,11 +553,9 @@ def _spend(body: bytes, store: Store):
     if err:
         return err
     try:
-        trusted, err = _trusted_issuers(data, store)
+        trusted = _server_trusted_issuers(store)  # server config only; see docs/decisions.md
     except SignerError as exc:
         return _signer_unavailable(exc)
-    if err:
-        return err
     result = try_spend(
         store, budget_id.strip(), data["receipt"], policy, now=_now(), sources=sources,
         trusted_issuers=trusted, caller=auth.caller,

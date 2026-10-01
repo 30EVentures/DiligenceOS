@@ -8,6 +8,7 @@ Slice 13, persisted to DILIGENCEOS_DATA_PATH (default
 
 from __future__ import annotations
 
+import hmac
 import html
 import os
 import sys
@@ -154,6 +155,8 @@ def _data_body(store: Store, error: str | None = None) -> str:
   <input id="s_program" name="program" required>
   <label for="s_aliases">Aliases (comma-separated, optional)</label>
   <input id="s_aliases" name="aliases">
+  <label for="s_token">Admin token</label>
+  <input id="s_token" name="admin_token" type="password" required>
   <button type="submit">Add</button>
 </form>
 </fieldset>
@@ -175,6 +178,8 @@ def _data_body(store: Store, error: str | None = None) -> str:
   </select>
   <label for="r_jurisdiction">Jurisdiction (optional)</label>
   <input id="r_jurisdiction" name="jurisdiction">
+  <label for="r_token">Admin token</label>
+  <input id="r_token" name="admin_token" type="password" required>
   <button type="submit">Add</button>
 </form>
 </fieldset>
@@ -192,6 +197,8 @@ def _data_body(store: Store, error: str | None = None) -> str:
   </label>
   <label for="d_note">Note (optional)</label>
   <input id="d_note" name="note">
+  <label for="d_token">Admin token</label>
+  <input id="d_token" name="admin_token" type="password" required>
   <button type="submit">Add</button>
 </form>
 </fieldset>"""
@@ -205,6 +212,26 @@ _store: Store | None = None
 
 def _data_path() -> Path:
     return Path(os.environ.get("DILIGENCEOS_DATA_PATH", DEFAULT_DATA_PATH)).expanduser()
+
+
+def _admin_token() -> str | None:
+    token = os.environ.get("DILIGENCEOS_ADMIN_TOKEN", "")
+    return token or None
+
+
+def _require_admin_token(form: dict) -> str | None:
+    """None if authorized to write to /data; otherwise an error message.
+    Fails closed: with no DILIGENCEOS_ADMIN_TOKEN configured, every /data/*
+    write is refused outright — there is no "no auth configured, allow
+    everyone" fallback, since this dataset directly drives verdicts.
+    Timing-safe comparison; see docs/decisions.md, 2026-10-01."""
+    configured = _admin_token()
+    if configured is None:
+        return "writes to /data are disabled: set DILIGENCEOS_ADMIN_TOKEN to enable them"
+    supplied = form.get("admin_token", "")
+    if not hmac.compare_digest(supplied, configured):
+        return "admin token is missing or incorrect"
+    return None
 
 
 def _get_store() -> Store:
@@ -286,6 +313,12 @@ def app(environ, start_response):
 
     if method == "POST" and path == "/data/sanctions":
         form = _read_form(environ)
+        token_error = _require_admin_token(form)  # before any field validation
+        if token_error:
+            return _html_response(
+                start_response, "The data checks run against, editable here.",
+                _data_body(store, error=token_error), status="401 Unauthorized",
+            )
         name = form.get("name", "").strip()
         program = form.get("program", "").strip()
         if not name or not program:
@@ -300,6 +333,12 @@ def app(environ, start_response):
 
     if method == "POST" and path == "/data/registry":
         form = _read_form(environ)
+        token_error = _require_admin_token(form)  # before any field validation
+        if token_error:
+            return _html_response(
+                start_response, "The data checks run against, editable here.",
+                _data_body(store, error=token_error), status="401 Unauthorized",
+            )
         registration_id = form.get("registration_id", "").strip()
         name = form.get("name", "").strip()
         if not registration_id or not name:
@@ -318,6 +357,12 @@ def app(environ, start_response):
 
     if method == "POST" and path == "/data/delivery":
         form = _read_form(environ)
+        token_error = _require_admin_token(form)  # before any field validation
+        if token_error:
+            return _html_response(
+                start_response, "The data checks run against, editable here.",
+                _data_body(store, error=token_error), status="401 Unauthorized",
+            )
         subject = form.get("subject", "").strip()
         if not subject:
             return _html_response(

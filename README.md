@@ -68,3 +68,8 @@ records of your own — additions are checkable immediately and persist
 across restarts in `~/.diligenceos/store.json`. Still not real registries
 or sanctions data — everything starts from a bundled sample dataset. See
 `CLAUDE.md` for how to run tests and the batch (JSON in, JSON out) mode.
+
+Writing to `/data` requires `DILIGENCEOS_ADMIN_TOKEN` to be set before the
+server starts (any string you choose) and entered into the form — with no
+token configured, every write is refused. Viewing `/data` and running a
+check at `/` need no token.
