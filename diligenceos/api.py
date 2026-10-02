@@ -16,7 +16,7 @@ from diligenceos.policy import Policy, WideningError, decide, effective_policy, 
 from diligenceos.spend import try_spend
 from diligenceos.receipt_log import LogCorruptError
 from diligenceos.signing import LOG_HEAD_DOMAIN, SignerError, head_message, verify_signature
-from diligenceos.receipt import RULES, SCHEMA, digest, issue_receipt, verify_receipt
+from diligenceos.receipt import RULES, SCHEMA, digest, unsanitized_fields_doc, issue_receipt, verify_receipt
 from diligenceos.store import Store
 from diligenceos.types import CheckStatus, Money, Verdict
 
@@ -68,6 +68,7 @@ def _capabilities():
         "verdicts": [v.value for v in Verdict],
         "finding_statuses": [s.value for s in CheckStatus],
         "categories": list(CATEGORIES),
+        "untrusted_fields": unsanitized_fields_doc(),
         "endpoints": {
             "POST /v1/verdict": {
                 "request": {

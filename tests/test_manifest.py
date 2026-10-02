@@ -77,6 +77,16 @@ class ServedManifestTest(unittest.TestCase):
         self.assertEqual(m["limits"]["max_delegation_chain"], delegation.MAX_CHAIN)
         self.assertEqual(m["limits"]["request_clock_skew_seconds"], auth.MAX_SKEW_SECONDS)
 
+    def test_it_carries_the_same_unsanitized_fields_statement_as_capabilities(self):
+        from diligenceos import receipt as receipt_mod
+
+        stated = self.get()[1]["manifest"]["documents"]["receipt"]["untrusted_fields"]
+        caps = json.loads(api.handle("GET", "/v1/capabilities", b"", self.store)[2])
+        self.assertEqual(stated, caps["untrusted_fields"])
+        self.assertEqual(stated["notice"], receipt_mod.UNSANITIZED_NOTICE)
+        self.assertIn("NOT sanitized", stated["notice"])
+        self.assertIn("untrusted data", stated["notice"])
+
     def test_routes_match_the_router_and_flag_authenticated_ones(self):
         routes = {r["path"]: r for r in self.get()[1]["manifest"]["api"]["routes"]}
         self.assertEqual({p: r["method"] for p, r in routes.items()}, api._ROUTES)

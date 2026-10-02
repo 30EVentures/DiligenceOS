@@ -520,3 +520,22 @@ exactly `1`; `serve()` prints it to stderr. It warns and does not refuse to star
 (a refusal would just push people to set the flag without reading it), and the
 flag is an acknowledgement the server cannot verify. README now states the
 requirement.
+
+## 2026-10-02 — Say plainly that signed receipt fields are not sanitized
+
+From the external audit (D3). `subject.name` and `subject.registration_id` come
+from the caller and go into the signed receipt unchanged, and finding details
+quote them; revocation `reason` text is likewise caller-supplied. "Signed" is not
+"sanitized": a hostile string is faithfully signed, and an LLM agent reading the
+receipt may follow it as an instruction.
+
+This is not fixable in the data model — a receipt that rewrote what it was
+given would not be a faithful record, and changing the bytes would change what is
+signed. So the fix is to be honest about it where a consumer looks. A single
+notice and field list live in `receipt.py` (`UNSANITIZED_NOTICE`,
+`CALLER_SUPPLIED_FIELDS`); `/v1/capabilities` serves them as `untrusted_fields`
+and the signed manifest repeats them under `documents.receipt.untrusted_fields`,
+so a consumer verifying via the manifest gets the statement from a pinned key. A
+test asserts the two agree and a second that hostile text really is signed
+verbatim, so the claim cannot go stale. README has a section on it. The web
+front end already HTML-escapes these values; nothing about issuance changed.
