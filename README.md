@@ -53,6 +53,23 @@ someone other than the operator, who keeps its own state file. Add
 `--submit` and list the witness in the server's `DILIGENCEOS_WITNESSES` to
 have cosignatures served with `/v1/log/head`.
 
+The witness downloads the log page by page (`GET /v1/log/entries` returns at
+most 500 entries per call; see `after_seq` / `limit` in `/v1/capabilities`)
+and checks the whole of it against the signed head, so a long log costs more
+requests but no weaker a check.
+
+## Deployment: TLS is not provided
+
+The built-in server is plain HTTP (stdlib `wsgiref`) and has no TLS. Bound to
+`127.0.0.1` (the default) that is fine. Before it is reachable from any other
+machine, a TLS-terminating reverse proxy must sit in front of it: otherwise
+the admin token, signed requests and receipts cross the network in the clear.
+If `DILIGENCEOS_HOST` is anything but loopback, startup prints a warning to
+stderr saying so; set `DILIGENCEOS_BEHIND_TLS_PROXY=1` to acknowledge that a
+proxy is in place and silence it. The flag is a statement, not a check — the
+server cannot tell whether a proxy is really there — and the server still
+starts either way.
+
 ## Getting started
 
 ```
