@@ -4,6 +4,58 @@ Dated, one entry per real decision. Not a changelog — the code and commit
 history already say what changed; this says why, where "why" isn't obvious
 from reading the diff.
 
+## 2026-10-02 — Three small, clearly-correct robustness fixes
+
+From the external audit's remaining findings (items (a), (b), (c) of the
+follow-up list; `notes/mine-diligenceos.md` §10 items 6-10). Each verified
+real against current `main` with a failing reproduction before being fixed;
+each now has a permanent regression test.
+
+**(a) A malformed `transaction` crashed `decide()`.** `policy.py`'s tx check
+read `tx["currency"]` / `tx["amount_minor"]` directly — a receipt with a
+transaction missing a key, of the wrong type, or with a negative amount
+raised `KeyError`/`TypeError`/`ValueError` instead of producing a decision.
+Reachable unauthenticated through `POST /v1/decide` (open by design — it
+computes no authority) with any self-signed receipt and a caller-chosen
+`trusted_issuers`; a crash is a crash regardless of what the call could have
+authorized. Fixed by routing the transaction through `Money.from_dict`
+(already-validated construction) inside a `try/except`, turning any
+malformed shape into an `ESCALATE`-contributing reason instead of an
+exception — reusing `Money`'s own validation rather than re-implementing a
+subset of it by hand, so the two can't drift. `spend.py`'s
+`Money.from_dict(receipt["transaction"])` was already relying on `decide()`
+having validated this; that reliance is now actually true.
+
+**(b) `DILIGENCEOS_RECEIPT_TTL_SECONDS=0` silently disabled expiry.**
+`if expires is None and ttl_seconds:` treated `0` the same as "no TTL
+given" — both are falsy — so a `0` TTL produced a receipt that never
+expires, the opposite of what setting it to zero should mean. Changed to
+`ttl_seconds is not None`, so `0` now means exactly what it says: expires
+at the moment of issuance.
+
+**(c) `store.json` writes were not atomic.** `_save()` called
+`Path.write_text()` directly on the real path. A process killed mid-write
+(power loss, OOM) leaves whatever the OS buffered — a truncated file that
+fails `json.loads()`, refusing the *next* server start entirely, not just
+losing the latest change. Fixed with the standard pattern: write to a
+sibling `.tmp` file, then `os.replace()` it into place. `os.replace` is a
+single filesystem operation on the same volume, so the real path is either
+the complete old content or the complete new content, never a partial
+mix — a crash during the write damages only the temp file.
+
+**Not fixed here, by design — items (d) and (e) of the same list.** Both
+change authority/enforcement semantics rather than being locally-contained
+bugs, so neither gets a code change without the owner's sign-off. Each is
+confirmed real (not just suspected) and written up as a design proposal in
+`docs/proposals/`: (d) the revocation index in `store.json` is loaded
+independently of the signed log, so a crash between a revocation's log
+append and the index save silently drops its enforcement after restart,
+even though the log itself still shows it; (e) the request nonce cache is
+in-memory only (a replay becomes possible across a restart) and the signed
+request message carries no audience/host binding (a credential usable
+across more than one deployment of this server could be replayed from one
+onto another).
+
 ## 2026-10-01 — Security hardening: four auth/authority gaps closed
 
 An external audit of this code found four real gaps. All four are fixed in

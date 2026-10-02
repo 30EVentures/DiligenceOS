@@ -8,6 +8,7 @@ entirely (see docs/decisions.md).
 from __future__ import annotations
 
 import json
+import os
 from datetime import datetime, timezone
 from pathlib import Path
 
@@ -254,5 +255,16 @@ class Store:
             self._save()
 
     def _save(self) -> None:
+        # Atomic: write to a sibling temp file, then os.replace() into place.
+        # write_text() alone can leave a truncated, unparseable store.json if
+        # the process dies mid-write (power loss, OOM kill) - the old file is
+        # gone and the new one is corrupt, losing everything, not just the
+        # latest change. A temp file + rename means the real path only ever
+        # shows the fully-written old or new content, never a partial one:
+        # a crash during the write leaves the temp file damaged and the real
+        # store.json exactly as it was before this save.
         self.persist_path.parent.mkdir(parents=True, exist_ok=True)
-        self.persist_path.write_text(json.dumps(self._state_dict(), indent=2))
+        data = json.dumps(self._state_dict(), indent=2)
+        tmp_path = self.persist_path.with_name(self.persist_path.name + ".tmp")
+        tmp_path.write_text(data)
+        os.replace(tmp_path, self.persist_path)
