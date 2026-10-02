@@ -4,6 +4,32 @@ Dated, one entry per real decision. Not a changelog — the code and commit
 history already say what changed; this says why, where "why" isn't obvious
 from reading the diff.
 
+## 2026-10-02 — Revocations are enforced from the index *and* the signed log
+
+Implements option 2 of `docs/proposals/revocation-index-vs-log.md`, approved by
+the owner. `Store.revoke()` appends the signed revocation to the log first and
+saves the index second, so a crash between the two left a revocation that was
+durably logged but not in `store.json`, and `from_dict` rebuilds enforcement
+from `store.json` alone. After the restart the revoked receipt (or delegation,
+and everything chained below it) was accepted again. Reproduced, including a
+revoked receipt being spent.
+
+`Store.revocations` now reconciles once per process: every `kind: "revocation"`
+entry in the log that the index lacks is added, and the repaired index is saved.
+It is a union, so it can only add enforcement. Index entries the log never saw
+are kept. `revoke()` reconciles first, so re-revoking after a crash does not
+append a duplicate log entry, and the first reason stands.
+
+Decisions made while implementing, the ones the proposal left open:
+- **Corrupt log:** enforcement falls back to the index alone (what happens
+  today) rather than raising, and `revoke()` still fails closed with
+  `LogCorruptError` (503), as before. Refusing the verify/decide/spend
+  endpoints outright when the log is corrupt is a stricter choice, left to the
+  owner because it changes what those endpoints do.
+- **Legacy index entries with no log entry:** kept. A union does not drop them.
+- **Not done:** option 1 (log as the only source, index removed); spend commits
+  and delegation issuance are still not logged.
+
 ## 2026-10-02 — Three small, clearly-correct robustness fixes
 
 From the external audit's remaining findings (items (a), (b), (c) of the
