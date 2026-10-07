@@ -597,3 +597,17 @@ so `85.0` (and `true` where the replay gives 1) passed. They canonicalize
 differently from `85`, which makes the receipt's id depend on which language
 re-serializes it. `verify_receipt` now requires `type(trust_score) is int` before
 comparing; the existing "does not follow from the findings" error is used.
+
+## 2026-10-07 — /v1/verdict refuses lone surrogates instead of failing with a 500
+
+Found by the conformance corpus. A JSON string such as `"\ud800"` is syntactically
+valid but cannot be encoded as UTF-8, and receipts are hashed as UTF-8 (canonical
+JSON, `ensure_ascii=False`). `POST /v1/verdict` with one in `subject.name`,
+`subject.registration_id` or `document_text` raised `UnicodeEncodeError`. It is now a
+`400 invalid_request` naming the field. Verification paths already treat such a
+document as "not canonicalizable" rather than raising. NOT fixed here: the
+authenticated routes (`/v1/revoke`, `/v1/spend`) hash the request body to check the
+signature *before* verifying it, so a body with a lone surrogate and any auth
+envelope, even a bogus one, still raises (a 500 rather than a 401). It needs only an
+unauthenticated POST and leaks nothing; it is left alone because it is inside the
+auth path, and is recorded as a known failure in the conformance corpus.

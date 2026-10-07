@@ -337,6 +337,15 @@ def _verdict(body: bytes, store: Store):
     document_text = data.get("document_text")
     if document_text is not None and not isinstance(document_text, str):
         return _error(400, "invalid_request", "document_text must be a string", "document_text")
+    # Receipts and the log are hashed as UTF-8, which cannot encode a lone surrogate
+    # (JSON "\ud800" is syntactically valid): refuse it here rather than fail later.
+    for field, value in (("subject.name", subject["name"]), ("subject.registration_id", subject["registration_id"]),
+                         ("document_text", document_text)):
+        if isinstance(value, str):
+            try:
+                value.encode("utf-8")
+            except UnicodeEncodeError:
+                return _error(400, "invalid_request", f"{field} must be valid Unicode text (no lone surrogates)", field)
 
     transaction = None
     raw_tx = data.get("transaction")
