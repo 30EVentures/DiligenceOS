@@ -579,3 +579,13 @@ Fix: a present transaction must parse as `Money` (integer `amount_minor >= 0`,
 three-letter uppercase ASCII currency) or the decision is DENY, "receipt carries a
 malformed transaction". A *missing* transaction still ESCALATEs. Nothing else in
 `decide()` changed.
+
+## 2026-10-07 — verify_chain refuses a log that is not a list, and a seq that is not an int
+
+Found by the conformance corpus. `receipt_log.verify_chain` iterated whatever it
+was given: `{}`, `""` and `()` looked like a valid empty log, and a number, `None` or
+`true` raised `TypeError`. And `entry.get("seq") != i` let `false` stand for 0 and
+`true` for 1 (`False == 0` in Python), so a self-consistent forged chain with boolean
+seqs verified, where a verifier in any other language would refuse it. Now: a
+non-list is the single error "entries must be a list", and `seq` must be exactly an
+`int`. Real logs and the witness (which already checked for a list) are unaffected.

@@ -72,6 +72,21 @@ class ChainTest(unittest.TestCase):
         self.assertTrue(any("head" in x for x in verify_chain(e, expected_head=head)))
         self.assertEqual(verify_chain(log.entries, expected_head=head), [])
 
+    def test_entries_must_be_a_list(self):
+        # an empty non-list used to look like an empty log; a number or None raised TypeError
+        for bad in (None, 5, True, "", "abc", {}, {"0": {}}, (), 0.5):
+            errors = verify_chain(bad)
+            self.assertEqual(errors, ["entries must be a list"], bad)
+
+    def test_seq_must_be_an_integer_not_a_boolean_or_string(self):
+        for bad_seq in (False, "0", 0.5):
+            entry = {"seq": bad_seq, "kind": "receipt", "receipt_id": "sha256:" + "a" * 64,
+                     "inputs_digest": "sha256:" + "b" * 64, "outcome_digest": "sha256:" + "c" * 64,
+                     "logged_at": T, "conflict_with": None, "prev_hash": GENESIS}
+            entry["entry_hash"] = _entry_hash(entry)  # self-consistent forgery: only seq is wrong
+            self.assertTrue(any("seq" in e for e in verify_chain([entry])), bad_seq)
+        self.assertEqual(verify_chain(filled().entries), [])
+
     def test_garbage_never_raises(self):
         for bad in ([1], [{"seq": 0}], [None], [{"seq": 0, "prev_hash": GENESIS, "x": {1, 2}}]):
             self.assertTrue(verify_chain(bad))
