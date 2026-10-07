@@ -563,3 +563,19 @@ the environment changes after start-up. Legitimate third-party witnesses are
 unaffected. This does not make a witness independent in any deeper sense (a second
 key held by the same operator still passes); it removes only the case the code can
 detect. Tests: `tests/test_witness_independence.py`.
+
+## 2026-10-07 — decide() denies a receipt whose transaction is not real money
+
+Found by the conformance corpus (`conformance/diligenceos-1.json`, `decide` set).
+`decide()` read `receipt["transaction"]` without checking it. A receipt signed by an
+issuer the *caller* trusts (`/v1/decide` takes the caller's own trust list) could
+carry `{"amount_minor": -5, ...}`, a float, `true` or a string: negative and float
+amounts compared as "within the cap" and were ALLOWed, a string or a list raised
+`TypeError`/`KeyError` (a 500), and a lowercase or NUL currency merely escalated.
+A negative amount would also have been committed against a budget by `/v1/spend`
+had the issuer been trusted there. Operator-issued receipts were never affected
+(`/v1/verdict` validates the transaction), which is why this stayed unseen.
+Fix: a present transaction must parse as `Money` (integer `amount_minor >= 0`,
+three-letter uppercase ASCII currency) or the decision is DENY, "receipt carries a
+malformed transaction". A *missing* transaction still ESCALATEs. Nothing else in
+`decide()` changed.
