@@ -539,3 +539,27 @@ so a consumer verifying via the manifest gets the statement from a pinned key. A
 test asserts the two agree and a second that hostile text really is signed
 verbatim, so the claim cannot go stale. README has a section on it. The web
 front end already HTML-escapes these values; nothing about issuance changed.
+
+## 2026-10-07 — A log cannot witness itself
+
+An external audit ran a check and found that a cosignature whose `witness` equals
+the log's own `issuer` verified True, was accepted by `POST /v1/log/cosign` when
+the issuer key was listed in `DILIGENCEOS_WITNESSES`, and was then published in the
+head's `cosignatures[]`. The operator holds that key, so such a "witness" attests
+nothing: it defeats the reason for an external witness. Reproduced first
+(`verify_cosignature` returned True; the cosign endpoint answered 200), then fixed.
+
+Refused wherever one is accepted: `verify_cosignature` is False when `witness ==
+issuer`; `cosign_head` and `run_witness` raise `SelfWitnessError` (a `ValueError`,
+so the `witness` CLI exits 2 with `error: ...`); `Store.add_cosignature` raises it
+before anything else, and the endpoint answers `403 forbidden`, field `witness`,
+with a message saying why (no new error code). Ignored wherever counted: a
+self-cosignature already in a persisted store is filtered out of `cosignatures_for`
+(so out of `GET /v1/log/head`), and the manifest's `witnesses[]` omits the issuer.
+Configuration: `webapp.serve()` calls `check_witness_config` and refuses to start,
+naming `DILIGENCEOS_WITNESSES`, rather than silently dropping the entry. The
+per-request paths (manifest, cosign) additionally never honour the issuer, in case
+the environment changes after start-up. Legitimate third-party witnesses are
+unaffected. This does not make a witness independent in any deeper sense (a second
+key held by the same operator still passes); it removes only the case the code can
+detect. Tests: `tests/test_witness_independence.py`.

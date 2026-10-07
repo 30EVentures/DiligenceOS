@@ -18,6 +18,7 @@ from diligenceos.receipt_log import LogCorruptError
 from diligenceos.signing import LOG_HEAD_DOMAIN, SignerError, head_message, verify_signature
 from diligenceos.receipt import RULES, SCHEMA, digest, unsanitized_fields_doc, issue_receipt, verify_receipt
 from diligenceos.store import Store
+from diligenceos.witness import SelfWitnessError
 from diligenceos.types import CheckStatus, Money, Verdict
 
 MAX_BODY_BYTES = 1024 * 1024
@@ -113,7 +114,7 @@ def _capabilities():
             "POST /v1/log/cosign": {
                 "request": {"issuer": "string", "length": "int", "head_hash": "string", "witness": "ed25519 id", "signature": "string"},
                 "response": {"accepted": True},
-                "note": "accepted only from witnesses listed in DILIGENCEOS_WITNESSES, for a head this log really has",
+                "note": "accepted only from witnesses listed in DILIGENCEOS_WITNESSES, for a head this log really has; never from this log's own issuer key (403 forbidden), and the server refuses to start with that key in DILIGENCEOS_WITNESSES",
             },
             "GET /v1/log/entries": {
                 "request": {
@@ -172,9 +173,10 @@ def _manifest(store: Store):
         signer = store.signer
     except SignerError as exc:
         return _signer_unavailable(exc)
+    listed = [w for w in _witnesses() if w != signer.issuer_id]  # the issuer is never its own witness
     doc = manifest_doc.build_manifest(
         issuer_id=signer.issuer_id, routes=_ROUTES, authenticated=AUTHENTICATED,
-        witnesses=_witnesses(), generated_at=_now(),
+        witnesses=listed, generated_at=_now(),
         limits={
             "max_body_bytes": MAX_BODY_BYTES,
             "request_clock_skew_seconds": MAX_SKEW_SECONDS,
@@ -270,6 +272,8 @@ def _log_endpoint(path: str, body: bytes, store: Store, query: str = ""):
             store.add_cosignature(data, allowed)
         except SignerError as exc:
             return _signer_unavailable(exc)
+        except SelfWitnessError as exc:
+            return _error(403, "forbidden", str(exc), "witness")
         except ValueError as exc:
             return _error(400, "invalid_request", str(exc), "cosignature")
         return _json(200, {"accepted": True})
