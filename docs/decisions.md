@@ -589,3 +589,11 @@ was given: `{}`, `""` and `()` looked like a valid empty log, and a number, `Non
 seqs verified, where a verifier in any other language would refuse it. Now: a
 non-list is the single error "entries must be a list", and `seq` must be exactly an
 `int`. Real logs and the witness (which already checked for a list) are unaffected.
+
+## 2026-10-07 — a receipt's trust_score must be an integer
+
+Found by the conformance corpus. The replay check compared `trust_score` with `!=`,
+so `85.0` (and `true` where the replay gives 1) passed. They canonicalize
+differently from `85`, which makes the receipt's id depend on which language
+re-serializes it. `verify_receipt` now requires `type(trust_score) is int` before
+comparing; the existing "does not follow from the findings" error is used.

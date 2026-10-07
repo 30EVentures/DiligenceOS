@@ -140,7 +140,8 @@ def verify_receipt(
                 f"verdict {receipt.get('verdict')!r} does not follow from the "
                 f"findings (replay gives {replayed.verdict.value!r})"
             )
-        if replayed.trust_score != receipt.get("trust_score"):
+        score = receipt.get("trust_score")
+        if type(score) is not int or replayed.trust_score != score:  # 85.0 and True are not 85/1
             errors.append(
                 f"trust_score {receipt.get('trust_score')!r} does not follow from "
                 f"the findings (replay gives {replayed.trust_score})"
