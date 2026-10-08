@@ -90,6 +90,35 @@ def check_consistency(previous, entries, head_doc, *, pinned_issuer: str) -> Wit
     return WitnessResult(True, (), length=length, head_hash=head_hash, appended=appended)
 
 
+def download_entries(fetch, expected_length):
+    """All log entries up to `expected_length` (the signed head's length), by
+    following /v1/log/entries pages to the end. Returns a list, or None if a
+    page is malformed or the server's cursor does not advance.
+
+    The signed head, not the server's `has_more`, decides when to stop: we stop
+    once we hold `expected_length` entries and ignore any beyond it (the log may
+    have grown since the head was signed), so a server cannot make this loop
+    forever. A server that serves fewer entries than its head claims, or that
+    stops early, yields a short list and check_consistency refuses it."""
+    if not isinstance(expected_length, int) or isinstance(expected_length, bool) or expected_length < 0:
+        return []  # malformed head: check_consistency reports that before it reads entries
+    entries: list = []
+    path = "/v1/log/entries"
+    while True:
+        page = fetch(path)
+        if not isinstance(page, dict) or not isinstance(page.get("entries"), list):
+            return None
+        entries.extend(page["entries"])
+        if len(entries) >= expected_length or page.get("has_more") is not True:
+            return entries[:expected_length] if len(entries) > expected_length else entries
+        if not page["entries"] or not isinstance(page["entries"][-1], dict):
+            return None
+        cursor = page["entries"][-1].get("seq")
+        if not isinstance(cursor, int) or isinstance(cursor, bool) or cursor != len(entries) - 1:
+            return None  # a page that does not continue where we stopped
+        path = f"/v1/log/entries?after_seq={cursor}"
+
+
 def run_witness(fetch, state_path: Path, signer: Signer, pinned_issuer: str, submit=None):
     """One witnessing round. `fetch(path) -> dict` (GET, JSON). Returns
     (exit_code, message, cosignature|None): 0 ok, 3 inconsistent history.
@@ -98,7 +127,7 @@ def run_witness(fetch, state_path: Path, signer: Signer, pinned_issuer: str, sub
     previous = state.get(pinned_issuer)
 
     head_doc = fetch("/v1/log/head")
-    entries = fetch("/v1/log/entries")["entries"]
+    entries = download_entries(fetch, head_doc.get("length") if isinstance(head_doc, dict) else None)
     result = check_consistency(previous, entries, head_doc, pinned_issuer=pinned_issuer)
     if not result.ok:
         return 3, "INCONSISTENT: " + "; ".join(result.errors), None

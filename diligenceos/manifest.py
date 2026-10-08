@@ -62,6 +62,7 @@ def build_manifest(
                 "schema": receipt.SCHEMA,
                 "rules": receipt.RULES,
                 "id": "digest of the receipt without its `id` and `signature` fields",
+                "untrusted_fields": receipt.unsanitized_fields_doc(),
                 "signature": {"domain": signing.RECEIPT_DOMAIN, "message": "the receipt `id`", "signer": "the receipt's `issuer`"},
                 "replay": {
                     "rules": receipt.RULES,

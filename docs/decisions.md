@@ -482,3 +482,60 @@ how to verify. No key rotation or manifest history. Schemas are prose plus
 identifiers rather than JSON Schema files. It describes the format that
 exists; it does not certify that a given operator's deployment is honest —
 that is what witnesses are for.
+
+## 2026-10-02 — The log is served in bounded pages; the witness follows them; a non-loopback bind warns about TLS
+
+From the external audit's hardening list (D1). `GET /v1/log/entries` returned
+the whole log in one response, so every request cost O(log) and the cost grew
+with use.
+
+**Pagination.** `?after_seq=N&limit=M`. `seq` is the entry's position, so the
+cursor is stable while the log grows (nothing shifts under a client). Default
+100, maximum 500; a `limit` outside 1..500, or a malformed, repeated, signed or
+unknown parameter, is a `400 invalid_request` naming the field. Over-max is
+rejected rather than clamped so a client never silently gets less than it asked
+for. A cursor at or past the end is an empty last page, not an error. The
+response adds `length`, `has_more` and `next_after_seq`; `head_hash` stays the
+head of the whole log. Both page constants live in `api.py` and the signed
+manifest's `limits` reads them from there (a test asserts they agree).
+`/v1/log/head`, `/verify` and `/lookup` are unchanged. To carry the query string,
+`api.handle` gained an optional `query` argument (default empty).
+
+**The witness.** It follows pages until it holds as many entries as the *signed
+head* says the log has, then checks them exactly as before. The head, not the
+server's `has_more`, decides when to stop, so a lying server cannot loop it and a
+server that stops early or drops entries yields a short list that
+`check_consistency` refuses (exit 3). Entries beyond the signed length (the log
+grew mid-download) are ignored; the witness cosigns the head it was shown. A
+page that is malformed or does not continue at the right `seq` is now an exit 3
+rather than an exception. The first request is the bare path, so a witness still
+works against a server that predates pagination and returns everything at once.
+The cost is deliberate: verifying a long log takes more requests; the check is
+no weaker.
+
+**TLS.** Not added to `wsgiref`; that is a deployment concern. `webapp.tls_warning`
+(pure, unit-tested) returns a warning when the bind host is not loopback
+(`127.0.0.0/8`, `::1`, `localhost`) and `DILIGENCEOS_BEHIND_TLS_PROXY` is not
+exactly `1`; `serve()` prints it to stderr. It warns and does not refuse to start
+(a refusal would just push people to set the flag without reading it), and the
+flag is an acknowledgement the server cannot verify. README now states the
+requirement.
+
+## 2026-10-02 — Say plainly that signed receipt fields are not sanitized
+
+From the external audit (D3). `subject.name` and `subject.registration_id` come
+from the caller and go into the signed receipt unchanged, and finding details
+quote them; revocation `reason` text is likewise caller-supplied. "Signed" is not
+"sanitized": a hostile string is faithfully signed, and an LLM agent reading the
+receipt may follow it as an instruction.
+
+This is not fixable in the data model — a receipt that rewrote what it was
+given would not be a faithful record, and changing the bytes would change what is
+signed. So the fix is to be honest about it where a consumer looks. A single
+notice and field list live in `receipt.py` (`UNSANITIZED_NOTICE`,
+`CALLER_SUPPLIED_FIELDS`); `/v1/capabilities` serves them as `untrusted_fields`
+and the signed manifest repeats them under `documents.receipt.untrusted_fields`,
+so a consumer verifying via the manifest gets the statement from a pinned key. A
+test asserts the two agree and a second that hostile text really is signed
+verbatim, so the claim cannot go stale. README has a section on it. The web
+front end already HTML-escapes these values; nothing about issuance changed.
