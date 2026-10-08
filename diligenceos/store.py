@@ -16,7 +16,7 @@ from diligenceos.identity import RegistryLookup, RegistryRecord
 from diligenceos.sanctions import SanctionsEntry, SanctionsList
 from diligenceos.receipt_log import ReceiptLog
 from diligenceos.signing import Signer
-from diligenceos.witness import verify_cosignature
+from diligenceos.witness import SELF_WITNESS_MESSAGE, SelfWitnessError, verify_cosignature
 from diligenceos.track_record import DeliveryRecord, Ledger
 from diligenceos.types import Money
 
@@ -196,11 +196,17 @@ class Store:
         return self._revocations[receipt_id]
 
     def cosignatures_for(self, head_hash: str) -> list[dict]:
-        return list(self._cosignatures.get(head_hash, {}).values())
+        """Stored cosignatures of this head, never counting one whose witness is this
+        log's own issuer (refused on the way in; ignored here in case an older build stored one)."""
+        own = self.signer.issuer_id
+        return [c for c in self._cosignatures.get(head_hash, {}).values() if c.get("witness") != own]
 
     def add_cosignature(self, doc: dict, allowed_witnesses) -> None:
         """Raises ValueError, saying why, unless `doc` is a valid cosignature by a listed
-        witness of a head this log really has (or had)."""
+        witness of a head this log really has (or had). Raises SelfWitnessError (a ValueError)
+        if the witness is this log's own issuer, even if it is listed."""
+        if isinstance(doc, dict) and doc.get("witness") == self.signer.issuer_id:
+            raise SelfWitnessError(SELF_WITNESS_MESSAGE)
         if not verify_cosignature(doc):
             raise ValueError("cosignature does not verify")
         if doc["witness"] not in set(allowed_witnesses):

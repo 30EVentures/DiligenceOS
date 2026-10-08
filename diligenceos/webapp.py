@@ -10,6 +10,7 @@ from __future__ import annotations
 
 import hmac
 import html
+import ipaddress
 import os
 import sys
 from pathlib import Path
@@ -20,6 +21,7 @@ from diligenceos import api
 from diligenceos.pipeline import run_diligence
 from diligenceos.store import Store
 from diligenceos.types import CheckStatus, Verdict, VerdictResult
+from diligenceos.witness import check_witness_config
 
 DEFAULT_DATA_PATH = "~/.diligenceos/store.json"
 
@@ -273,7 +275,7 @@ def app(environ, start_response):
             length = 0
         # read one byte past the cap so an oversize body is detected, not truncated
         body = environ["wsgi.input"].read(min(length, api.MAX_BODY_BYTES + 1)) if length else b""
-        status, headers, payload = api.handle(method, path, body, store)
+        status, headers, payload = api.handle(method, path, body, store, environ.get("QUERY_STRING", ""))
         start_response(f"{status} {_REASONS.get(status, 'Error')}", headers)
         return [payload]
 
@@ -379,9 +381,47 @@ def app(environ, start_response):
     return [b"not found"]
 
 
+TLS_PROXY_ACK = "DILIGENCEOS_BEHIND_TLS_PROXY"
+
+
+def _is_loopback(host: str) -> bool:
+    host = host.strip().strip("[]").lower()
+    if host == "localhost":
+        return True
+    try:
+        return ipaddress.ip_address(host).is_loopback
+    except ValueError:
+        return False  # a hostname we cannot prove is local, "" and 0.0.0.0 included
+
+
+def tls_warning(host: str, environ=None) -> str | None:
+    """The startup warning for a bind address, or None. Pure: no sockets, no I/O.
+
+    This server speaks plain HTTP only (stdlib wsgiref). On anything but
+    loopback, credentials, signed requests and receipts would cross the network
+    in the clear unless a TLS-terminating reverse proxy sits in front. Setting
+    DILIGENCEOS_BEHIND_TLS_PROXY=1 says that is the case and silences this. It
+    cannot verify the claim; it only makes the deployment choice explicit."""
+    env = os.environ if environ is None else environ
+    if _is_loopback(host) or env.get(TLS_PROXY_ACK) == "1":
+        return None
+    return (
+        f"WARNING: DiligenceOS is binding to {host!r}, not loopback, and provides no TLS. "
+        "Traffic (including the admin token and signed requests) would be sent in "
+        "plaintext. Put a TLS-terminating reverse proxy in front of it, or bind to "
+        f"127.0.0.1. Set {TLS_PROXY_ACK}=1 once that is the case to silence this warning."
+    )
+
+
 def serve(host: str | None = None, port: int | None = None) -> None:
     host = host or os.environ.get("DILIGENCEOS_HOST", "127.0.0.1")
     port = port or int(os.environ.get("DILIGENCEOS_PORT", "8000"))
+    witnesses = api._witnesses()
+    if witnesses:  # refuse a self-witnessing setup before serving anything
+        check_witness_config(witnesses, _get_store().signer.issuer_id)
+    warning = tls_warning(host)
+    if warning:
+        print(warning, file=sys.stderr)
     with make_server(host, port, app) as server:
         print(f"DiligenceOS running at http://{host}:{port}", file=sys.stderr)
         server.serve_forever()

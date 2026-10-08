@@ -172,3 +172,40 @@ class ApiDecideTest(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class MalformedTransactionTest(unittest.TestCase):
+    """A receipt signed by an issuer the caller trusts can still carry junk where the
+    amount should be. decide() must deny it: never raise, never compare it, never ALLOW."""
+
+    def forged(self, tx):
+        from diligenceos.receipt import digest
+        from diligenceos.signing import RECEIPT_DOMAIN, Signer
+        signer = Signer.generate()
+        base = receipt()
+        body = {k: v for k, v in base.items() if k not in ("id", "signature")}
+        body.update(transaction=tx, issuer=signer.issuer_id)
+        rid = digest(body)
+        return signer, {**body, "id": rid, "signature": signer.sign(RECEIPT_DOMAIN, rid)}
+
+    def test_junk_transactions_are_denied(self):
+        for tx in ({"amount_minor": 5}, {"amount_minor": 12.5, "currency": "USD"}, {"amount_minor": "5", "currency": "USD"},
+                   {"amount_minor": -5, "currency": "USD"}, {"amount_minor": True, "currency": "USD"},
+                   {"amount_minor": 5, "currency": "usd"}, {"amount_minor": 5, "currency": "U\u0000D"},
+                   [5, "USD"], "5 USD", 7):
+            signer, r = self.forged(tx)
+            d = decide(r, policy(), now=NOW, trusted_issuers=[signer.issuer_id])
+            self.assertEqual(d.outcome, Outcome.DENY, tx)
+            self.assertIn("malformed transaction", d.reasons[0], tx)
+
+    def test_a_missing_transaction_still_escalates(self):
+        for tx in (None, {}):
+            d = decide(receipt(amount=None) if tx is None else self.forged(tx)[1], policy(), now=NOW)
+            self.assertEqual(d.outcome, Outcome.ESCALATE, tx)
+
+    def test_negative_amount_cannot_reduce_a_budget_through_the_api(self):
+        store = Store()
+        signer, r = self.forged({"amount_minor": -5, "currency": "USD"})
+        status, _, out = api.handle("POST", "/v1/decide", json.dumps({
+            "receipt": r, "policy": policy().to_dict(), "trusted_issuers": [signer.issuer_id]}).encode(), store)
+        self.assertEqual((status, json.loads(out)["decision"]), (200, "DENY"))

@@ -6,6 +6,7 @@ import json
 import os
 import re
 from datetime import datetime, timezone
+from urllib.parse import parse_qs
 
 from diligenceos.pipeline import run_diligence
 from diligenceos import manifest as manifest_doc
@@ -15,12 +16,15 @@ from diligenceos.policy import Policy, WideningError, decide, effective_policy, 
 from diligenceos.spend import try_spend
 from diligenceos.receipt_log import LogCorruptError
 from diligenceos.signing import LOG_HEAD_DOMAIN, SignerError, head_message, verify_signature
-from diligenceos.receipt import RULES, SCHEMA, digest, issue_receipt, verify_receipt
+from diligenceos.receipt import RULES, SCHEMA, digest, unsanitized_fields_doc, issue_receipt, verify_receipt
 from diligenceos.store import Store
+from diligenceos.witness import SelfWitnessError
 from diligenceos.types import CheckStatus, Money, Verdict
 
 MAX_BODY_BYTES = 1024 * 1024
 DEFAULT_TTL_SECONDS = 24 * 60 * 60
+DEFAULT_LOG_PAGE = 100  # GET /v1/log/entries: entries per page when `limit` is omitted
+MAX_LOG_PAGE = 500      # ...and the most a caller may ask for; more is a 400, not a clamp
 _RECEIPT_ID = re.compile(r"^sha256:[0-9a-f]{64}$")
 CATEGORIES = ("sanctions", "identity", "track_record", "document_scan")
 
@@ -65,6 +69,7 @@ def _capabilities():
         "verdicts": [v.value for v in Verdict],
         "finding_statuses": [s.value for s in CheckStatus],
         "categories": list(CATEGORIES),
+        "untrusted_fields": unsanitized_fields_doc(),
         "endpoints": {
             "POST /v1/verdict": {
                 "request": {
@@ -109,9 +114,20 @@ def _capabilities():
             "POST /v1/log/cosign": {
                 "request": {"issuer": "string", "length": "int", "head_hash": "string", "witness": "ed25519 id", "signature": "string"},
                 "response": {"accepted": True},
-                "note": "accepted only from witnesses listed in DILIGENCEOS_WITNESSES, for a head this log really has",
+                "note": "accepted only from witnesses listed in DILIGENCEOS_WITNESSES, for a head this log really has; never from this log's own issuer key (403 forbidden), and the server refuses to start with that key in DILIGENCEOS_WITNESSES",
             },
-            "GET /v1/log/entries": {"response": {"entries": ["log entry"], "head_hash": "string"}},
+            "GET /v1/log/entries": {
+                "request": {
+                    "after_seq": "query, optional integer >= 0: return only entries with seq greater than this (the cursor; omit for the first page)",
+                    "limit": f"query, optional integer 1..{MAX_LOG_PAGE} (default {DEFAULT_LOG_PAGE}); outside that range is a 400, not clamped",
+                },
+                "response": {
+                    "entries": ["log entry, in seq order"], "head_hash": "string (the head of the whole log, not of the page)",
+                    "length": "int (entries in the whole log)", "has_more": "bool",
+                    "next_after_seq": "int|null (pass as after_seq to get the next page)",
+                },
+                "note": "bounded pages; follow next_after_seq until has_more is false. The signed head from /v1/log/head covers the whole log, so a client must download every page to check it",
+            },
             "GET /v1/log/conflicts": {"response": {"conflicts": ["log entry with conflict_with set"]}},
             "GET /v1/log/verify": {"response": {"valid": "bool", "errors": ["string"], "length": "int", "head_hash": "string"}},
             "POST /v1/log/lookup": {
@@ -157,14 +173,17 @@ def _manifest(store: Store):
         signer = store.signer
     except SignerError as exc:
         return _signer_unavailable(exc)
+    listed = [w for w in _witnesses() if w != signer.issuer_id]  # the issuer is never its own witness
     doc = manifest_doc.build_manifest(
         issuer_id=signer.issuer_id, routes=_ROUTES, authenticated=AUTHENTICATED,
-        witnesses=_witnesses(), generated_at=_now(),
+        witnesses=listed, generated_at=_now(),
         limits={
             "max_body_bytes": MAX_BODY_BYTES,
             "request_clock_skew_seconds": MAX_SKEW_SECONDS,
             "max_delegation_chain": MAX_CHAIN,
             "default_receipt_ttl_seconds": _ttl_seconds(),
+            "default_log_entries_page": DEFAULT_LOG_PAGE,
+            "max_log_entries_page": MAX_LOG_PAGE,
         },
     )
     return _json(200, manifest_doc.sign_manifest(doc, signer))
@@ -198,7 +217,33 @@ def _server_trusted_issuers(store: Store) -> list[str]:
     return [store.signer.issuer_id]
 
 
-def _log_endpoint(path: str, body: bytes, store: Store):
+_DIGITS = re.compile(r"^[0-9]{1,15}$")  # ASCII only: str.isdigit() would accept other scripts
+
+
+def _page_params(query: str):
+    """(after_seq|None, limit, None) or (None, None, error). Strict: unknown or
+    repeated parameters, signs, spaces and non-ASCII digits are all a 400."""
+    try:
+        params = parse_qs(query, keep_blank_values=True, strict_parsing=bool(query), max_num_fields=8)
+    except ValueError:
+        return None, None, _error(400, "invalid_request", "query string is malformed")
+    for name in params:
+        if name not in ("after_seq", "limit"):
+            return None, None, _error(400, "invalid_request", f"unknown query parameter {name!r}", name)
+    values = {}
+    for name, found in params.items():
+        if len(found) != 1:
+            return None, None, _error(400, "invalid_request", f"{name} may be given only once", name)
+        if not _DIGITS.match(found[0]):
+            return None, None, _error(400, "invalid_request", f"{name} must be a non-negative integer", name)
+        values[name] = int(found[0])
+    limit = values.get("limit", DEFAULT_LOG_PAGE)
+    if not 1 <= limit <= MAX_LOG_PAGE:
+        return None, None, _error(400, "invalid_request", f"limit must be between 1 and {MAX_LOG_PAGE}", "limit")
+    return values.get("after_seq"), limit, None
+
+
+def _log_endpoint(path: str, body: bytes, store: Store, query: str = ""):
     try:
         log = store.log
     except LogCorruptError as exc:
@@ -227,11 +272,24 @@ def _log_endpoint(path: str, body: bytes, store: Store):
             store.add_cosignature(data, allowed)
         except SignerError as exc:
             return _signer_unavailable(exc)
+        except SelfWitnessError as exc:
+            return _error(403, "forbidden", str(exc), "witness")
         except ValueError as exc:
             return _error(400, "invalid_request", str(exc), "cosignature")
         return _json(200, {"accepted": True})
     if path == "/v1/log/entries":
-        return _json(200, {"entries": log.entries, "head_hash": log.head})
+        after_seq, limit, err = _page_params(query)
+        if err:
+            return err
+        entries = log.entries  # one snapshot: length, head and page all describe the same moment
+        start = 0 if after_seq is None else after_seq + 1  # seq == position, so the cursor is stable under appends
+        page = entries[start:start + limit]
+        has_more = start + len(page) < len(entries)
+        return _json(200, {
+            "entries": page, "head_hash": entries[-1]["entry_hash"] if entries else log.head,
+            "length": len(entries), "has_more": has_more,
+            "next_after_seq": page[-1]["seq"] if has_more else None,
+        })
     if path == "/v1/log/conflicts":
         return _json(200, {"conflicts": log.conflicts()})
     if path == "/v1/log/verify":
@@ -279,6 +337,15 @@ def _verdict(body: bytes, store: Store):
     document_text = data.get("document_text")
     if document_text is not None and not isinstance(document_text, str):
         return _error(400, "invalid_request", "document_text must be a string", "document_text")
+    # Receipts and the log are hashed as UTF-8, which cannot encode a lone surrogate
+    # (JSON "\ud800" is syntactically valid): refuse it here rather than fail later.
+    for field, value in (("subject.name", subject["name"]), ("subject.registration_id", subject["registration_id"]),
+                         ("document_text", document_text)):
+        if isinstance(value, str):
+            try:
+                value.encode("utf-8")
+            except UnicodeEncodeError:
+                return _error(400, "invalid_request", f"{field} must be valid Unicode text (no lone surrogates)", field)
 
     transaction = None
     raw_tx = data.get("transaction")
@@ -570,7 +637,7 @@ def _spend(body: bytes, store: Store):
     })
 
 
-def handle(method: str, path: str, body: bytes, store: Store):
+def handle(method: str, path: str, body: bytes, store: Store, query: str = ""):
     expected = _ROUTES.get(path)
     if expected is None:
         return _error(404, "not_found", f"no such endpoint: {path}")
@@ -590,7 +657,7 @@ def handle(method: str, path: str, body: bytes, store: Store):
         except SignerError as exc:
             return _signer_unavailable(exc)
     if path.startswith("/v1/log/"):
-        return _log_endpoint(path, body, store)
+        return _log_endpoint(path, body, store, query)
     if path == "/v1/verdict":
         return _verdict(body, store)
     if path == "/v1/decide":

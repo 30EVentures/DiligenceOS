@@ -57,6 +57,19 @@ class ReceiptTest(unittest.TestCase):
         self.assertFalse(check.valid)
         self.assertTrue(any("does not follow" in e for e in check.errors))
 
+    def test_trust_score_must_be_an_integer(self):
+        # 85.0 == 85 and True == 1 in Python, but they canonicalize differently and other
+        # languages disagree about them: only a real integer may match the replay.
+        for bad in (85.0, True):
+            r = copy.deepcopy(make(findings=[Finding("sanctions", CheckStatus.PASS)]))
+            self.assertEqual(r["trust_score"], 85)
+            r["trust_score"] = bad if bad is not True else 1
+            check = verify_receipt(reseal(r))
+            self.assertFalse(check.valid, bad)
+        r = copy.deepcopy(make(findings=[Finding("sanctions", CheckStatus.PASS)]))
+        r["trust_score"] = 85.0
+        self.assertTrue(any("trust_score" in e for e in verify_receipt(reseal(r)).errors))
+
     def test_malformed_input_never_raises(self):
         for bad in (None, [], "x", {}, {"schema": "diligenceos.receipt/1", "findings": 3}):
             self.assertFalse(verify_receipt(bad).valid)

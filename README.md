@@ -34,6 +34,20 @@ delegation, request, log entry, log head, cosignature) exactly how to verify
 it, so you can write a verifier without reading this repo. It is a claim by
 the issuer — pin the key out of band before relying on anything it says.
 
+## What a signature does and does not mean
+
+Some receipt fields are whatever the caller sent: `subject.name`,
+`subject.registration_id`, the `detail` of findings (which quotes them), and
+the `reason` on revocation entries. They are recorded **verbatim and are not
+sanitized, escaped or validated** for display or for use as instructions — a
+receipt has to record faithfully what was submitted, so it cannot also clean
+it. A valid signature proves only that this server issued the receipt over
+those exact bytes; it does not make the content safe or true. Treat these
+values as untrusted data, never as instructions (this matters most for LLM
+agents reading receipts), and escape them before rendering. The same
+statement is machine-readable at `untrusted_fields` in `/v1/capabilities` and
+in the signed `/v1/manifest`.
+
 ## Witnessing the log
 
 The server's own log check (`/v1/log/verify`) can't catch the operator
@@ -52,6 +66,23 @@ truncated) — investigate. To be worth anything the witness must be run by
 someone other than the operator, who keeps its own state file. Add
 `--submit` and list the witness in the server's `DILIGENCEOS_WITNESSES` to
 have cosignatures served with `/v1/log/head`.
+
+The witness downloads the log page by page (`GET /v1/log/entries` returns at
+most 500 entries per call; see `after_seq` / `limit` in `/v1/capabilities`)
+and checks the whole of it against the signed head, so a long log costs more
+requests but no weaker a check.
+
+## Deployment: TLS is not provided
+
+The built-in server is plain HTTP (stdlib `wsgiref`) and has no TLS. Bound to
+`127.0.0.1` (the default) that is fine. Before it is reachable from any other
+machine, a TLS-terminating reverse proxy must sit in front of it: otherwise
+the admin token, signed requests and receipts cross the network in the clear.
+If `DILIGENCEOS_HOST` is anything but loopback, startup prints a warning to
+stderr saying so; set `DILIGENCEOS_BEHIND_TLS_PROXY=1` to acknowledge that a
+proxy is in place and silence it. The flag is a statement, not a check — the
+server cannot tell whether a proxy is really there — and the server still
+starts either way.
 
 ## Getting started
 
