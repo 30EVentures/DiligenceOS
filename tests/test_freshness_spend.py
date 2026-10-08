@@ -36,6 +36,21 @@ class FreshnessTest(unittest.TestCase):
         self.assertEqual(receipt(ttl=3600)["expires"], "2026-09-29T13:00:00+00:00")
         self.assertIsNone(receipt()["expires"])
 
+    def test_ttl_zero_expires_immediately_rather_than_disabling_expiry(self):
+        # Fixed 2026-10-02: `if expires is None and ttl_seconds:` treated 0 the
+        # same as "no TTL given" (both falsy), so DILIGENCEOS_RECEIPT_TTL_SECONDS=0
+        # silently produced a receipt that never expires. 0 is a real TTL value
+        # (expire at issuance), not an absent one.
+        r = receipt(ttl=0)
+        self.assertEqual(r["expires"], r["issued_at"])
+        self.assertIsNotNone(r["expires"])
+        # exactly at issuance it has not yet passed its expiry instant...
+        self.assertEqual(decide(r, policy(), now=T0).outcome, Outcome.ALLOW)
+        # ...but one second later it has, same as any other TTL would behave.
+        d = decide(r, policy(), now="2026-09-29T12:00:01+00:00")
+        self.assertEqual(d.outcome, Outcome.ESCALATE)
+        self.assertTrue(any("expired" in x for x in d.reasons))
+
     def test_expired_receipt_escalates(self):
         r = receipt(ttl=60)
         self.assertEqual(decide(r, policy(), now="2026-09-29T12:00:30+00:00").outcome, Outcome.ALLOW)
@@ -150,6 +165,15 @@ class ApiTest(unittest.TestCase):
             r2 = self.verdict()
             self.assertEqual(
                 (datetime.fromisoformat(r2["expires"]) - datetime.fromisoformat(r2["issued_at"])).total_seconds(), 60)
+        finally:
+            del os.environ["DILIGENCEOS_RECEIPT_TTL_SECONDS"]
+
+    def test_env_ttl_zero_does_not_disable_expiry(self):
+        os.environ["DILIGENCEOS_RECEIPT_TTL_SECONDS"] = "0"
+        try:
+            r = self.verdict()
+            self.assertIsNotNone(r["expires"])
+            self.assertEqual(r["expires"], r["issued_at"])
         finally:
             del os.environ["DILIGENCEOS_RECEIPT_TTL_SECONDS"]
 

@@ -103,6 +103,35 @@ class DecideTest(unittest.TestCase):
         d = decide(receipt(amount=60_000_000), policy(floor=100), now=NOW)
         self.assertEqual(len(d.reasons), 2)
 
+    def test_malformed_transaction_is_denied_instead_of_crashing(self):
+        # A transaction missing a key, of the wrong type, or negative used to
+        # reach tx["amount_minor"] / Money.from_dict unguarded and raise
+        # (KeyError / TypeError / ValueError) instead of producing a decision.
+        # decide() must never raise on caller-controlled input, and a present
+        # transaction that is not real money is a DENY (the guard that landed on
+        # main in #33), not an ESCALATE: a human cannot review a figure that is
+        # not a figure. Each receipt is built with the bad transaction baked in
+        # from the start (issue_receipt does not validate its shape), so its `id`
+        # genuinely matches its contents and the malformed-shape code path is
+        # the one actually reached, not an early "id does not match" denial.
+        for bad_tx in (
+            {"currency": "USD"},                          # missing amount_minor
+            {"amount_minor": 100},                         # missing currency
+            {"amount_minor": "100", "currency": "USD"},     # wrong type
+            {"amount_minor": 100, "currency": 123},         # wrong type
+            {"amount_minor": -1, "currency": "USD"},        # out of range
+            {"amount_minor": 100, "currency": "usd"},       # wrong case
+            "not even an object",
+            ["also", "not", "an", "object"],
+        ):
+            forged = issue_receipt(
+                subject={"name": "X"}, inputs={}, result=assemble_verdict([Finding("sanctions", CheckStatus.PASS)]),
+                transaction=bad_tx, issued_at=NOW,
+            )
+            d = decide(forged, policy(), now=NOW)  # must not raise
+            self.assertEqual(d.outcome, Outcome.DENY, bad_tx)
+            self.assertTrue(any("malformed" in x for x in d.reasons), (bad_tx, d.reasons))
+
 
 class ApiDecideTest(unittest.TestCase):
     def setUp(self):

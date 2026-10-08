@@ -2,6 +2,7 @@ import json
 import tempfile
 import unittest
 from pathlib import Path
+from unittest import mock
 
 from diligenceos.store import Store
 from diligenceos.types import CheckStatus
@@ -104,6 +105,44 @@ class PersistenceTest(unittest.TestCase):
         store = Store()
         store.add_registry_record(registration_id="US1", name="A", status="active")
         self.assertFalse(self.path.exists())  # nothing written anywhere
+
+    def test_save_leaves_no_temp_file_behind_on_success(self):
+        store = Store(persist_path=self.path)
+        store.add_registry_record(registration_id="US1", name="A", status="active")
+        self.assertFalse(self.path.with_name(self.path.name + ".tmp").exists())
+        self.assertTrue(self.path.exists())
+
+    def test_a_crash_mid_write_never_corrupts_the_real_file(self):
+        # Fixed 2026-10-02: _save() used to write_text() the real path
+        # directly, so a process killed mid-write (power loss, OOM) left a
+        # truncated, unparseable store.json - not just losing the latest
+        # change, but making the server refuse to start at all next time.
+        # Writing to a sibling temp file and os.replace()-ing it into place
+        # means a crash during the write only ever damages the temp file;
+        # the real path is untouched until the replace, which is atomic.
+        store = Store(persist_path=self.path)
+        store.add_registry_record(registration_id="US1", name="Before The Crash", status="active")
+        good_bytes = self.path.read_bytes()
+
+        real_write_text = Path.write_text
+
+        def crashes_halfway(self_path, data, *a, **kw):
+            if self_path == store.persist_path.with_name(store.persist_path.name + ".tmp"):
+                self_path.write_bytes(data.encode()[: len(data) // 2])
+                raise OSError("simulated crash mid-write")
+            return real_write_text(self_path, data, *a, **kw)
+
+        with mock.patch.object(Path, "write_text", crashes_halfway):
+            with self.assertRaises(OSError):
+                store.add_registry_record(registration_id="US2", name="During The Crash", status="active")
+
+        # the real file must be exactly what it was before the crashed write -
+        # never a half-written mix, and it must still parse.
+        self.assertEqual(self.path.read_bytes(), good_bytes)
+        reloaded = json.loads(self.path.read_text())
+        self.assertIn("US1", reloaded["registry"])
+        self.assertNotIn("US2", reloaded["registry"])
+        Store.load_or_seed(self.path)  # must not raise
 
 
 if __name__ == "__main__":
