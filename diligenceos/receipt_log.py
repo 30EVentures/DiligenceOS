@@ -42,14 +42,17 @@ def verify_chain(
     Entries that carry a signature must verify (and, if `trusted_issuers` is
     given, be from a listed issuer). `require_signed` also rejects entries
     that have none (logs written before Slice 26 are unsigned)."""
+    if not isinstance(entries, list):
+        return ["entries must be a list"]
     errors: list[str] = []
     prev = GENESIS
     for i, entry in enumerate(entries):
         if not isinstance(entry, dict):
             errors.append(f"entry {i} is not an object")
             break
-        if entry.get("seq") != i:
-            errors.append(f"entry {i} has seq {entry.get('seq')!r}")
+        seq = entry.get("seq")
+        if type(seq) is not int or seq != i:  # not bool: False == 0 and True == 1 in Python
+            errors.append(f"entry {i} has seq {seq!r}")
         if entry.get("prev_hash") != prev:
             errors.append(f"entry {i} does not link to the entry before it")
         try:

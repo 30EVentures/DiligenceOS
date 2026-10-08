@@ -108,6 +108,12 @@ def decide(
         return Decision(Outcome.DENY, (f"receipt was revoked: {check.revoked_reason}",))
     if receipt["verdict"] == Verdict.RED_FLAG.value:
         return Decision(Outcome.DENY, ("verdict is RED_FLAG",))
+    tx = receipt.get("transaction")
+    if tx:  # a falsy transaction means "none" and escalates below; a present one must be real money
+        try:
+            Money.from_dict(tx)
+        except (ValueError, KeyError, TypeError):
+            return Decision(Outcome.DENY, ("receipt carries a malformed transaction (needs integer amount_minor >= 0 and a currency code)",))
 
     reasons = []
     if receipt["verdict"] not in {v.value for v in policy.acceptable_verdicts}:
@@ -116,7 +122,6 @@ def decide(
         reasons.append(
             f"trust score {receipt['trust_score']} is below the minimum {policy.min_trust_score}"
         )
-    tx = receipt.get("transaction")
     if not tx:
         reasons.append("receipt carries no transaction, so the amount cannot be checked")
     elif tx["currency"] != policy.max_amount.currency:

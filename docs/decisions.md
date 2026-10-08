@@ -539,3 +539,122 @@ so a consumer verifying via the manifest gets the statement from a pinned key. A
 test asserts the two agree and a second that hostile text really is signed
 verbatim, so the claim cannot go stale. README has a section on it. The web
 front end already HTML-escapes these values; nothing about issuance changed.
+
+## 2026-10-07 — A log cannot witness itself
+
+An external audit ran a check and found that a cosignature whose `witness` equals
+the log's own `issuer` verified True, was accepted by `POST /v1/log/cosign` when
+the issuer key was listed in `DILIGENCEOS_WITNESSES`, and was then published in the
+head's `cosignatures[]`. The operator holds that key, so such a "witness" attests
+nothing: it defeats the reason for an external witness. Reproduced first
+(`verify_cosignature` returned True; the cosign endpoint answered 200), then fixed.
+
+Refused wherever one is accepted: `verify_cosignature` is False when `witness ==
+issuer`; `cosign_head` and `run_witness` raise `SelfWitnessError` (a `ValueError`,
+so the `witness` CLI exits 2 with `error: ...`); `Store.add_cosignature` raises it
+before anything else, and the endpoint answers `403 forbidden`, field `witness`,
+with a message saying why (no new error code). Ignored wherever counted: a
+self-cosignature already in a persisted store is filtered out of `cosignatures_for`
+(so out of `GET /v1/log/head`), and the manifest's `witnesses[]` omits the issuer.
+Configuration: `webapp.serve()` calls `check_witness_config` and refuses to start,
+naming `DILIGENCEOS_WITNESSES`, rather than silently dropping the entry. The
+per-request paths (manifest, cosign) additionally never honour the issuer, in case
+the environment changes after start-up. Legitimate third-party witnesses are
+unaffected. This does not make a witness independent in any deeper sense (a second
+key held by the same operator still passes); it removes only the case the code can
+detect. Tests: `tests/test_witness_independence.py`.
+
+## 2026-10-07 — decide() denies a receipt whose transaction is not real money
+
+Found by the conformance corpus (`conformance/diligenceos-1.json`, `decide` set).
+`decide()` read `receipt["transaction"]` without checking it. A receipt signed by an
+issuer the *caller* trusts (`/v1/decide` takes the caller's own trust list) could
+carry `{"amount_minor": -5, ...}`, a float, `true` or a string: negative and float
+amounts compared as "within the cap" and were ALLOWed, a string or a list raised
+`TypeError`/`KeyError` (a 500), and a lowercase or NUL currency merely escalated.
+A negative amount would also have been committed against a budget by `/v1/spend`
+had the issuer been trusted there. Operator-issued receipts were never affected
+(`/v1/verdict` validates the transaction), which is why this stayed unseen.
+Fix: a present transaction must parse as `Money` (integer `amount_minor >= 0`,
+three-letter uppercase ASCII currency) or the decision is DENY, "receipt carries a
+malformed transaction". A *missing* transaction still ESCALATEs. Nothing else in
+`decide()` changed.
+
+## 2026-10-07 — verify_chain refuses a log that is not a list, and a seq that is not an int
+
+Found by the conformance corpus. `receipt_log.verify_chain` iterated whatever it
+was given: `{}`, `""` and `()` looked like a valid empty log, and a number, `None` or
+`true` raised `TypeError`. And `entry.get("seq") != i` let `false` stand for 0 and
+`true` for 1 (`False == 0` in Python), so a self-consistent forged chain with boolean
+seqs verified, where a verifier in any other language would refuse it. Now: a
+non-list is the single error "entries must be a list", and `seq` must be exactly an
+`int`. Real logs and the witness (which already checked for a list) are unaffected.
+
+## 2026-10-07 — a receipt's trust_score must be an integer
+
+Found by the conformance corpus. The replay check compared `trust_score` with `!=`,
+so `85.0` (and `true` where the replay gives 1) passed. They canonicalize
+differently from `85`, which makes the receipt's id depend on which language
+re-serializes it. `verify_receipt` now requires `type(trust_score) is int` before
+comparing; the existing "does not follow from the findings" error is used.
+
+## 2026-10-07 — /v1/verdict refuses lone surrogates instead of failing with a 500
+
+Found by the conformance corpus. A JSON string such as `"\ud800"` is syntactically
+valid but cannot be encoded as UTF-8, and receipts are hashed as UTF-8 (canonical
+JSON, `ensure_ascii=False`). `POST /v1/verdict` with one in `subject.name`,
+`subject.registration_id` or `document_text` raised `UnicodeEncodeError`. It is now a
+`400 invalid_request` naming the field. Verification paths already treat such a
+document as "not canonicalizable" rather than raising. NOT fixed here: the
+authenticated routes (`/v1/revoke`, `/v1/spend`) hash the request body to check the
+signature *before* verifying it, so a body with a lone surrogate and any auth
+envelope, even a bogus one, still raises (a 500 rather than a 401). It needs only an
+unauthenticated POST and leaks nothing; it is left alone because it is inside the
+auth path, and is recorded as a known failure in the conformance corpus.
+
+## 2026-10-07 — A refusal-first conformance corpus and a fail-closed runner for our own verifiers
+
+`conformance/diligenceos-1.json` (246 cases, 7 sets, 84% refusals) states what our
+verifiers must refuse: receipts (forged id, replay mismatch, wrong issuer, expired,
+revoked, evidence), policy narrowing (every way to widen), `decide` (ALLOW /
+ESCALATE / DENY, including a receipt that certifies itself), the same through the
+HTTP handlers, delegation chains, the receipt log, and ill-typed or hostile input
+(floats and booleans as money, 2^64, NULs, lone surrogates, wrong container types).
+Cases are `{id, set, input, context?, expect:{valid|verdict, codes?}, note}` inside
+`sets[]`, so a runner that reads `conformance/1` bundles can read it. It is
+generated by `conformance/build_diligenceos_1.py` because signed fixtures cannot be
+written by hand, but every expectation is typed by hand there, never read back from
+the code under test. Keys are fixed-seed test keys, times are fixed, so the output
+is byte-for-byte reproducible and a test checks that.
+
+`diligenceos/conformance.py` is both an adapter (`python -m diligenceos.conformance`:
+JSON lines in, one answer per line out) and the in-process runner. Design points:
+- Codes are ours, stable and mapped from the verifiers' error sentences; a test fails
+  if any sentence is left `unclassified`, so rewording an error cannot silently
+  empty the vocabulary. Codes are compared only where a case names them.
+- A crash inside a verifier is answered with a `crash` field and no verdict, never
+  with a refusal, so it counts as *unreadable*. Otherwise every "must refuse" case
+  would pass on a bug.
+- `tests/test_conformance_corpus.py` fails on zero executed cases, any unanswered or
+  unreadable case, any disagreement, a duplicate id, or a refusal share under 60%,
+  and has its own tests that each of those really fails the runner. It runs the corpus
+  in process and again through the real stdin/stdout protocol.
+- `known_failure` marks a case that documents a bug we have chosen not to fix. It must
+  still fail (it is a failure if it starts passing, so the marker cannot go stale) and
+  must still be answered.
+
+What running it for the first time found (each fixed with a regression test and its own
+entry above): `decide()` crashed or ALLOWed on a malformed transaction; `verify_chain`
+accepted a non-list and boolean `seq`; `trust_score` 85.0 passed the replay; `/v1/verdict`
+500ed on a lone surrogate. Two things are NOT fixed and are marked `known_failure`:
+1. **Money has no upper bound.** `Money(2**64, "USD")` is valid. No int64 system can hold
+   it, and the repo says amounts are integer minor units. Choosing the bound (2^53-1 for
+   JSON interop, or 2^63-1) is a product decision, so it is left to the owner. Three cases
+   (`mf-money-beyond-int64`, `mf-money-astronomical`, `mf-request-transaction-beyond-int64`).
+2. **A lone surrogate in an authenticated route's body is a 500, not a 401** (see the
+   `/v1/verdict` entry). It is inside the auth path. One case.
+
+Cross-check: the open `conformance-kit` runner (a pinned clone, invoked directly with
+`node <clone>/src/cli.mjs`, never via a bin symlink) runs the same corpus against the
+adapter: it executes all 246 cases and agrees with all but the known failures.
+Nothing of the kit is in this repo and it is not part of the test suite.

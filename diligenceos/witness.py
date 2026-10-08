@@ -16,7 +16,28 @@ def cosign_message(issuer: str, length: int, head_hash: str) -> str:
     return f"{issuer}:{length}:{head_hash}"
 
 
+SELF_WITNESS_MESSAGE = (
+    "the witness is the log's own issuer: a log cannot be witnessed by its own key "
+    "(the operator holds that key, so it would prove nothing)"
+)
+
+
+class SelfWitnessError(ValueError):
+    """A cosignature, witness run or witness list that names the log's own issuer as its witness."""
+
+
+def check_witness_config(witnesses, issuer_id: str) -> None:
+    """Raises SelfWitnessError if `witnesses` (DILIGENCEOS_WITNESSES) lists the log's own issuer."""
+    if issuer_id in set(witnesses):
+        raise SelfWitnessError(
+            f"DILIGENCEOS_WITNESSES lists this server's own issuer key {issuer_id}: {SELF_WITNESS_MESSAGE}. "
+            "Remove it; witnesses must be independent parties holding their own keys."
+        )
+
+
 def cosign_head(signer: Signer, issuer: str, length: int, head_hash: str) -> dict:
+    if signer.issuer_id == issuer:
+        raise SelfWitnessError(SELF_WITNESS_MESSAGE)
     return {
         "issuer": issuer,
         "length": length,
@@ -27,9 +48,12 @@ def cosign_head(signer: Signer, issuer: str, length: int, head_hash: str) -> dic
 
 
 def verify_cosignature(doc) -> bool:
-    """Pure; anything malformed is False. Checks the witness's signature only —
-    whether that witness is one you trust is your call."""
+    """Pure; anything malformed is False. Checks the witness's signature, and that the
+    witness is not the log's own issuer (that is never a cosignature). Whether the
+    witness is one you trust is your call."""
     try:
+        if doc["witness"] == doc["issuer"]:
+            return False
         return verify_signature(
             doc["witness"], COSIGN_DOMAIN,
             cosign_message(doc["issuer"], doc["length"], doc["head_hash"]), doc["signature"],
@@ -122,7 +146,10 @@ def download_entries(fetch, expected_length):
 def run_witness(fetch, state_path: Path, signer: Signer, pinned_issuer: str, submit=None):
     """One witnessing round. `fetch(path) -> dict` (GET, JSON). Returns
     (exit_code, message, cosignature|None): 0 ok, 3 inconsistent history.
+    Raises SelfWitnessError (a ValueError) if `signer` is the pinned issuer itself.
     State is written only on success, so a bad round never becomes the new baseline."""
+    if signer.issuer_id == pinned_issuer:
+        raise SelfWitnessError(SELF_WITNESS_MESSAGE)
     state = json.loads(state_path.read_text()) if state_path.exists() else {}
     previous = state.get(pinned_issuer)
 

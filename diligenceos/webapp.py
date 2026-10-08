@@ -21,6 +21,7 @@ from diligenceos import api
 from diligenceos.pipeline import run_diligence
 from diligenceos.store import Store
 from diligenceos.types import CheckStatus, Verdict, VerdictResult
+from diligenceos.witness import check_witness_config
 
 DEFAULT_DATA_PATH = "~/.diligenceos/store.json"
 
@@ -415,6 +416,9 @@ def tls_warning(host: str, environ=None) -> str | None:
 def serve(host: str | None = None, port: int | None = None) -> None:
     host = host or os.environ.get("DILIGENCEOS_HOST", "127.0.0.1")
     port = port or int(os.environ.get("DILIGENCEOS_PORT", "8000"))
+    witnesses = api._witnesses()
+    if witnesses:  # refuse a self-witnessing setup before serving anything
+        check_witness_config(witnesses, _get_store().signer.issuer_id)
     warning = tls_warning(host)
     if warning:
         print(warning, file=sys.stderr)

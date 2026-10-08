@@ -101,6 +101,17 @@ class ErrorShapeTest(unittest.TestCase):
         bad = {**GOOD, "document_text": 5}
         self.assert_error(call("POST", "/v1/verdict", bad), 400, "invalid_request", "document_text")
 
+    def test_lone_surrogates_are_refused_not_a_server_error(self):
+        # JSON "\ud800" is valid syntax but cannot be encoded as UTF-8, which receipts are hashed as.
+        for field, bad in (
+            ("subject.name", {"subject": {"name": "Acme \ud800", "registration_id": "R1"}}),
+            ("subject.registration_id", {"subject": {"name": "Acme", "registration_id": "R\udfff"}}),
+            ("document_text", {**GOOD, "document_text": "x \ud800 y"}),
+        ):
+            self.assert_error(call("POST", "/v1/verdict", bad), 400, "invalid_request", field)
+        ok = call("POST", "/v1/verdict", {"subject": {"name": "Acme \U0001F680", "registration_id": "R1"}})
+        self.assertEqual(ok[0], 200)  # astral characters are fine
+
     def test_unknown_path_and_wrong_method(self):
         self.assert_error(call("GET", "/v1/nope"), 404, "not_found")
         status, headers, body = call("GET", "/v1/verdict")
