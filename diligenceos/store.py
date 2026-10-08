@@ -14,7 +14,7 @@ from pathlib import Path
 
 from diligenceos.identity import RegistryLookup, RegistryRecord
 from diligenceos.sanctions import SanctionsEntry, SanctionsList
-from diligenceos.receipt_log import ReceiptLog
+from diligenceos.receipt_log import LogCorruptError, ReceiptLog
 from diligenceos.signing import Signer
 from diligenceos.witness import SELF_WITNESS_MESSAGE, SelfWitnessError, verify_cosignature
 from diligenceos.track_record import DeliveryRecord, Ledger
@@ -36,6 +36,7 @@ class Store:
         self._signer: Signer | None = None
         self._cosignatures: dict[str, dict[str, dict]] = {}  # head hash -> witness -> doc
         self._nonces: dict[str, datetime] = {}  # in memory only; see specs/slice-25
+        self._revocations_reconciled = False
 
     @classmethod
     def seeded_from_sample(cls, persist_path: Path | None = None) -> "Store":
@@ -178,12 +179,43 @@ class Store:
 
     @property
     def revocations(self) -> dict[str, dict]:
+        try:
+            self._reconcile_revocations()
+        except LogCorruptError:
+            pass  # enforce the index alone, as before; endpoints that need the log already 503
         return dict(self._revocations)
+
+    def _reconcile_revocations(self) -> None:
+        """Enforce the union of the index and the signed log's revocation entries.
+
+        revoke() appends to the log first and saves the index second, so a crash
+        between the two leaves a revocation that is logged but not in store.json.
+        Without this it would stay unenforced after the restart. The union can only
+        add enforcement, never remove it. Done once per process; anything revoked
+        afterwards goes through revoke(), which updates both. Raises LogCorruptError
+        if the log cannot be trusted (and tries again next time)."""
+        if self._revocations_reconciled:
+            return
+        healed = False
+        for entry in self.log.revocation_entries():
+            target = entry.get("target_id")
+            if isinstance(target, str) and target not in self._revocations:
+                self._revocations[target] = {
+                    "reason": entry.get("reason"),
+                    "revoked_at": entry.get("logged_at"),
+                    "revoked_by": entry.get("revoked_by"),
+                    "log_seq": entry.get("seq"),
+                }
+                healed = True
+        self._revocations_reconciled = True
+        if healed:
+            self._maybe_save()  # repair the index on disk too
 
     def revoke(self, receipt_id: str, reason: str, *, by: str | None = None) -> dict:
         """Idempotent: revoking twice keeps the first reason and time. The revocation
         is appended to the signed log *first*, so if the log or key is unusable this
         raises (LogCorruptError / SignerError) instead of recording an unattested one."""
+        self._reconcile_revocations()  # so a revocation already in the log is not appended twice
         if receipt_id not in self._revocations:
             entry = self.log.append_revocation(receipt_id, reason, by, signer=self.signer)
             self._revocations[receipt_id] = {
