@@ -103,13 +103,15 @@ class DecideTest(unittest.TestCase):
         d = decide(receipt(amount=60_000_000), policy(floor=100), now=NOW)
         self.assertEqual(len(d.reasons), 2)
 
-    def test_malformed_transaction_escalates_instead_of_crashing(self):
-        # Fixed 2026-10-02: a transaction missing a key, wrong types, or a
-        # negative amount used to reach tx["amount_minor"] / Money.from_dict
-        # unguarded and raise (KeyError / TypeError / ValueError) instead of
-        # producing a decision. decide() must never raise on caller-controlled
-        # input. Each receipt is built with the bad transaction baked in from
-        # the start (issue_receipt does not validate its shape), so its `id`
+    def test_malformed_transaction_is_denied_instead_of_crashing(self):
+        # A transaction missing a key, of the wrong type, or negative used to
+        # reach tx["amount_minor"] / Money.from_dict unguarded and raise
+        # (KeyError / TypeError / ValueError) instead of producing a decision.
+        # decide() must never raise on caller-controlled input, and a present
+        # transaction that is not real money is a DENY (the guard that landed on
+        # main in #33), not an ESCALATE: a human cannot review a figure that is
+        # not a figure. Each receipt is built with the bad transaction baked in
+        # from the start (issue_receipt does not validate its shape), so its `id`
         # genuinely matches its contents and the malformed-shape code path is
         # the one actually reached, not an early "id does not match" denial.
         for bad_tx in (
@@ -127,7 +129,7 @@ class DecideTest(unittest.TestCase):
                 transaction=bad_tx, issued_at=NOW,
             )
             d = decide(forged, policy(), now=NOW)  # must not raise
-            self.assertEqual(d.outcome, Outcome.ESCALATE, bad_tx)
+            self.assertEqual(d.outcome, Outcome.DENY, bad_tx)
             self.assertTrue(any("malformed" in x for x in d.reasons), (bad_tx, d.reasons))
 
 

@@ -19,12 +19,16 @@ Reachable unauthenticated through `POST /v1/decide` (open by design — it
 computes no authority) with any self-signed receipt and a caller-chosen
 `trusted_issuers`; a crash is a crash regardless of what the call could have
 authorized. Fixed by routing the transaction through `Money.from_dict`
-(already-validated construction) inside a `try/except`, turning any
-malformed shape into an `ESCALATE`-contributing reason instead of an
-exception — reusing `Money`'s own validation rather than re-implementing a
-subset of it by hand, so the two can't drift. `spend.py`'s
-`Money.from_dict(receipt["transaction"])` was already relying on `decide()`
-having validated this; that reliance is now actually true.
+(already-validated construction) inside a `try/except` — reusing `Money`'s own
+validation rather than re-implementing a subset of it by hand, so the two can't
+drift. This branch first made a malformed shape an `ESCALATE` reason; `main`
+(#33, which found the same crash from the conformance corpus) independently
+made it a `DENY` earlier in `decide()`, and that stricter outcome is the one in
+force: a human cannot usefully review a figure that is not a figure. The test
+here now expects `DENY`. The `try/except` in the later amount check is
+therefore only a second line of defence that malformed input never reaches.
+`spend.py`'s `Money.from_dict(receipt["transaction"])` was already relying on
+`decide()` having validated this; that reliance is now actually true.
 
 **(b) `DILIGENCEOS_RECEIPT_TTL_SECONDS=0` silently disabled expiry.**
 `if expires is None and ttl_seconds:` treated `0` the same as "no TTL
