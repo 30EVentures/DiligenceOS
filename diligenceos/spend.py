@@ -32,7 +32,7 @@ def try_spend(
     if decision.outcome is not Outcome.ALLOW:
         return SpendResult(decision, spent, remaining)
 
-    amount = Money.from_dict(receipt["transaction"])  # decide() guarantees it is present
+    amount = Money.from_dict(receipt["transaction"])  # decide() only returns ALLOW once this already succeeded
     if store.spend_entry(budget_id, receipt["id"]) is not None:
         return SpendResult(decision, spent, remaining, already_committed=True)
 

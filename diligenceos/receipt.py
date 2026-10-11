@@ -67,7 +67,10 @@ def issue_receipt(
     wire = verdict_result_to_dict(result)
     issued = issued_at or _now()
     expires = wire["expires"]
-    if expires is None and ttl_seconds:
+    # `is not None`, not truthiness: ttl_seconds=0 is a real, deliberate TTL
+    # (expires immediately), not "no TTL requested" — a falsy-truthy check
+    # here previously made 0 silently disable expiry entirely.
+    if expires is None and ttl_seconds is not None:
         expires = (datetime.fromisoformat(issued) + timedelta(seconds=ttl_seconds)).isoformat()
     body = {
         "schema": SCHEMA,

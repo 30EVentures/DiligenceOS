@@ -124,12 +124,18 @@ def decide(
         )
     if not tx:
         reasons.append("receipt carries no transaction, so the amount cannot be checked")
-    elif tx["currency"] != policy.max_amount.currency:
-        reasons.append(f"currency {tx['currency']} differs from policy {policy.max_amount.currency}")
-    elif tx["amount_minor"] > policy.max_amount.amount_minor:
-        reasons.append(
-            f"amount {tx['amount_minor']} exceeds the cap {policy.max_amount.amount_minor}"
-        )
+    else:
+        try:
+            amount = Money.from_dict(tx)  # reuses Money's own shape/range validation
+        except (KeyError, TypeError, ValueError) as exc:
+            reasons.append(f"receipt's transaction is malformed, so the amount cannot be checked: {exc}")
+        else:
+            if amount.currency != policy.max_amount.currency:
+                reasons.append(f"currency {amount.currency} differs from policy {policy.max_amount.currency}")
+            elif amount.amount_minor > policy.max_amount.amount_minor:
+                reasons.append(
+                    f"amount {amount.amount_minor} exceeds the cap {policy.max_amount.amount_minor}"
+                )
     if check.expired:
         reasons.append("receipt has expired; run a fresh check")
 
