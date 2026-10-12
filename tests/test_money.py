@@ -14,6 +14,14 @@ class MoneyTest(unittest.TestCase):
             with self.assertRaises(ValueError, msg=args):
                 Money(*args)
 
+    def test_the_upper_bound_is_two_to_the_53_minus_1(self):
+        from diligenceos.types import MAX_AMOUNT_MINOR
+        self.assertEqual(MAX_AMOUNT_MINOR, 9007199254740991)
+        self.assertEqual(Money(MAX_AMOUNT_MINOR, "USD").amount_minor, 9007199254740991)
+        for amount in (MAX_AMOUNT_MINOR + 1, 2**63 - 1, 2**64, 2**200):
+            with self.assertRaises(ValueError, msg=amount):
+                Money(amount, "USD")
+
 
 if __name__ == "__main__":
     unittest.main()

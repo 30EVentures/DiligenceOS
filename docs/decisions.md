@@ -740,3 +740,29 @@ Cross-check: the open `conformance-kit` runner (a pinned clone, invoked directly
 `node <clone>/src/cli.mjs`, never via a bin symlink) runs the same corpus against the
 adapter: it executes all 246 cases and agrees with all but the known failures.
 Nothing of the kit is in this repo and it is not part of the test suite.
+
+## 2026-10-12 — Money is at most 2^53 - 1 minor units
+
+The owner chose the bound left open on 2026-10-07: **2^53 - 1 (9,007,199,254,740,991)**,
+not 2^63 - 1. Reason: it is the largest integer every JSON implementation reads exactly,
+so a canonical-JSON amount, a signed receipt and a conformance case mean the same thing in
+Python, JS and Go. 2^63 - 1 would be safe for huge settlements but silently loses precision
+in JS, and a signed number that two verifiers read differently is worse than a lower cap.
+The cost: a single amount above about 90 trillion units of the major currency (for a
+two-decimal currency) is refused. Nothing in the pilot approaches that.
+
+Where it lives: `types.MAX_AMOUNT_MINOR`, enforced in `Money.__post_init__`, so every path
+that builds money (receipt transaction, policy cap, spend, delegation policy, verdict
+request) gets it, and every caller already turns the `ValueError` into its usual refusal.
+Cumulative spend is a sum of amounts held at or below a cap that is itself within the bound,
+and Python ints do not overflow, so no second check.
+
+The three `known_failure` markers from 2026-10-07 (`mf-money-beyond-int64`,
+`mf-money-astronomical`, `mf-request-transaction-beyond-int64`) are gone; those cases are
+now refused like any other bad amount. Three cases were added: 2^53 as money, 2^53 in a
+verdict request, and 2^53 as a policy cap (249 cases in all). The corpus was regenerated
+with `conformance/build_diligenceos_1.py`, not edited by hand; the one remaining
+`known_failure` is the lone-surrogate case. A receipt already issued with an amount above
+the bound (none exist outside tests) now fails verification as malformed money.
+Tests: `test_money`, `test_api.MoneyBoundTest`, `test_policy.MalformedTransactionTest`, and
+the corpus runner.
