@@ -1383,6 +1383,39 @@
      }
     },
     {
+     "id": "pn-cap-above-bound",
+     "set": "policy-narrowing",
+     "note": "A cap of 2^53, one past the largest safe integer.",
+     "input": {
+      "parent": {
+       "max_amount": {
+        "amount_minor": 100000,
+        "currency": "USD"
+       },
+       "acceptable_verdicts": [
+        "PROCEED"
+       ],
+       "min_trust_score": 70
+      },
+      "child": {
+       "max_amount": {
+        "amount_minor": 9007199254740992,
+        "currency": "USD"
+       },
+       "acceptable_verdicts": [
+        "PROCEED"
+       ],
+       "min_trust_score": 70
+      }
+     },
+     "expect": {
+      "valid": false,
+      "codes": [
+       "policy-malformed"
+      ]
+     }
+    },
+    {
      "id": "pn-cap-negative",
      "set": "policy-narrowing",
      "note": "Negative cap.",
@@ -7598,6 +7631,24 @@
      }
     },
     {
+     "id": "mf-money-one-past-safe-integer",
+     "set": "malformed",
+     "note": "Money with 2^53, one past the largest safe integer.",
+     "input": {
+      "amount_minor": 9007199254740992,
+      "currency": "USD"
+     },
+     "context": {
+      "op": "money"
+     },
+     "expect": {
+      "valid": false,
+      "codes": [
+       "malformed-money"
+      ]
+     }
+    },
+    {
      "id": "mf-money-beyond-int64",
      "set": "malformed",
      "note": "Money with 2^64: beyond any 64-bit integer.",
@@ -7613,8 +7664,7 @@
       "codes": [
        "malformed-money"
       ]
-     },
-     "known_failure": "Money has no upper bound: amounts beyond 64 bits are accepted, so an amount that no int64 system can hold passes. Open design decision (which bound: 2^53-1 for JSON interop, or 2^63-1), not a clear-cut bug; see decisions.md 2026-10-07."
+     }
     },
     {
      "id": "mf-money-astronomical",
@@ -7632,8 +7682,7 @@
       "codes": [
        "malformed-money"
       ]
-     },
-     "known_failure": "Money has no upper bound: amounts beyond 64 bits are accepted, so an amount that no int64 system can hold passes. Open design decision (which bound: 2^53-1 for JSON interop, or 2^63-1), not a clear-cut bug; see decisions.md 2026-10-07."
+     }
     },
     {
      "id": "mf-money-currency-lowercase",
@@ -9061,6 +9110,31 @@
      }
     },
     {
+     "id": "mf-request-transaction-one-past-safe-integer",
+     "set": "malformed",
+     "note": "A verdict request with an amount of 2^53, one past the bound.",
+     "input": {
+      "subject": {
+       "name": "Acme Ltd",
+       "registration_id": "R1"
+      },
+      "transaction": {
+       "amount_minor": 9007199254740992,
+       "currency": "USD"
+      }
+     },
+     "context": {
+      "op": "verdict-request"
+     },
+     "expect": {
+      "valid": false,
+      "codes": [
+       "invalid_request",
+       "transaction.amount_minor"
+      ]
+     }
+    },
+    {
      "id": "mf-request-transaction-beyond-int64",
      "set": "malformed",
      "note": "A verdict request with an amount beyond 64 bits.",
@@ -9083,8 +9157,7 @@
        "invalid_request",
        "transaction.amount_minor"
       ]
-     },
-     "known_failure": "Money has no upper bound: amounts beyond 64 bits are accepted, so an amount that no int64 system can hold passes. Open design decision (which bound: 2^53-1 for JSON interop, or 2^63-1), not a clear-cut bug; see decisions.md 2026-10-07."
+     }
     },
     {
      "id": "mf-request-body-array",

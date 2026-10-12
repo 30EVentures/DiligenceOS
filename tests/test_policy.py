@@ -193,6 +193,7 @@ class MalformedTransactionTest(unittest.TestCase):
     def test_junk_transactions_are_denied(self):
         for tx in ({"amount_minor": 5}, {"amount_minor": 12.5, "currency": "USD"}, {"amount_minor": "5", "currency": "USD"},
                    {"amount_minor": -5, "currency": "USD"}, {"amount_minor": True, "currency": "USD"},
+                   {"amount_minor": 2**53, "currency": "USD"},
                    {"amount_minor": 5, "currency": "usd"}, {"amount_minor": 5, "currency": "U\u0000D"},
                    [5, "USD"], "5 USD", 7):
             signer, r = self.forged(tx)

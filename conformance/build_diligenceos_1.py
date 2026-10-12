@@ -123,10 +123,6 @@ def rehash(entry):
 
 # ── cases ───────────────────────────────────────────────────────────────────
 
-BOUND = (
-    "Money has no upper bound: amounts beyond 64 bits are accepted, so an amount that no int64 system can hold "
-    "passes. Open design decision (which bound: 2^53-1 for JSON interop, or 2^63-1), not a clear-cut bug; see decisions.md 2026-10-07."
-)
 SURROGATE_AUTH = (
     "A lone surrogate in an authenticated route's body raises before the signature is checked (a 500, not a 401). "
     "Inside the auth path, which this work was told not to touch; see decisions.md 2026-10-07."
@@ -216,6 +212,7 @@ case(s, "pn-currency-changed", "Same cap, different currency.", {"parent": pol()
 case(s, "pn-red-flag-acceptable", "RED_FLAG can never be acceptable.", {"parent": pol(), "child": pol(verdicts=("RED_FLAG",))}, no("policy-malformed"))
 case(s, "pn-floor-over-100", "Trust floor above 100.", {"parent": pol(), "child": pol(floor=101)}, no("policy-malformed"))
 case(s, "pn-cap-float", "Float money in the cap.", {"parent": pol(), "child": pol(99999.5)}, no("policy-malformed"))
+case(s, "pn-cap-above-bound", "A cap of 2^53, one past the largest safe integer.", {"parent": pol(), "child": pol(9007199254740992)}, no("policy-malformed"))
 case(s, "pn-cap-negative", "Negative cap.", {"parent": pol(), "child": pol(-1)}, no("policy-malformed"))
 case(s, "pn-floor-missing", "Child has no trust floor.", {"parent": pol(), "child": without(pol(), "min_trust_score")}, no("policy-malformed"))
 case(s, "pn-floor-string", "Trust floor as the string '70'.", {"parent": pol(), "child": edit(pol(), min_trust_score="70")}, no("policy-malformed"))
@@ -440,6 +437,7 @@ case(s, "mf-money-largest-safe-integer", "2^53-1, the largest integer every JSON
 for cid, note, value in (
     ("float", "a fractional amount", M(100.5)), ("boolean", "true as an amount", M(True)), ("string", "'100' as an amount", M("100")),
     ("null", "null amount", M(None)), ("negative", "a negative amount", M(-1)), ("list", "a list as an amount", M([1])),
+    ("one-past-safe-integer", "2^53, one past the largest safe integer", M(9007199254740992)),
     ("beyond-int64", "2^64: beyond any 64-bit integer", M(18446744073709551616)),
     ("astronomical", "2^200", M(2 ** 200)),
     ("currency-lowercase", "usd", M(1, "usd")), ("currency-short", "US", M(1, "US")), ("currency-long", "USDX", M(1, "USDX")),
@@ -514,6 +512,7 @@ for cid, note, value, field in (
     ("transaction-currency-lowercase", "lowercase currency", {**sub(), "transaction": M(1, "usd")}, "transaction.currency"),
     ("transaction-currency-nul", "a NUL in the currency", {**sub(), "transaction": M(1, "U\u0000D")}, "transaction.currency"),
     ("transaction-currency-null", "null currency", {**sub(), "transaction": M(1, None)}, "transaction.currency"),
+    ("transaction-one-past-safe-integer", "an amount of 2^53, one past the bound", {**sub(), "transaction": M(9007199254740992)}, "transaction.amount_minor"),
     ("transaction-beyond-int64", "an amount beyond 64 bits", {**sub(), "transaction": M(18446744073709551616)}, "transaction.amount_minor"),
 ):
     case(s, "mf-request-" + cid, f"A verdict request with {note}.", value, no("invalid_request", field), vr)
@@ -522,9 +521,6 @@ for cid, note, value in (("array", "a JSON array", []), ("null", "null", None), 
 
 
 KNOWN_FAILURES = {
-    "mf-money-beyond-int64": BOUND,
-    "mf-money-astronomical": BOUND,
-    "mf-request-transaction-beyond-int64": BOUND,
     "api-spend-lone-surrogate-unauthenticated": SURROGATE_AUTH,
 }
 

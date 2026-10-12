@@ -17,9 +17,15 @@ class CheckStatus(Enum):
     FLAG = "flag"
 
 
+MAX_AMOUNT_MINOR = 2**53 - 1
+
+
 @dataclass(frozen=True)
 class Money:
-    """Integer minor units (cents, pence) + currency. Never a float."""
+    """Integer minor units (cents, pence) + currency. Never a float.
+
+    At most MAX_AMOUNT_MINOR (2^53 - 1), the largest integer every JSON
+    implementation reads exactly; see docs/decisions.md, 2026-10-12."""
 
     amount_minor: int
     currency: str
@@ -29,6 +35,8 @@ class Money:
             raise ValueError("amount_minor must be an integer count of minor units")
         if self.amount_minor < 0:
             raise ValueError("amount_minor must not be negative")
+        if self.amount_minor > MAX_AMOUNT_MINOR:
+            raise ValueError(f"amount_minor must not exceed {MAX_AMOUNT_MINOR} (2^53 - 1)")
         if not (
             isinstance(self.currency, str)
             and len(self.currency) == 3

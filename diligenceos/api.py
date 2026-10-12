@@ -75,7 +75,7 @@ def _capabilities():
                 "request": {
                     "subject": {"name": "string", "registration_id": "string"},
                     "document_text": "string, optional",
-                    "transaction": {"amount_minor": "integer minor units, never a float", "currency": "3-letter uppercase code"},
+                    "transaction": {"amount_minor": "integer minor units, never a float; 0 to 9007199254740991 (2^53-1) inclusive", "currency": "3-letter uppercase code"},
                 },
                 "response": "receipt (schema above)",
             },
