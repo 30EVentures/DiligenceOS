@@ -1,8 +1,8 @@
 # Proposal: make the signed log, not `store.json`, the source of revocation enforcement
 
-Status: **proposal only, no code.** It changes what the server enforces after a
-restart, so it waits for the owner's go-ahead. Audit item: `mine-diligenceos.md`
-§10 item 9.
+Status: **option 2 (union) approved and implemented** on branch
+`fix-revocation-log-union`; see `docs/decisions.md`, 2026-10-02. Option 1 and the
+open questions below stay open. Audit item: `mine-diligenceos.md` §10 item 9.
 
 ## The problem (reproduced against `main` at 4205487)
 

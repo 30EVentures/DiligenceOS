@@ -10,6 +10,7 @@ from diligenceos.engine import assemble_verdict
 from diligenceos.gate import EscrowGate, release_if_allowed
 from diligenceos.policy import Outcome, Policy, decide
 from diligenceos.receipt import issue_receipt, verify_receipt
+from diligenceos.receipt_log import LogCorruptError
 from diligenceos.spend import try_spend
 from diligenceos.store import Store
 from diligenceos.types import CheckStatus, Finding, Money, Verdict
@@ -89,6 +90,98 @@ class RevocationTest(unittest.TestCase):
             self.assertEqual(s.to_dict(), before)
             reloaded = Store.load_or_seed(path)
             self.assertEqual(reloaded.revocations["sha256:" + "a" * 64]["reason"], "first")
+
+
+class RevocationCrashWindowTest(unittest.TestCase):
+    """revoke() appends to the signed log first and saves the index second. A crash
+    between the two used to leave a revocation that was logged but, after the
+    restart, not enforced (fixed 2026-10-02: the index is reconciled with the log)."""
+
+    def setUp(self):
+        self._tmp = tempfile.TemporaryDirectory()
+        self.addCleanup(self._tmp.cleanup)
+        self.path = Path(self._tmp.name) / "store.json"
+        self.store = Store.load_or_seed(self.path)
+        self.r = issue_receipt(
+            subject={"name": "S"}, inputs={}, result=assemble_verdict(CLEAN),
+            transaction={"amount_minor": 60, "currency": "USD"}, issued_at=T0, signer=self.store.signer,
+        )
+        self.store.log.append(self.r, signer=self.store.signer)
+
+    def crash_after_log_append(self, target=None, reason="compromised"):
+        """What a process killed inside revoke() leaves behind: the signed log entry
+        is on disk, the index in store.json never heard about it."""
+        self.store.log.append_revocation(target or self.r["id"], reason, "ed25519:op", signer=self.store.signer)
+        return Store.load_or_seed(self.path)  # the restarted server
+
+    def test_without_reconciliation_the_gap_is_real(self):
+        restarted = self.crash_after_log_append()
+        self.assertIn(self.r["id"], {e["target_id"] for e in restarted.log.revocation_entries()})
+        self.assertNotIn(self.r["id"], restarted._revocations)  # the raw index really lacks it
+
+    def test_a_logged_revocation_is_enforced_after_the_restart(self):
+        restarted = self.crash_after_log_append()
+        self.assertEqual(restarted.revocations[self.r["id"]]["reason"], "compromised")
+        self.assertEqual(restarted.revocations[self.r["id"]]["revoked_by"], "ed25519:op")
+        d = decide(self.r, policy(), now=T0, revocations=restarted.revocations,
+                   trusted_issuers=[restarted.signer.issuer_id])
+        self.assertEqual(d.outcome, Outcome.DENY)
+
+    def test_a_revoked_receipt_cannot_be_spent_after_the_restart(self):
+        restarted = self.crash_after_log_append()
+        body = as_operator(restarted, "/v1/spend", {"budget_id": "b", "receipt": self.r, "policy": policy().to_dict()})
+        status, _, out = api.handle("POST", "/v1/spend", json.dumps(body).encode(), restarted)
+        self.assertEqual(status, 200)
+        self.assertEqual(json.loads(out)["decision"], "DENY")
+        self.assertIn("revoked", json.loads(out)["reasons"][0])
+
+    def test_a_logged_delegation_revocation_cuts_off_the_chain_after_the_restart(self):
+        from diligenceos.delegation import extend_chain
+        from diligenceos.signing import Signer
+        agent = Signer.generate()
+        chain = extend_chain([], self.store.signer, delegate=agent.issuer_id, scopes=["spend"],
+                             expires="2099-01-01T00:00:00+00:00")
+        restarted = self.crash_after_log_append(target=chain[0]["id"])
+        from diligenceos.delegation import verify_chain
+        checked = verify_chain(chain, root_issuers=[restarted.signer.issuer_id], now=T0,
+                               revocations=restarted.revocations)
+        self.assertFalse(checked.valid)
+        self.assertTrue(any("revoked" in e for e in checked.errors))
+
+    def test_the_index_on_disk_is_repaired(self):
+        restarted = self.crash_after_log_append()
+        restarted.revocations  # reconciles and saves
+        on_disk = json.loads(self.path.read_text())
+        self.assertIn(self.r["id"], on_disk["revocations"])
+
+    def test_revoking_again_after_the_crash_does_not_log_a_second_entry(self):
+        restarted = self.crash_after_log_append()
+        before = len(restarted.log.entries)
+        again = restarted.revoke(self.r["id"], "second attempt")
+        self.assertEqual(again["reason"], "compromised")  # the first reason stands
+        self.assertEqual(len(restarted.log.entries), before)
+
+    def test_index_only_entries_are_kept_not_dropped(self):
+        # a union, never a replacement: an entry the log never saw stays enforced
+        self.store._revocations["sha256:" + "b" * 64] = {"reason": "legacy", "revoked_at": T0}
+        self.store._maybe_save()
+        restarted = Store.load_or_seed(self.path)
+        self.assertEqual(restarted.revocations["sha256:" + "b" * 64]["reason"], "legacy")
+
+    def test_a_normal_revoke_is_unchanged(self):
+        self.store.revoke(self.r["id"], "normal")
+        entries = self.store.log.revocation_entries()
+        self.assertEqual([e["target_id"] for e in entries], [self.r["id"]])
+        self.assertEqual(Store.load_or_seed(self.path).revocations[self.r["id"]]["reason"], "normal")
+
+    def test_a_corrupt_log_falls_back_to_the_index_and_revoke_fails_closed(self):
+        self.store.revoke("sha256:" + "c" * 64, "already indexed")
+        log_file = self.path.with_name("receipts.jsonl")
+        log_file.write_text(log_file.read_text() + "this is not json\n")
+        restarted = Store.load_or_seed(self.path)
+        self.assertIn("sha256:" + "c" * 64, restarted.revocations)  # no raise; the index still enforces
+        with self.assertRaises(LogCorruptError):  # but nothing new is recorded without a usable log
+            restarted.revoke("sha256:" + "d" * 64, "x")
 
 
 class SpendTest(unittest.TestCase):
