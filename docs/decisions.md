@@ -766,3 +766,36 @@ with `conformance/build_diligenceos_1.py`, not edited by hand; the one remaining
 the bound (none exist outside tests) now fails verification as malformed money.
 Tests: `test_money`, `test_api.MoneyBoundTest`, `test_policy.MalformedTransactionTest`, and
 the corpus runner.
+
+## 2026-10-12 — A payer's check for a PROCEED receipt, as a library function
+
+`diligenceos/payment_check.py`: `verify_receipt_for_payment(receipt, counterparty,
+amount_minor, asset_ref, max_age, *, now, trusted_issuers, revocations, policy, assets)`
+returns ALLOW / ESCALATE / DENY with a closed `Reason` code. Spec:
+`specs/payment-receipt-check/spec.md`. No endpoint, manifest or receipt-format change; the
+route table is pinned by a test.
+
+Choices worth recording:
+- **Fail closed where `decide()` does not.** `decide()` skips the expiry check when `now` is
+  omitted, ESCALATEs an expired receipt, accepts `expires: null`, and treats
+  `trusted_issuers=None` as "no trust check". For a payer those are all DENY here, and `now`
+  has no default (no ambient clock).
+- **DENY vs ESCALATE.** Integrity, identity and freshness failures are DENY (approving by hand
+  cannot fix a forged, revoked, expired or mismatched receipt). The payer's own limits (cap,
+  acceptable verdicts, trust floor) are ESCALATE, as in `decide()`; `test_agrees_with_decide`
+  pins that. Owner may prefer a hard DENY above the cap; it is one line.
+- **Exactness.** The receipt must name the counterparty (name and registration id,
+  byte-for-byte) and the exact amount and currency. A smaller or larger transfer needs its own
+  verdict, as `release_if_allowed` already requires.
+- **Units are the caller's.** `amount_minor` is in the receipt currency's minor units;
+  `assets` maps each accepted asset_ref to that currency. A 6-decimal token amount is never
+  guessed into cents.
+- **A revocation view of `None` is "unknown", not "none".** `revocations_for_payment(store)`
+  returns `None` if the signed log cannot be read (the server's own `Store.revocations` falls
+  back to the index, which is right for serving but not for moving money).
+- **The result never echoes caller or receipt text**: only codes and a digest-shaped receipt id.
+
+Not done, said plainly: no destination-address binding (a receipt names a subject, not an
+account), no consumption of the receipt (a caller's atomic spent-set), no revocation fetching
+or freshness of the revocation view. See `docs/design/proceed-gate-and-mcp.md` on the design
+branch for the `spend-auth` proposal that would close the first two.
