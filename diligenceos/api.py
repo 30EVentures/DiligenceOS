@@ -25,7 +25,7 @@ MAX_BODY_BYTES = 1024 * 1024
 DEFAULT_TTL_SECONDS = 24 * 60 * 60
 DEFAULT_LOG_PAGE = 100  # GET /v1/log/entries: entries per page when `limit` is omitted
 MAX_LOG_PAGE = 500      # ...and the most a caller may ask for; more is a 400, not a clamp
-_RECEIPT_ID = re.compile(r"^sha256:[0-9a-f]{64}$")
+_RECEIPT_ID = re.compile(r"sha256:[0-9a-f]{64}")  # used with fullmatch: "$" would also accept a trailing newline
 CATEGORIES = ("sanctions", "identity", "track_record", "document_scan")
 
 _ROUTES = {
@@ -232,7 +232,7 @@ def _server_trusted_issuers(store: Store) -> list[str]:
     return [store.signer.issuer_id]
 
 
-_DIGITS = re.compile(r"^[0-9]{1,15}$")  # ASCII only: str.isdigit() would accept other scripts
+_DIGITS = re.compile(r"[0-9]{1,15}")  # ASCII only: str.isdigit() would accept other scripts
 
 
 def _page_params(query: str):
@@ -249,7 +249,7 @@ def _page_params(query: str):
     for name, found in params.items():
         if len(found) != 1:
             return None, None, _error(400, "invalid_request", f"{name} may be given only once", name)
-        if not _DIGITS.match(found[0]):
+        if not _DIGITS.fullmatch(found[0]):
             return None, None, _error(400, "invalid_request", f"{name} must be a non-negative integer", name)
         values[name] = int(found[0])
     limit = values.get("limit", DEFAULT_LOG_PAGE)
@@ -317,7 +317,7 @@ def _log_endpoint(path: str, body: bytes, store: Store, query: str = ""):
     if err:
         return err
     receipt_id = data.get("receipt_id") if isinstance(data, dict) else None
-    if not isinstance(receipt_id, str) or not _RECEIPT_ID.match(receipt_id):
+    if not isinstance(receipt_id, str) or not _RECEIPT_ID.fullmatch(receipt_id):
         return _error(400, "invalid_request", "receipt_id must look like sha256:<64 hex>", "receipt_id")
     entry = log.lookup(receipt_id)
     if entry is None:
@@ -582,7 +582,7 @@ def _revoke(body: bytes, store: Store):
                 "delegation_id",
             )
         target_id = data.get("delegation_id")
-        if not isinstance(target_id, str) or not _RECEIPT_ID.match(target_id):
+        if not isinstance(target_id, str) or not _RECEIPT_ID.fullmatch(target_id):
             return _error(400, "invalid_request", "delegation_id must look like sha256:<64 hex>", "delegation_id")
         key = "delegation_id"
     else:
@@ -593,7 +593,7 @@ def _revoke(body: bytes, store: Store):
                 "receipt_id",
             )
         target_id = data.get("receipt_id")
-        if not isinstance(target_id, str) or not _RECEIPT_ID.match(target_id):
+        if not isinstance(target_id, str) or not _RECEIPT_ID.fullmatch(target_id):
             return _error(400, "invalid_request", "receipt_id must look like sha256:<64 hex>", "receipt_id")
         key = "receipt_id"
 

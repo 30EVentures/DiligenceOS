@@ -92,6 +92,11 @@ class ReceiptLog:
             if errors:
                 raise LogCorruptError("receipt log failed verification: " + "; ".join(errors))
         receipts = [e for e in self._entries if e.get("kind", "receipt") == "receipt"]
+        for e in receipts:
+            # The chain check proves the entries are the ones that were written, not that they
+            # have the shape this class reads; a hash-valid entry without these is corruption.
+            if not all(isinstance(e.get(k), str) for k in ("receipt_id", "inputs_digest", "outcome_digest")):
+                raise LogCorruptError(f"receipt log entry {e.get('seq')!r} is not a well-formed receipt entry")
         self._by_receipt = {e["receipt_id"]: e for e in receipts}
         self._first_by_inputs: dict[str, dict] = {}
         for e in receipts:
