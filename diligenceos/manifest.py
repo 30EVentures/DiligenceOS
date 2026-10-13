@@ -85,7 +85,11 @@ def build_manifest(
                 "domain": auth.REQUEST_DOMAIN,
                 "message": "digest of {path, body without `auth`, issued_at, nonce}",
                 "signer": "auth.signer, which must be the operator (empty chain) or the last delegate of the chain",
-                "freshness": f"issued_at within {auth.MAX_SKEW_SECONDS}s of the server; nonce single-use",
+                "freshness": (
+                    f"issued_at within {auth.MAX_SKEW_SECONDS}s of the server; a nonce seen again within that window is refused, "
+                    "but nonces are held in server memory only, so a request replayed after a restart is not recognised"
+                ),
+                "not_covered": "the credential chain in `auth.chain` is not part of the signed message, nor is the audience (which server it is for)",
             },
             "log_entry": {
                 "hash": "entry_hash = digest of the entry without `entry_hash` and `signature`; prev_hash links entries; genesis prev_hash is " + receipt_log.GENESIS,

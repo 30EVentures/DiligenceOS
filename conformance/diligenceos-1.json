@@ -269,6 +269,97 @@
      }
     },
     {
+     "id": "rc-id-is-an-object",
+     "set": "receipt",
+     "note": "id is a JSON object (it cannot even be looked up in a revocation list).",
+     "input": {
+      "schema": "diligenceos.receipt/1",
+      "rules": "verdict-rules/1",
+      "subject": {
+       "name": "Subject 1",
+       "registration_id": "REG1"
+      },
+      "transaction": null,
+      "inputs_digest": "sha256:2bfd14f43d17fc7cea24e0917a8879b4b2f880b8baeec1b9d90fbaad655e71bd",
+      "verdict": "PROCEED",
+      "trust_score": 85,
+      "findings": [
+       {
+        "category": "sanctions",
+        "status": "pass",
+        "detail": null,
+        "evidence_url": null,
+        "evidence": []
+       }
+      ],
+      "issued_at": "2026-05-01T00:00:00+00:00",
+      "expires": "2026-07-01T00:00:00+00:00",
+      "issuer": "ed25519:8a88e3dd7409f195fd52db2d3cba5d72ca6709bf1d94121bf3748801b40f6f5c",
+      "id": {
+       "a": 1
+      },
+      "signature": "ed25519:6bbb9d162f3c6b38537a76deb1140eea97fd162bfd24595f9d6702820c4672df1b1a48193ecec8af0e25f0b96232a937a3a3d343cc40d69f5dc915ca34bd7906"
+     },
+     "context": {
+      "now": "2026-06-01T00:00:00+00:00",
+      "trusted_issuers": [
+       "ed25519:8a88e3dd7409f195fd52db2d3cba5d72ca6709bf1d94121bf3748801b40f6f5c"
+      ]
+     },
+     "expect": {
+      "valid": false,
+      "codes": [
+       "id-mismatch"
+      ]
+     }
+    },
+    {
+     "id": "rc-id-is-a-list",
+     "set": "receipt",
+     "note": "id is a JSON array.",
+     "input": {
+      "schema": "diligenceos.receipt/1",
+      "rules": "verdict-rules/1",
+      "subject": {
+       "name": "Subject 1",
+       "registration_id": "REG1"
+      },
+      "transaction": null,
+      "inputs_digest": "sha256:2bfd14f43d17fc7cea24e0917a8879b4b2f880b8baeec1b9d90fbaad655e71bd",
+      "verdict": "PROCEED",
+      "trust_score": 85,
+      "findings": [
+       {
+        "category": "sanctions",
+        "status": "pass",
+        "detail": null,
+        "evidence_url": null,
+        "evidence": []
+       }
+      ],
+      "issued_at": "2026-05-01T00:00:00+00:00",
+      "expires": "2026-07-01T00:00:00+00:00",
+      "issuer": "ed25519:8a88e3dd7409f195fd52db2d3cba5d72ca6709bf1d94121bf3748801b40f6f5c",
+      "id": [
+       1,
+       2
+      ],
+      "signature": "ed25519:6bbb9d162f3c6b38537a76deb1140eea97fd162bfd24595f9d6702820c4672df1b1a48193ecec8af0e25f0b96232a937a3a3d343cc40d69f5dc915ca34bd7906"
+     },
+     "context": {
+      "now": "2026-06-01T00:00:00+00:00",
+      "trusted_issuers": [
+       "ed25519:8a88e3dd7409f195fd52db2d3cba5d72ca6709bf1d94121bf3748801b40f6f5c"
+      ]
+     },
+     "expect": {
+      "valid": false,
+      "codes": [
+       "id-mismatch"
+      ]
+     }
+    },
+    {
      "id": "rc-verdict-edited",
      "set": "receipt",
      "note": "HOLD edited to PROCEED, id left stale.",

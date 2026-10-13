@@ -140,7 +140,7 @@ def _capabilities():
         "auth": {
             "envelope": {
                 "signer": "ed25519 id of the request key", "chain": "[delegation, ...] (empty = the operator)",
-                "issued_at": "iso8601, within 300s of the server", "nonce": "single-use string",
+                "issued_at": "iso8601, within 300s of the server", "nonce": "string; refused if seen again while the server runs (not remembered across a restart)",
                 "signature": "over {path, body without auth, issued_at, nonce}, domain diligenceos.request/1",
             },
             "delegation": "diligenceos.delegation/1: scopes, policy?, budget_id?, expires; each link may only narrow",
@@ -325,11 +325,18 @@ def _log_endpoint(path: str, body: bytes, store: Store, query: str = ""):
     return _json(200, {"entry": entry, "head_hash": log.head})
 
 
+MAX_TTL_SECONDS = 365 * 24 * 60 * 60
+
+
 def _ttl_seconds() -> int:
+    """DILIGENCEOS_RECEIPT_TTL_SECONDS, 0 to a year. Anything else (not a number, negative, or so
+    long that the receipt would outlive any freshness claim, or overflow a date) is the default:
+    a misconfiguration must not make every verdict a 500, nor quietly issue receipts valid for centuries."""
     try:
-        return int(os.environ.get("DILIGENCEOS_RECEIPT_TTL_SECONDS", DEFAULT_TTL_SECONDS))
+        ttl = int(os.environ.get("DILIGENCEOS_RECEIPT_TTL_SECONDS", DEFAULT_TTL_SECONDS))
     except ValueError:
         return DEFAULT_TTL_SECONDS
+    return ttl if 0 <= ttl <= MAX_TTL_SECONDS else DEFAULT_TTL_SECONDS
 
 
 def _now() -> str:

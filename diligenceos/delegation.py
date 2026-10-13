@@ -80,7 +80,7 @@ def verify_chain(chain, *, root_issuers, now: str, revocations=None) -> ChainRes
     policy: Policy | None = None
     try:
         now_dt = _parse_time(now)
-    except ValueError:
+    except (TypeError, ValueError):
         return ChainResult(False, ("now is not a timezone-aware ISO-8601 timestamp",))
 
     for i, d in enumerate(chain):

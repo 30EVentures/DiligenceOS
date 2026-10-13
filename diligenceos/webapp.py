@@ -254,11 +254,8 @@ def _read_body(environ) -> bytes:
     Content-Length that is not a non-negative integer (read(-1) would wait for the peer to close:
     one connection could hold this single-threaded server forever) or that is over the cap
     (checked from the header, so an oversize body is refused unread, not buffered)."""
-    raw = environ.get("CONTENT_LENGTH") or "0"
-    try:
-        length = int(raw) if raw.strip().isascii() and raw.strip().isdigit() else -1
-    except (ValueError, AttributeError):
-        length = -1
+    raw = str(environ.get("CONTENT_LENGTH") or "0").strip()
+    length = int(raw) if raw.isascii() and raw.isdigit() else -1
     if length < 0:
         raise _BadBody(400, "Content-Length must be a non-negative integer")
     if length > api.MAX_BODY_BYTES:

@@ -171,6 +171,8 @@ case(s, "rc-unsigned-offline", "Unsigned, no trust list: integrity only.", mk(No
 case(s, "rc-unsigned-with-trust-list", "Unsigned cannot satisfy a trust list.", mk(None), no("untrusted-issuer"), T)
 case(s, "rc-signature-removed", "Names an issuer but the signature was stripped.", without(good, "signature"), no("unsigned-but-names-issuer"), T)
 case(s, "rc-forged-id", "id replaced with an unrelated digest.", edit(good, id="sha256:" + "0" * 64), no("id-mismatch"), T)
+case(s, "rc-id-is-an-object", "id is a JSON object (it cannot even be looked up in a revocation list).", edit(good, id={"a": 1}), no("id-mismatch"), T)
+case(s, "rc-id-is-a-list", "id is a JSON array.", edit(good, id=[1, 2]), no("id-mismatch"), T)
 case(s, "rc-verdict-edited", "HOLD edited to PROCEED, id left stale.", edit(held, verdict="PROCEED"), no("id-mismatch"), T)
 case(s, "rc-verdict-replay-mismatch", "Attacker re-ids and re-signs HOLD as PROCEED; the findings still replay to HOLD.",
      reseal(held, ATT, verdict="PROCEED"), no("verdict-replay-mismatch"), {"now": NOW})
