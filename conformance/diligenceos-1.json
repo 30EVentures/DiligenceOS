@@ -4687,6 +4687,191 @@
      }
     },
     {
+     "id": "dg-issued-at-unreadable",
+     "set": "delegation-chain",
+     "note": "issued_at is not a timestamp.",
+     "input": [
+      {
+       "schema": "diligenceos.delegation/1",
+       "delegator": "ed25519:8a88e3dd7409f195fd52db2d3cba5d72ca6709bf1d94121bf3748801b40f6f5c",
+       "delegate": "ed25519:ca93ac1705187071d67b83c7ff0efe8108e8ec4530575d7726879333dbdabe7c",
+       "scopes": [
+        "spend"
+       ],
+       "policy": null,
+       "budget_id": null,
+       "issued_at": "never",
+       "expires": "2026-12-01T00:00:00+00:00",
+       "parent": null,
+       "id": "sha256:659399cb9b148b70c34b0100f6c49252f2358e2db3325b4f5cdab659510c5834",
+       "signature": "ed25519:c448a3b7b14e4b4cf3af0ca074414ed940ba520f5ae5032ef0a23b5554b0607ab1f978b97447f9b67edcd3bfe9deff30fc6dde0d2d833936bd0cf1335e158204"
+      }
+     ],
+     "context": {
+      "root_issuers": [
+       "ed25519:8a88e3dd7409f195fd52db2d3cba5d72ca6709bf1d94121bf3748801b40f6f5c"
+      ],
+      "now": "2026-06-01T00:00:00+00:00"
+     },
+     "expect": {
+      "valid": false,
+      "codes": [
+       "malformed-link"
+      ]
+     }
+    },
+    {
+     "id": "dg-issued-at-naive",
+     "set": "delegation-chain",
+     "note": "issued_at names no timezone.",
+     "input": [
+      {
+       "schema": "diligenceos.delegation/1",
+       "delegator": "ed25519:8a88e3dd7409f195fd52db2d3cba5d72ca6709bf1d94121bf3748801b40f6f5c",
+       "delegate": "ed25519:ca93ac1705187071d67b83c7ff0efe8108e8ec4530575d7726879333dbdabe7c",
+       "scopes": [
+        "spend"
+       ],
+       "policy": null,
+       "budget_id": null,
+       "issued_at": "2026-05-01T00:00:00",
+       "expires": "2026-12-01T00:00:00+00:00",
+       "parent": null,
+       "id": "sha256:59261a6fd5cd168ed4e8b35b3110a455fabf88ae042b88e4ac9ec0b30badc970",
+       "signature": "ed25519:f41fb34d3f2c042b95dceb92875fb364f50cf20ce4a7c3c7436ed37e57bb96d05b7e62c9e9d503a4c2ec58fc50f3204885a0de2d4e1c0a3718dc43efb1a08b01"
+      }
+     ],
+     "context": {
+      "root_issuers": [
+       "ed25519:8a88e3dd7409f195fd52db2d3cba5d72ca6709bf1d94121bf3748801b40f6f5c"
+      ],
+      "now": "2026-06-01T00:00:00+00:00"
+     },
+     "expect": {
+      "valid": false,
+      "codes": [
+       "malformed-link"
+      ]
+     }
+    },
+    {
+     "id": "dg-issued-in-the-future",
+     "set": "delegation-chain",
+     "note": "Issued a year after the verifier's clock: not valid yet.",
+     "input": [
+      {
+       "schema": "diligenceos.delegation/1",
+       "delegator": "ed25519:8a88e3dd7409f195fd52db2d3cba5d72ca6709bf1d94121bf3748801b40f6f5c",
+       "delegate": "ed25519:ca93ac1705187071d67b83c7ff0efe8108e8ec4530575d7726879333dbdabe7c",
+       "scopes": [
+        "spend"
+       ],
+       "policy": null,
+       "budget_id": null,
+       "issued_at": "2027-06-01T00:00:00+00:00",
+       "expires": "2026-12-01T00:00:00+00:00",
+       "parent": null,
+       "id": "sha256:1e17b9aee27de57f733ed1d188ffbda3a8b5b21730ec74b07f0cad40a4c43de8",
+       "signature": "ed25519:deea21aebee898ce95d57ae9220a48ed40436f4ea7a9603558fc9ad3da4c0a8945d1895202007858170dcd5d37327eef08cf6fe41f1b9e90bcd3140bc3e51b0a"
+      }
+     ],
+     "context": {
+      "root_issuers": [
+       "ed25519:8a88e3dd7409f195fd52db2d3cba5d72ca6709bf1d94121bf3748801b40f6f5c"
+      ],
+      "now": "2026-06-01T00:00:00+00:00"
+     },
+     "expect": {
+      "valid": false,
+      "codes": [
+       "not-valid-yet"
+      ]
+     }
+    },
+    {
+     "id": "dg-issued-after-expiry",
+     "set": "delegation-chain",
+     "note": "issued_at is later than its own expiry.",
+     "input": [
+      {
+       "schema": "diligenceos.delegation/1",
+       "delegator": "ed25519:8a88e3dd7409f195fd52db2d3cba5d72ca6709bf1d94121bf3748801b40f6f5c",
+       "delegate": "ed25519:ca93ac1705187071d67b83c7ff0efe8108e8ec4530575d7726879333dbdabe7c",
+       "scopes": [
+        "spend"
+       ],
+       "policy": null,
+       "budget_id": null,
+       "issued_at": "2027-01-01T00:00:00+00:00",
+       "expires": "2026-12-01T00:00:00+00:00",
+       "parent": null,
+       "id": "sha256:77748c6c62ec423310f085e86ee6e0e96e26a1cee8e040590ce738f16df8ae3e",
+       "signature": "ed25519:2b699e01ba30713059b0519fb152faa58521d9ba4b1ec5e5c6b10442de305fd9f6760a99daf93807a4c9bb3e723838552ac26e17a7e7ed005847e1e78137ef0d"
+      }
+     ],
+     "context": {
+      "root_issuers": [
+       "ed25519:8a88e3dd7409f195fd52db2d3cba5d72ca6709bf1d94121bf3748801b40f6f5c"
+      ],
+      "now": "2026-06-01T00:00:00+00:00"
+     },
+     "expect": {
+      "valid": false,
+      "codes": [
+       "issued-after-expiry"
+      ]
+     }
+    },
+    {
+     "id": "dg-child-dated-before-parent",
+     "set": "delegation-chain",
+     "note": "The child is dated a month before its parent.",
+     "input": [
+      {
+       "schema": "diligenceos.delegation/1",
+       "delegator": "ed25519:8a88e3dd7409f195fd52db2d3cba5d72ca6709bf1d94121bf3748801b40f6f5c",
+       "delegate": "ed25519:ca93ac1705187071d67b83c7ff0efe8108e8ec4530575d7726879333dbdabe7c",
+       "scopes": [
+        "spend"
+       ],
+       "policy": null,
+       "budget_id": null,
+       "issued_at": "2026-05-01T00:00:00+00:00",
+       "expires": "2026-12-01T00:00:00+00:00",
+       "parent": null,
+       "id": "sha256:ff8efa3223ca685abd1fcba67742d5bce92ba517c8be7edf9755fa3cebcb2628",
+       "signature": "ed25519:4b9df6aae50654c923e852655584e33b87d8791a093311e7f99b747a006cb23707ee2bbd48e7d4e7fac3a8f54779510ae51e370beb8e2ebbce5ed1aee6d8a70f"
+      },
+      {
+       "schema": "diligenceos.delegation/1",
+       "delegator": "ed25519:ca93ac1705187071d67b83c7ff0efe8108e8ec4530575d7726879333dbdabe7c",
+       "delegate": "ed25519:6e7a1cdd29b0b78fd13af4c5598feff4ef2a97166e3ca6f2e4fbfccd80505bf1",
+       "scopes": [
+        "spend"
+       ],
+       "policy": null,
+       "budget_id": null,
+       "issued_at": "2026-03-01T00:00:00+00:00",
+       "expires": "2026-11-01T00:00:00+00:00",
+       "parent": "sha256:ff8efa3223ca685abd1fcba67742d5bce92ba517c8be7edf9755fa3cebcb2628",
+       "id": "sha256:e040b2702d0ce6d57023bb2aa68cc508fb55380b6cfeda1a1264a5cc5b5bf92e",
+       "signature": "ed25519:ce5cbebb9befe9120c2327899da17e131b1d51d975011f1b1bf43d5dc2b53d1e61d47fb10c2b1da8a78765996e87b41937bd0cddcb1b7bdf9ca01e66d8234a02"
+      }
+     ],
+     "context": {
+      "root_issuers": [
+       "ed25519:8a88e3dd7409f195fd52db2d3cba5d72ca6709bf1d94121bf3748801b40f6f5c"
+      ],
+      "now": "2026-06-01T00:00:00+00:00"
+     },
+     "expect": {
+      "valid": false,
+      "codes": [
+       "dated-before-parent"
+      ]
+     }
+    },
+    {
      "id": "dg-link-expired",
      "set": "delegation-chain",
      "note": "Past its expiry.",

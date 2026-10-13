@@ -256,6 +256,10 @@ class Store:
         entry = self._spend.get(budget_id, {}).get(receipt_id)
         return Money.from_dict(entry) if entry else None
 
+    def spent_under_another_budget(self, budget_id: str, receipt_id: str) -> bool:
+        """True if this receipt already paid under a budget other than `budget_id`."""
+        return any(b != budget_id and receipt_id in entries for b, entries in self._spend.items())
+
     def spent(self, budget_id: str, currency: str) -> int:
         return sum(
             e["amount_minor"] for e in self._spend.get(budget_id, {}).values()

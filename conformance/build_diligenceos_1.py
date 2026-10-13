@@ -337,6 +337,18 @@ case(s, "dg-signature-removed", "An unsigned link.", [without(dl(OP, KA), "signa
 case(s, "dg-signature-by-wrong-key", "Signed by a key that is not the delegator.",
      [edit(dl(OP, KA), signature=ATT.sign(DELEGATION_DOMAIN, dl(OP, KA)["id"]))], no("bad-signature"), C)
 case(s, "dg-contents-edited", "Scopes edited after signing.", [edit(dl(OP, KA), scopes=["spend", "revoke"])], no("bad-id"), C)
+for cid, note, at, code in (
+    ("issued-at-unreadable", "issued_at is not a timestamp.", "never", "malformed-link"),
+    ("issued-at-naive", "issued_at names no timezone.", "2026-05-01T00:00:00", "malformed-link"),
+    ("issued-in-the-future", "Issued a year after the verifier's clock: not valid yet.", "2027-06-01T00:00:00+00:00", "not-valid-yet"),
+    ("issued-after-expiry", "issued_at is later than its own expiry.", "2027-01-01T00:00:00+00:00", "issued-after-expiry"),
+):
+    case(s, "dg-" + cid, note, [issue_delegation(OP, delegate=KA.issuer_id, scopes=("spend",), expires="2026-12-01T00:00:00+00:00", issued_at=at)],
+         no(code), C)
+_parent = dl(OP, KA)
+case(s, "dg-child-dated-before-parent", "The child is dated a month before its parent.",
+     [_parent, issue_delegation(KA, delegate=KB.issuer_id, scopes=("spend",), expires="2026-11-01T00:00:00+00:00", parent=_parent["id"],
+                                issued_at="2026-03-01T00:00:00+00:00")], no("dated-before-parent"), C)
 case(s, "dg-link-expired", "Past its expiry.", [dl(OP, KA, expires="2026-05-15T00:00:00+00:00")], no("expired"), C)
 case(s, "dg-link-revoked", "Listed in the verifier's revocations.", [dl(OP, KA)], no("revoked"), {**C, "revocations": {dl(OP, KA)["id"]: {"reason": "x"}}})
 case(s, "dg-first-link-names-parent", "Link 0 claims a parent.", [dl(OP, KA, parent="sha256:" + "1" * 64)], no("bad-parent"), C)
