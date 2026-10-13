@@ -184,6 +184,11 @@ case(s, "rc-wrong-issuer", "Validly signed by a key the verifier does not trust.
 case(s, "rc-extra-trusted-issuer", "Valid when the verifier's own list names the signer.", mk(ATT), ok(),
      {"now": NOW, "trusted_issuers": [OP.issuer_id, ATT.issuer_id]})
 case(s, "rc-signature-of-another", "Another receipt's signature grafted on.", edit(good, signature=held["signature"]), no("bad-signature"), T)
+case(s, "rc-signature-uppercase-hex", "The right signature spelled with uppercase hex: one spelling per signature.",
+     edit(good, signature="ed25519:" + good["signature"][len("ed25519:"):].upper()), no("bad-signature"), T)
+case(s, "rc-small-order-issuer-key", "Issuer is the identity point and the signature is the one that verifies for every message.",
+     {**reseal(good, None, issuer="ed25519:" + "01" + "00" * 31), "signature": "ed25519:" + "01" + "00" * 31 + "00" * 32},
+     no("bad-signature"), T)
 case(s, "rc-issuer-swapped", "Issuer field swapped to another key.", edit(good, issuer=ATT.issuer_id), no("bad-signature", "id-mismatch"), T)
 case(s, "rc-expired", "Past its expiry.", good, no("expired"), {**T, "now": LATE})
 case(s, "rc-revoked", "Listed in the verifier's revocations.", good, no("revoked"),

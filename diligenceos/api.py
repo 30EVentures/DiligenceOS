@@ -155,13 +155,28 @@ def _capabilities():
     }
 
 
+def _no_duplicate_keys(pairs):
+    keys = [k for k, _ in pairs]
+    if len(keys) != len(set(keys)):
+        raise ValueError("an object repeats a key (which value a reader keeps is not defined)")
+    return dict(pairs)
+
+
+def _no_nonfinite(token):
+    raise ValueError(f"{token} is not a JSON number")
+
+
 def _parse_body(body: bytes):
     if len(body) > MAX_BODY_BYTES:
         return None, _error(413, "body_too_large", f"body exceeds {MAX_BODY_BYTES} bytes")
     try:
-        return json.loads(body.decode("utf-8")), None
+        return json.loads(
+            body.decode("utf-8"), object_pairs_hook=_no_duplicate_keys, parse_constant=_no_nonfinite,
+        ), None
     except (UnicodeDecodeError, ValueError) as exc:
         return None, _error(400, "invalid_json", f"body is not valid JSON: {exc}")
+    except RecursionError:
+        return None, _error(400, "invalid_json", "body is nested too deeply")
 
 
 def _witnesses() -> list[str]:

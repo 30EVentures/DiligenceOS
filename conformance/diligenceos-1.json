@@ -592,6 +592,92 @@
      }
     },
     {
+     "id": "rc-signature-uppercase-hex",
+     "set": "receipt",
+     "note": "The right signature spelled with uppercase hex: one spelling per signature.",
+     "input": {
+      "schema": "diligenceos.receipt/1",
+      "rules": "verdict-rules/1",
+      "subject": {
+       "name": "Subject 1",
+       "registration_id": "REG1"
+      },
+      "transaction": null,
+      "inputs_digest": "sha256:2bfd14f43d17fc7cea24e0917a8879b4b2f880b8baeec1b9d90fbaad655e71bd",
+      "verdict": "PROCEED",
+      "trust_score": 85,
+      "findings": [
+       {
+        "category": "sanctions",
+        "status": "pass",
+        "detail": null,
+        "evidence_url": null,
+        "evidence": []
+       }
+      ],
+      "issued_at": "2026-05-01T00:00:00+00:00",
+      "expires": "2026-07-01T00:00:00+00:00",
+      "issuer": "ed25519:8a88e3dd7409f195fd52db2d3cba5d72ca6709bf1d94121bf3748801b40f6f5c",
+      "id": "sha256:3a6d7320133ebfecc13a0b774756d4f073c235f38fe32ba85ae237d06e5924fc",
+      "signature": "ed25519:6BBB9D162F3C6B38537A76DEB1140EEA97FD162BFD24595F9D6702820C4672DF1B1A48193ECEC8AF0E25F0B96232A937A3A3D343CC40D69F5DC915CA34BD7906"
+     },
+     "context": {
+      "now": "2026-06-01T00:00:00+00:00",
+      "trusted_issuers": [
+       "ed25519:8a88e3dd7409f195fd52db2d3cba5d72ca6709bf1d94121bf3748801b40f6f5c"
+      ]
+     },
+     "expect": {
+      "valid": false,
+      "codes": [
+       "bad-signature"
+      ]
+     }
+    },
+    {
+     "id": "rc-small-order-issuer-key",
+     "set": "receipt",
+     "note": "Issuer is the identity point and the signature is the one that verifies for every message.",
+     "input": {
+      "schema": "diligenceos.receipt/1",
+      "rules": "verdict-rules/1",
+      "subject": {
+       "name": "Subject 1",
+       "registration_id": "REG1"
+      },
+      "transaction": null,
+      "inputs_digest": "sha256:2bfd14f43d17fc7cea24e0917a8879b4b2f880b8baeec1b9d90fbaad655e71bd",
+      "verdict": "PROCEED",
+      "trust_score": 85,
+      "findings": [
+       {
+        "category": "sanctions",
+        "status": "pass",
+        "detail": null,
+        "evidence_url": null,
+        "evidence": []
+       }
+      ],
+      "issued_at": "2026-05-01T00:00:00+00:00",
+      "expires": "2026-07-01T00:00:00+00:00",
+      "issuer": "ed25519:0100000000000000000000000000000000000000000000000000000000000000",
+      "id": "sha256:6101823a63cc28b73116fa446029185e544814f0c1af29067f80086ee79005a9",
+      "signature": "ed25519:01000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000"
+     },
+     "context": {
+      "now": "2026-06-01T00:00:00+00:00",
+      "trusted_issuers": [
+       "ed25519:8a88e3dd7409f195fd52db2d3cba5d72ca6709bf1d94121bf3748801b40f6f5c"
+      ]
+     },
+     "expect": {
+      "valid": false,
+      "codes": [
+       "bad-signature"
+      ]
+     }
+    },
+    {
      "id": "rc-issuer-swapped",
      "set": "receipt",
      "note": "Issuer field swapped to another key.",

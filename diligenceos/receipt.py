@@ -42,7 +42,7 @@ def unsanitized_fields_doc() -> dict:
 
 def canonical_json(obj) -> bytes:
     return json.dumps(
-        obj, sort_keys=True, separators=(",", ":"), ensure_ascii=False
+        obj, sort_keys=True, separators=(",", ":"), ensure_ascii=False, allow_nan=False
     ).encode("utf-8")
 
 
