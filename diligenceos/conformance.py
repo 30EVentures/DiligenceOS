@@ -70,6 +70,7 @@ _RULES = (
     (r"names an issuer but carries no signature", "unsigned-but-names-issuer"),
     (r"^expires/now is not an ISO", "bad-timestamp"),
     (r"does not match the digest the claim", "evidence-digest-mismatch"),
+    (r"is empty, so it proves nothing", "evidence-empty"),
     (r"not found in", "evidence-quote-missing"),
     (r"was claimed absent but appears", "evidence-absent-present"),
     # delegation chains

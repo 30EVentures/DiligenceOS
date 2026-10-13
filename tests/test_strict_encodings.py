@@ -162,5 +162,46 @@ class RequestJsonTest(unittest.TestCase):
         self.assertEqual(status, 200)
 
 
+class SignedDocumentFieldTypesTest(unittest.TestCase):
+    """The signed message is text, so a field that formats the same under two types has two spellings."""
+
+    def test_a_head_signed_for_length_3_is_not_also_a_head_for_the_string_3(self):
+        from diligenceos.signing import LOG_HEAD_DOMAIN, head_message, verify_head
+        op = test_signer(1)
+        head = {"length": 3, "head_hash": "sha256:" + "ab" * 32, "issuer": op.issuer_id}
+        head["signature"] = op.sign(LOG_HEAD_DOMAIN, head_message(3, head["head_hash"]))
+        self.assertTrue(verify_head(head))
+        for length in ("3", 3.0, True, -3, [3], None):
+            self.assertFalse(verify_head({**head, "length": length}), repr(length))
+        self.assertFalse(verify_head({**head, "head_hash": ["x"]}))
+
+    def test_the_same_for_a_cosignature(self):
+        from diligenceos.witness import cosign_head, verify_cosignature
+        op, witness = test_signer(1), test_signer(3)
+        cosig = cosign_head(witness, op.issuer_id, 3, "sha256:" + "ab" * 32)
+        self.assertTrue(verify_cosignature(cosig))
+        for length in ("3", 3.0, True, -3):
+            self.assertFalse(verify_cosignature({**cosig, "length": length}), repr(length))
+        self.assertFalse(verify_cosignature({**cosig, "issuer": [op.issuer_id]}))
+
+
+class EvidenceIsNeverVacuousTest(unittest.TestCase):
+    def test_an_empty_quote_is_not_a_citation(self):
+        from diligenceos.evidence import text_digest, verify_citation, verify_evidence
+        from diligenceos.types import Evidence
+        source = "Section 3: Termination. Liability Cap applies."
+        for empty in ("", " ", "\t\n", "\u00a0"):
+            self.assertFalse(verify_citation(empty, source), repr(empty))
+            self.assertTrue(verify_evidence(Evidence("doc", text_digest(source), quote=empty), source), repr(empty))
+            self.assertTrue(verify_evidence(Evidence("doc", text_digest(source), absent=empty), source), repr(empty))
+
+    def test_real_evidence_still_verifies(self):
+        from diligenceos.evidence import text_digest, verify_evidence
+        from diligenceos.types import Evidence
+        source = "Section 3: Termination. Liability Cap applies."
+        self.assertEqual(verify_evidence(Evidence("doc", text_digest(source), quote="liability  CAP"), source), [])
+        self.assertEqual(verify_evidence(Evidence("doc", text_digest(source), absent="indemnification"), source), [])
+
+
 if __name__ == "__main__":
     unittest.main()

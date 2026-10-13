@@ -1146,6 +1146,112 @@
      }
     },
     {
+     "id": "rc-evidence-empty-quote",
+     "set": "receipt",
+     "note": "An empty quote is 'found' in every source, so it must prove nothing.",
+     "input": {
+      "schema": "diligenceos.receipt/1",
+      "rules": "verdict-rules/1",
+      "subject": {
+       "name": "Subject 6",
+       "registration_id": "REG6"
+      },
+      "transaction": null,
+      "inputs_digest": "sha256:ade0bebbcdd770e830221a9ea5ea03aa975a54ba2b90f7077c3b5e0754faf3c8",
+      "verdict": "HOLD",
+      "trust_score": 70,
+      "findings": [
+       {
+        "category": "document_scan",
+        "status": "flag",
+        "detail": "Cover is not as claimed",
+        "evidence_url": null,
+        "evidence": [
+         {
+          "source": "doc",
+          "source_digest": "sha256:ae959cb483d9bcbb1dfd16c308ce25cae1061915e545a80e50f8764d5f8c7362",
+          "quote": "",
+          "absent": null
+         }
+        ]
+       }
+      ],
+      "issued_at": "2026-05-01T00:00:00+00:00",
+      "expires": "2026-07-01T00:00:00+00:00",
+      "issuer": "ed25519:8a88e3dd7409f195fd52db2d3cba5d72ca6709bf1d94121bf3748801b40f6f5c",
+      "id": "sha256:0bf3771421c080c48b854ec8d5f3251115797e9cd53746082cb7748610359d08",
+      "signature": "ed25519:988c3f775b81ef8c6a8d7408206ea59ad965011b785c03cb273fafe464197e0bed83b65a76f37da169e0cb446d5922b3e7b6d048feb82c2f401b233ad3c11608"
+     },
+     "context": {
+      "now": "2026-06-01T00:00:00+00:00",
+      "trusted_issuers": [
+       "ed25519:8a88e3dd7409f195fd52db2d3cba5d72ca6709bf1d94121bf3748801b40f6f5c"
+      ],
+      "sources": {
+       "doc": "Acme Ltd holds public liability cover. The warranty is void after 12 months."
+      }
+     },
+     "expect": {
+      "valid": false,
+      "codes": [
+       "evidence-empty"
+      ]
+     }
+    },
+    {
+     "id": "rc-evidence-empty-absence",
+     "set": "receipt",
+     "note": "An empty absence claim is vacuous too.",
+     "input": {
+      "schema": "diligenceos.receipt/1",
+      "rules": "verdict-rules/1",
+      "subject": {
+       "name": "Subject 7",
+       "registration_id": "REG7"
+      },
+      "transaction": null,
+      "inputs_digest": "sha256:1dd42de9287c1b6a96c617376c0df6b8304485783ed0b4803f1aac0f119471a5",
+      "verdict": "HOLD",
+      "trust_score": 70,
+      "findings": [
+       {
+        "category": "document_scan",
+        "status": "flag",
+        "detail": "Cover is not as claimed",
+        "evidence_url": null,
+        "evidence": [
+         {
+          "source": "doc",
+          "source_digest": "sha256:ae959cb483d9bcbb1dfd16c308ce25cae1061915e545a80e50f8764d5f8c7362",
+          "quote": null,
+          "absent": "  "
+         }
+        ]
+       }
+      ],
+      "issued_at": "2026-05-01T00:00:00+00:00",
+      "expires": "2026-07-01T00:00:00+00:00",
+      "issuer": "ed25519:8a88e3dd7409f195fd52db2d3cba5d72ca6709bf1d94121bf3748801b40f6f5c",
+      "id": "sha256:5b711cdf036272317a1834f9ba54879210b05563199d2f18a161d3c984745230",
+      "signature": "ed25519:fef18b3844043131e6e2052724bea8a09fc6c895229d9822fa571e091e577b3ddd18200dc21d6a7713b62e445075d5da84756adf3c85ac48666e361b75d14a08"
+     },
+     "context": {
+      "now": "2026-06-01T00:00:00+00:00",
+      "trusted_issuers": [
+       "ed25519:8a88e3dd7409f195fd52db2d3cba5d72ca6709bf1d94121bf3748801b40f6f5c"
+      ],
+      "sources": {
+       "doc": "Acme Ltd holds public liability cover. The warranty is void after 12 months."
+      }
+     },
+     "expect": {
+      "valid": false,
+      "codes": [
+       "evidence-empty"
+      ]
+     }
+    },
+    {
      "id": "rc-expires-not-a-timestamp",
      "set": "receipt",
      "note": "Signed with expires='tomorrow'.",

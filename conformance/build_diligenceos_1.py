@@ -49,6 +49,10 @@ EVIDENCED = [Finding("document_scan", CheckStatus.FLAG, detail="Cover is not as 
                      evidence=(Evidence(source="doc", source_digest=text_digest(DOC), quote="public liability cover"),))]
 UNQUOTED = [Finding("document_scan", CheckStatus.FLAG, detail="Cover is not as claimed",
                     evidence=(Evidence(source="doc", source_digest=text_digest(DOC), quote="fully insured"),))]
+EMPTY_QUOTE = [Finding("document_scan", CheckStatus.FLAG, detail="Cover is not as claimed",
+                       evidence=(Evidence(source="doc", source_digest=text_digest(DOC), quote=""),))]
+EMPTY_ABSENT = [Finding("document_scan", CheckStatus.FLAG, detail="Cover is not as claimed",
+                        evidence=(Evidence(source="doc", source_digest=text_digest(DOC), absent="  "),))]
 TX = {"amount_minor": 50_000, "currency": "USD"}
 
 
@@ -202,6 +206,10 @@ case(s, "rc-evidence-source-edited", "The source changed since the claim was mad
      {**T, "sources": {"doc": DOC + " Edited."}})
 case(s, "rc-evidence-quote-missing", "Digest matches but the quote is not in the source.", mk(OP, UNQUOTED, n=5), no("evidence-quote-missing"),
      {**T, "sources": {"doc": DOC}})
+case(s, "rc-evidence-empty-quote", "An empty quote is 'found' in every source, so it must prove nothing.", mk(OP, EMPTY_QUOTE, n=6),
+     no("evidence-empty"), {**T, "sources": {"doc": DOC}})
+case(s, "rc-evidence-empty-absence", "An empty absence claim is vacuous too.", mk(OP, EMPTY_ABSENT, n=7),
+     no("evidence-empty"), {**T, "sources": {"doc": DOC}})
 case(s, "rc-expires-not-a-timestamp", "Signed with expires='tomorrow'.", reseal(good, OP, expires="tomorrow"), no("bad-timestamp"), T)
 case(s, "rc-now-not-a-timestamp", "The verifier's own clock value is unreadable.", good, no("bad-timestamp"), {**T, "now": "yesterday"})
 

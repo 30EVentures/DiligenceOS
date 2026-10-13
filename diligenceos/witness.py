@@ -55,6 +55,9 @@ def verify_cosignature(doc) -> bool:
     try:
         if doc["witness"] == doc["issuer"]:
             return False
+        if type(doc["length"]) is not int or doc["length"] < 0 or not isinstance(doc["head_hash"], str) \
+                or not isinstance(doc["issuer"], str):
+            return False  # the signed message is text: "3" must not be a second spelling of 3
         return verify_signature(
             doc["witness"], COSIGN_DOMAIN,
             cosign_message(doc["issuer"], doc["length"], doc["head_hash"]), doc["signature"],

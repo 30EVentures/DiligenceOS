@@ -107,8 +107,11 @@ def head_message(length: int, head_hash: str) -> str:
 
 
 def verify_head(doc) -> bool:
-    """Offline check of a signed /v1/log/head document."""
+    """Offline check of a signed /v1/log/head document. `length` must be a real integer: the signed
+    message is text, so "3" would otherwise be a second, validly signed spelling of 3."""
     try:
+        if type(doc["length"]) is not int or doc["length"] < 0 or not isinstance(doc["head_hash"], str):
+            return False
         return verify_signature(
             doc["issuer"], LOG_HEAD_DOMAIN,
             head_message(doc["length"], doc["head_hash"]), doc["signature"],
