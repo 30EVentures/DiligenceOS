@@ -17,7 +17,8 @@ from diligenceos.serialize import verdict_result_to_dict
 
 
 def _run_batch(request_path: str) -> int:
-    request = json.loads(open(request_path).read())
+    with open(request_path, encoding="utf-8") as fh:
+        request = json.loads(fh.read())
     subject = request["subject"]
 
     sanctions_list = (

@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass, field
 
+from diligenceos.names import normalize_name
 from diligenceos.types import CheckStatus, Finding
 
 CATEGORY = "track_record"
@@ -24,7 +25,8 @@ class Ledger:
         self._records.append(delivery_record)
 
     def for_subject(self, subject: str) -> tuple[DeliveryRecord, ...]:
-        return tuple(r for r in self._records if r.subject == subject)
+        wanted = normalize_name(subject)
+        return tuple(r for r in self._records if normalize_name(r.subject) == wanted)
 
     def all_records(self) -> tuple[DeliveryRecord, ...]:
         return tuple(self._records)

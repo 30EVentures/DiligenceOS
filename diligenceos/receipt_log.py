@@ -84,7 +84,7 @@ class ReceiptLog:
         if path is not None and path.exists():
             try:
                 self._entries = [
-                    json.loads(line) for line in path.read_text().splitlines() if line.strip()
+                    json.loads(line) for line in path.read_text(encoding="utf-8").splitlines() if line.strip()
                 ]
             except ValueError as exc:
                 raise LogCorruptError(f"receipt log is not valid JSON lines: {exc}") from exc
@@ -175,6 +175,6 @@ class ReceiptLog:
             entry["signature"] = signer.sign(LOG_ENTRY_DOMAIN, entry["entry_hash"])
         if self.path is not None:  # write first: only remember what reached disk
             self.path.parent.mkdir(parents=True, exist_ok=True)
-            with self.path.open("a") as fh:
+            with self.path.open("a", encoding="utf-8") as fh:
                 fh.write(json.dumps(entry, sort_keys=True) + "\n")
         self._entries.append(entry)

@@ -170,7 +170,7 @@ def run_witness(fetch, state_path: Path, signer: Signer, pinned_issuer: str, sub
     if signer.issuer_id == pinned_issuer:
         raise SelfWitnessError(SELF_WITNESS_MESSAGE)
     try:
-        state = json.loads(state_path.read_text()) if state_path.exists() else {}
+        state = json.loads(state_path.read_text(encoding="utf-8")) if state_path.exists() else {}
     except (OSError, ValueError):
         state = None
     if not isinstance(state, dict):
@@ -192,7 +192,7 @@ def run_witness(fetch, state_path: Path, signer: Signer, pinned_issuer: str, sub
     # be read as "unreadable" and lock the witness out, or in the past as "first sight").
     tmp_path = state_path.with_name(state_path.name + ".tmp")
     try:
-        tmp_path.write_text(json.dumps(state, indent=2))
+        tmp_path.write_text(json.dumps(state, indent=2), encoding="utf-8")
         os.replace(tmp_path, state_path)
     finally:
         tmp_path.unlink(missing_ok=True)

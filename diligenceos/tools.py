@@ -33,7 +33,7 @@ def _operator_key_path() -> Path:
 
 
 def _read_json(path: str):
-    return json.loads(sys.stdin.read() if path == "-" else Path(path).read_text())
+    return json.loads(sys.stdin.buffer.read().decode("utf-8") if path == "-" else Path(path).read_text(encoding="utf-8"))
 
 
 def _keygen(args) -> int:
