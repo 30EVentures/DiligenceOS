@@ -91,7 +91,7 @@ class DelegationClockTest(unittest.TestCase):
         self.assertTrue(valid(chain()).valid)
 
     def test_issued_at_must_be_a_timezone_aware_timestamp(self):
-        for bad in ("never", "", "2026-10-01T00:00:00", "2026-10-01", 5, None):
+        for bad in ("never", "2026-10-01T00:00:00", "2026-10-01", 5):      # "" and None become the wall clock in issue_delegation; see test_review_followups
             result = valid(chain(issued_at=bad))
             self.assertFalse(result.valid, repr(bad))
 

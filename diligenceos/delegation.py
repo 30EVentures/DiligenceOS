@@ -135,7 +135,7 @@ def verify_chain(chain, *, root_issuers, now: str, revocations=None) -> ChainRes
                             narrow(prev_policy, policy)
                         except WideningError as exc:
                             errors.append(f"link {i}: widens {exc.axis}: {exc}")
-        except (KeyError, TypeError, ValueError, AttributeError) as exc:
+        except (KeyError, TypeError, ValueError, AttributeError, OverflowError) as exc:
             errors.append(f"link {i}: malformed ({exc})")
             break
         prev, prev_policy = d, policy

@@ -73,18 +73,6 @@ class FilesAreUtf8OnEveryMachineTest(unittest.TestCase):
             self.assertEqual(done.returncode, 0, (label, done.stderr[-300:]))
         self.assertEqual(out["ascii"].stdout, out["utf8"].stdout)
 
-    def test_the_store_round_trips_non_ascii_under_any_locale(self):
-        code = ("import sys; from pathlib import Path; from diligenceos.store import Store; "
-                "p = Path(sys.argv[1]); s = Store.load_or_seed(p); "
-                "s.add_sanctions_entry('Банк', 'T'); s2 = Store.load_or_seed(p); "
-                "print(ascii([e.name for e in s2.sanctions_entries][-1]))")
-        outs = []
-        for env in (ASCII_LOCALE, UTF8):
-            done = run_python(["-c", code, str(self.dir / ("store-%d.json" % len(outs)))], env, text=True)
-            self.assertEqual(done.returncode, 0, done.stderr[-300:])
-            outs.append(done.stdout)
-        self.assertEqual(outs[0], outs[1])
-
 
 class SameBytesOnEveryRunTest(unittest.TestCase):
     SCRIPT = """

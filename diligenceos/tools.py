@@ -89,7 +89,10 @@ def _json_from_response(resp) -> object:
     data = resp.read(MAX_RESPONSE_BYTES + 1)
     if len(data) > MAX_RESPONSE_BYTES:
         raise ValueError(f"the server's reply is larger than {MAX_RESPONSE_BYTES} bytes; refusing to read it")
-    return json.loads(data.decode("utf-8"))
+    try:
+        return json.loads(data.decode("utf-8"))
+    except RecursionError:
+        raise ValueError("the server's reply is nested too deeply to read") from None
 
 
 def _witness(args) -> int:

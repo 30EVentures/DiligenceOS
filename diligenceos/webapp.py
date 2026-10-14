@@ -231,7 +231,8 @@ def _require_admin_token(form: dict) -> str | None:
     if configured is None:
         return "writes to /data are disabled: set DILIGENCEOS_ADMIN_TOKEN to enable them"
     supplied = form.get("admin_token", "")
-    if not hmac.compare_digest(supplied, configured):
+    # bytes, not str: compare_digest raises TypeError for a non-ASCII str, which was a 500 for anyone
+    if not hmac.compare_digest(str(supplied).encode("utf-8", "surrogatepass"), configured.encode("utf-8", "surrogatepass")):
         return "admin token is missing or incorrect"
     return None
 
@@ -250,12 +251,15 @@ class _BadBody(Exception):
 
 
 def _read_body(environ) -> bytes:
-    """The request body, never more than api.MAX_BODY_BYTES + 1 bytes. Raises _BadBody for a
+    """The request body, never more than api.MAX_BODY_BYTES bytes. Raises _BadBody for a
     Content-Length that is not a non-negative integer (read(-1) would wait for the peer to close:
     one connection could hold this single-threaded server forever) or that is over the cap
     (checked from the header, so an oversize body is refused unread, not buffered)."""
     raw = str(environ.get("CONTENT_LENGTH") or "0").strip()
-    length = int(raw) if raw.isascii() and raw.isdigit() else -1
+    # at most 15 digits: int() of a longer digit string can raise (Python limits int/str conversion)
+    length = int(raw) if raw.isascii() and raw.isdigit() and len(raw) <= 15 else -1
+    if length < 0 and raw.isascii() and raw.isdigit():
+        length = api.MAX_BODY_BYTES + 1  # too many digits to be anything but too large
     if length < 0:
         raise _BadBody(400, "Content-Length must be a non-negative integer")
     if length > api.MAX_BODY_BYTES:

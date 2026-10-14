@@ -193,10 +193,12 @@ def run_witness(fetch, state_path: Path, signer: Signer, pinned_issuer: str, sub
     state_path.parent.mkdir(parents=True, exist_ok=True)
     # Temp file, then rename: a crash mid-write must not leave a truncated baseline (which would
     # be read as "unreadable" and lock the witness out, or in the past as "first sight").
-    tmp_path = state_path.with_name(state_path.name + ".tmp")
+    target = state_path.resolve()  # a symlinked --state stays a symlink to the same file
+    tmp_path = target.with_name(target.name + ".tmp")
     try:
         tmp_path.write_text(json.dumps(state, indent=2), encoding="utf-8")
-        os.replace(tmp_path, state_path)
+        os.chmod(tmp_path, (target.stat().st_mode & 0o777) if target.exists() else 0o600)
+        os.replace(tmp_path, target)
     finally:
         tmp_path.unlink(missing_ok=True)
     note = f"consistent: {result.appended} new entr{'y' if result.appended == 1 else 'ies'}, head at {result.length}"
