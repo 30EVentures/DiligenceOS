@@ -49,6 +49,10 @@ EVIDENCED = [Finding("document_scan", CheckStatus.FLAG, detail="Cover is not as 
                      evidence=(Evidence(source="doc", source_digest=text_digest(DOC), quote="public liability cover"),))]
 UNQUOTED = [Finding("document_scan", CheckStatus.FLAG, detail="Cover is not as claimed",
                     evidence=(Evidence(source="doc", source_digest=text_digest(DOC), quote="fully insured"),))]
+EMPTY_QUOTE = [Finding("document_scan", CheckStatus.FLAG, detail="Cover is not as claimed",
+                       evidence=(Evidence(source="doc", source_digest=text_digest(DOC), quote=""),))]
+EMPTY_ABSENT = [Finding("document_scan", CheckStatus.FLAG, detail="Cover is not as claimed",
+                        evidence=(Evidence(source="doc", source_digest=text_digest(DOC), absent="  "),))]
 TX = {"amount_minor": 50_000, "currency": "USD"}
 
 
@@ -171,6 +175,8 @@ case(s, "rc-unsigned-offline", "Unsigned, no trust list: integrity only.", mk(No
 case(s, "rc-unsigned-with-trust-list", "Unsigned cannot satisfy a trust list.", mk(None), no("untrusted-issuer"), T)
 case(s, "rc-signature-removed", "Names an issuer but the signature was stripped.", without(good, "signature"), no("unsigned-but-names-issuer"), T)
 case(s, "rc-forged-id", "id replaced with an unrelated digest.", edit(good, id="sha256:" + "0" * 64), no("id-mismatch"), T)
+case(s, "rc-id-is-an-object", "id is a JSON object (it cannot even be looked up in a revocation list).", edit(good, id={"a": 1}), no("id-mismatch"), T)
+case(s, "rc-id-is-a-list", "id is a JSON array.", edit(good, id=[1, 2]), no("id-mismatch"), T)
 case(s, "rc-verdict-edited", "HOLD edited to PROCEED, id left stale.", edit(held, verdict="PROCEED"), no("id-mismatch"), T)
 case(s, "rc-verdict-replay-mismatch", "Attacker re-ids and re-signs HOLD as PROCEED; the findings still replay to HOLD.",
      reseal(held, ATT, verdict="PROCEED"), no("verdict-replay-mismatch"), {"now": NOW})
@@ -184,6 +190,11 @@ case(s, "rc-wrong-issuer", "Validly signed by a key the verifier does not trust.
 case(s, "rc-extra-trusted-issuer", "Valid when the verifier's own list names the signer.", mk(ATT), ok(),
      {"now": NOW, "trusted_issuers": [OP.issuer_id, ATT.issuer_id]})
 case(s, "rc-signature-of-another", "Another receipt's signature grafted on.", edit(good, signature=held["signature"]), no("bad-signature"), T)
+case(s, "rc-signature-uppercase-hex", "The right signature spelled with uppercase hex: one spelling per signature.",
+     edit(good, signature="ed25519:" + good["signature"][len("ed25519:"):].upper()), no("bad-signature"), T)
+case(s, "rc-small-order-issuer-key", "Issuer is the identity point and the signature is the one that verifies for every message.",
+     {**reseal(good, None, issuer="ed25519:" + "01" + "00" * 31), "signature": "ed25519:" + "01" + "00" * 31 + "00" * 32},
+     no("bad-signature"), T)
 case(s, "rc-issuer-swapped", "Issuer field swapped to another key.", edit(good, issuer=ATT.issuer_id), no("bad-signature", "id-mismatch"), T)
 case(s, "rc-expired", "Past its expiry.", good, no("expired"), {**T, "now": LATE})
 case(s, "rc-revoked", "Listed in the verifier's revocations.", good, no("revoked"),
@@ -195,6 +206,10 @@ case(s, "rc-evidence-source-edited", "The source changed since the claim was mad
      {**T, "sources": {"doc": DOC + " Edited."}})
 case(s, "rc-evidence-quote-missing", "Digest matches but the quote is not in the source.", mk(OP, UNQUOTED, n=5), no("evidence-quote-missing"),
      {**T, "sources": {"doc": DOC}})
+case(s, "rc-evidence-empty-quote", "An empty quote is 'found' in every source, so it must prove nothing.", mk(OP, EMPTY_QUOTE, n=6),
+     no("evidence-empty"), {**T, "sources": {"doc": DOC}})
+case(s, "rc-evidence-empty-absence", "An empty absence claim is vacuous too.", mk(OP, EMPTY_ABSENT, n=7),
+     no("evidence-empty"), {**T, "sources": {"doc": DOC}})
 case(s, "rc-expires-not-a-timestamp", "Signed with expires='tomorrow'.", reseal(good, OP, expires="tomorrow"), no("bad-timestamp"), T)
 case(s, "rc-now-not-a-timestamp", "The verifier's own clock value is unreadable.", good, no("bad-timestamp"), {**T, "now": "yesterday"})
 
@@ -332,6 +347,18 @@ case(s, "dg-signature-removed", "An unsigned link.", [without(dl(OP, KA), "signa
 case(s, "dg-signature-by-wrong-key", "Signed by a key that is not the delegator.",
      [edit(dl(OP, KA), signature=ATT.sign(DELEGATION_DOMAIN, dl(OP, KA)["id"]))], no("bad-signature"), C)
 case(s, "dg-contents-edited", "Scopes edited after signing.", [edit(dl(OP, KA), scopes=["spend", "revoke"])], no("bad-id"), C)
+for cid, note, at, code in (
+    ("issued-at-unreadable", "issued_at is not a timestamp.", "never", "malformed-link"),
+    ("issued-at-naive", "issued_at names no timezone.", "2026-05-01T00:00:00", "malformed-link"),
+    ("issued-in-the-future", "Issued a year after the verifier's clock: not valid yet.", "2027-06-01T00:00:00+00:00", "not-valid-yet"),
+    ("issued-after-expiry", "issued_at is later than its own expiry.", "2027-01-01T00:00:00+00:00", "issued-after-expiry"),
+):
+    case(s, "dg-" + cid, note, [issue_delegation(OP, delegate=KA.issuer_id, scopes=("spend",), expires="2026-12-01T00:00:00+00:00", issued_at=at)],
+         no(code), C)
+_parent = dl(OP, KA)
+case(s, "dg-child-dated-before-parent", "The child is dated a month before its parent.",
+     [_parent, issue_delegation(KA, delegate=KB.issuer_id, scopes=("spend",), expires="2026-11-01T00:00:00+00:00", parent=_parent["id"],
+                                issued_at="2026-03-01T00:00:00+00:00")], no("dated-before-parent"), C)
 case(s, "dg-link-expired", "Past its expiry.", [dl(OP, KA, expires="2026-05-15T00:00:00+00:00")], no("expired"), C)
 case(s, "dg-link-revoked", "Listed in the verifier's revocations.", [dl(OP, KA)], no("revoked"), {**C, "revocations": {dl(OP, KA)["id"]: {"reason": "x"}}})
 case(s, "dg-first-link-names-parent", "Link 0 claims a parent.", [dl(OP, KA, parent="sha256:" + "1" * 64)], no("bad-parent"), C)

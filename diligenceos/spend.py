@@ -36,6 +36,13 @@ def try_spend(
     if store.spend_entry(budget_id, receipt["id"]) is not None:
         return SpendResult(decision, spent, remaining, already_committed=True)
 
+    if store.spent_under_another_budget(budget_id, receipt["id"]):
+        # A receipt is a verdict on one transaction: it pays once, whichever budget is asked. (The
+        # other budget is not named: it may belong to a different caller.)
+        return SpendResult(
+            Decision(Outcome.DENY, ("receipt was already spent under another budget",)), spent, remaining,
+        )
+
     if spent + amount.amount_minor > cap.amount_minor:
         reason = (
             f"cumulative spend would exceed the cap: {spent} already spent + "

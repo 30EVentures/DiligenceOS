@@ -84,7 +84,7 @@ class ReceiptLog:
         if path is not None and path.exists():
             try:
                 self._entries = [
-                    json.loads(line) for line in path.read_text().splitlines() if line.strip()
+                    json.loads(line) for line in path.read_text(encoding="utf-8").splitlines() if line.strip()
                 ]
             except ValueError as exc:
                 raise LogCorruptError(f"receipt log is not valid JSON lines: {exc}") from exc
@@ -92,6 +92,11 @@ class ReceiptLog:
             if errors:
                 raise LogCorruptError("receipt log failed verification: " + "; ".join(errors))
         receipts = [e for e in self._entries if e.get("kind", "receipt") == "receipt"]
+        for e in receipts:
+            # The chain check proves the entries are the ones that were written, not that they
+            # have the shape this class reads; a hash-valid entry without these is corruption.
+            if not all(isinstance(e.get(k), str) for k in ("receipt_id", "inputs_digest", "outcome_digest")):
+                raise LogCorruptError(f"receipt log entry {e.get('seq')!r} is not a well-formed receipt entry")
         self._by_receipt = {e["receipt_id"]: e for e in receipts}
         self._first_by_inputs: dict[str, dict] = {}
         for e in receipts:
@@ -170,6 +175,6 @@ class ReceiptLog:
             entry["signature"] = signer.sign(LOG_ENTRY_DOMAIN, entry["entry_hash"])
         if self.path is not None:  # write first: only remember what reached disk
             self.path.parent.mkdir(parents=True, exist_ok=True)
-            with self.path.open("a") as fh:
+            with self.path.open("a", encoding="utf-8") as fh:
                 fh.write(json.dumps(entry, sort_keys=True) + "\n")
         self._entries.append(entry)

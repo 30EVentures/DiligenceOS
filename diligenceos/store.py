@@ -41,10 +41,10 @@ class Store:
     @classmethod
     def seeded_from_sample(cls, persist_path: Path | None = None) -> "Store":
         store = cls()  # persist_path unset while seeding: one write, not N
-        request = json.loads(DEFAULT_REQUEST_PATH.read_text())
+        request = json.loads(DEFAULT_REQUEST_PATH.read_text(encoding="utf-8"))
 
         if request.get("sanctions_list_path"):
-            raw = json.loads((REPO_ROOT / request["sanctions_list_path"]).read_text())
+            raw = json.loads((REPO_ROOT / request["sanctions_list_path"]).read_text(encoding="utf-8"))
             for item in raw:
                 store.add_sanctions_entry(
                     name=item["name"],
@@ -97,7 +97,7 @@ class Store:
     @classmethod
     def load_or_seed(cls, persist_path: Path) -> "Store":
         if persist_path.exists():
-            data = json.loads(persist_path.read_text())
+            data = json.loads(persist_path.read_text(encoding="utf-8"))
             return cls.from_dict(data, persist_path=persist_path)
         return cls.seeded_from_sample(persist_path=persist_path)
 
@@ -256,6 +256,10 @@ class Store:
         entry = self._spend.get(budget_id, {}).get(receipt_id)
         return Money.from_dict(entry) if entry else None
 
+    def spent_under_another_budget(self, budget_id: str, receipt_id: str) -> bool:
+        """True if this receipt already paid under a budget other than `budget_id`."""
+        return any(b != budget_id and receipt_id in entries for b, entries in self._spend.items())
+
     def spent(self, budget_id: str, currency: str) -> int:
         return sum(
             e["amount_minor"] for e in self._spend.get(budget_id, {}).values()
@@ -304,5 +308,5 @@ class Store:
         self.persist_path.parent.mkdir(parents=True, exist_ok=True)
         data = json.dumps(self._state_dict(), indent=2)
         tmp_path = self.persist_path.with_name(self.persist_path.name + ".tmp")
-        tmp_path.write_text(data)
+        tmp_path.write_text(data, encoding="utf-8")
         os.replace(tmp_path, self.persist_path)

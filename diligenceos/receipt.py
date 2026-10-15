@@ -42,7 +42,7 @@ def unsanitized_fields_doc() -> dict:
 
 def canonical_json(obj) -> bytes:
     return json.dumps(
-        obj, sort_keys=True, separators=(",", ":"), ensure_ascii=False
+        obj, sort_keys=True, separators=(",", ":"), ensure_ascii=False, allow_nan=False
     ).encode("utf-8")
 
 
@@ -173,7 +173,9 @@ def verify_receipt(
         except (TypeError, ValueError):
             errors.append("expires/now is not an ISO-8601 timestamp")
 
-    revocation = (revocations or {}).get(receipt.get("id"))
+    receipt_id = receipt.get("id")
+    # an id that is not a string cannot be in the revocation set (and a list or object cannot even be looked up)
+    revocation = (revocations or {}).get(receipt_id) if isinstance(receipt_id, str) else None
     return ReceiptCheck(
         valid=not errors, expired=expired, errors=tuple(errors), unchecked=tuple(unchecked),
         revoked=revocation is not None,

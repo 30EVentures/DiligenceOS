@@ -24,6 +24,11 @@ def text_digest(text: str) -> str:
 def verify_evidence(evidence: Evidence, source_text: str) -> list[str]:
     """Empty list means the claim holds against this source text."""
     errors = []
+    for label, text in (("quote", evidence.quote), ("absent", evidence.absent)):
+        if text is not None and (not isinstance(text, str) or not fold(text)):
+            errors.append(f"the {label} of evidence from {evidence.source!r} is empty, so it proves nothing")
+    if errors:
+        return errors
     if text_digest(source_text) != evidence.source_digest:
         errors.append(f"source {evidence.source!r} does not match the digest the claim was made against")
     if evidence.quote is not None and not verify_citation(evidence.quote, source_text):
@@ -34,7 +39,8 @@ def verify_evidence(evidence: Evidence, source_text: str) -> list[str]:
 
 
 def verify_citation(quote: str, source_text: str) -> bool:
-    return fold(quote) in fold(source_text)
+    folded = fold(quote)
+    return bool(folded) and folded in fold(source_text)  # an empty quote is "found" everywhere, which proves nothing
 
 
 def require_citable(

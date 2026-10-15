@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import os
+import re
 from pathlib import Path
 
 from cryptography.exceptions import InvalidSignature
@@ -13,6 +14,26 @@ from cryptography.hazmat.primitives.asymmetric.ed25519 import (
 )
 
 PREFIX = "ed25519:"
+# One string per key and per signature: lowercase hex, exact length. bytes.fromhex alone also
+# accepts uppercase and embedded whitespace, which would give every signature many valid spellings.
+_KEY_HEX = re.compile(r"[0-9a-f]{64}")
+_SIG_HEX = re.compile(r"[0-9a-f]{128}")
+
+
+def _small_order_keys() -> frozenset[bytes]:
+    """Encodings of the points of order dividing 8 (and their non-canonical spellings).
+
+    Under such a key the signature (R = the key itself or the identity, S = 0) verifies for
+    every message, so it must never count as a signer. y-coordinates: 0 and +-1 and the two
+    order-8 points; y and y+p are the same point written two ways; the sign bit may be either."""
+    p = 2**255 - 19
+    ys = {0, 1, p - 1, p, p + 1,
+          2707385501144840649318225287225658788936804267575313519463743609750303402022,
+          55188659117513257062467267217118295137698188065244968500265048394206261417927}
+    return frozenset((y | (sign << 255)).to_bytes(32, "little") for y in ys for sign in (0, 1))
+
+
+_SMALL_ORDER = _small_order_keys()
 RECEIPT_DOMAIN = "diligenceos.receipt/1"
 LOG_HEAD_DOMAIN = "diligenceos.log-head/1"
 
@@ -69,8 +90,13 @@ def verify_signature(issuer_id, domain: str, message: str, signature) -> bool:
             return False
         if not (isinstance(signature, str) and signature.startswith(PREFIX)):
             return False
-        key = Ed25519PublicKey.from_public_bytes(bytes.fromhex(issuer_id[len(PREFIX):]))
-        key.verify(bytes.fromhex(signature[len(PREFIX):]), _payload(domain, message))
+        key_hex, sig_hex = issuer_id[len(PREFIX):], signature[len(PREFIX):]
+        if not (_KEY_HEX.fullmatch(key_hex) and _SIG_HEX.fullmatch(sig_hex)):
+            return False
+        raw_key = bytes.fromhex(key_hex)
+        if raw_key in _SMALL_ORDER:
+            return False
+        Ed25519PublicKey.from_public_bytes(raw_key).verify(bytes.fromhex(sig_hex), _payload(domain, message))
         return True
     except (InvalidSignature, ValueError, TypeError):
         return False
@@ -81,8 +107,11 @@ def head_message(length: int, head_hash: str) -> str:
 
 
 def verify_head(doc) -> bool:
-    """Offline check of a signed /v1/log/head document."""
+    """Offline check of a signed /v1/log/head document. `length` must be a real integer: the signed
+    message is text, so "3" would otherwise be a second, validly signed spelling of 3."""
     try:
+        if type(doc["length"]) is not int or doc["length"] < 0 or not isinstance(doc["head_hash"], str):
+            return False
         return verify_signature(
             doc["issuer"], LOG_HEAD_DOMAIN,
             head_message(doc["length"], doc["head_hash"]), doc["signature"],

@@ -24,7 +24,7 @@ from diligenceos.receipt_log import LogCorruptError
 from diligenceos.types import MAX_AMOUNT_MINOR, Money, Verdict
 
 CLOCK_SKEW_SECONDS = 60  # how far in the future a receipt's issued_at may be, for clock drift
-_RECEIPT_ID = re.compile(r"^sha256:[0-9a-f]{64}$")
+_RECEIPT_ID = re.compile(r"sha256:[0-9a-f]{64}")  # used with fullmatch: "$" would also accept a trailing newline
 
 
 class Reason(str, Enum):
@@ -108,7 +108,7 @@ def verify_receipt_for_payment(
     """
     receipt_id = None
     try:
-        if isinstance(receipt, dict) and isinstance(receipt.get("id"), str) and _RECEIPT_ID.match(receipt["id"]):
+        if isinstance(receipt, dict) and isinstance(receipt.get("id"), str) and _RECEIPT_ID.fullmatch(receipt["id"]):
             receipt_id = receipt["id"]
         escalations = _evaluate(
             receipt, counterparty, amount_minor, asset_ref, max_age, now, trusted_issuers, revocations, policy, assets,

@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass, field
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 
 from diligenceos.policy import Policy, WideningError, narrow
 from diligenceos.receipt import digest
@@ -13,6 +13,7 @@ SCHEMA = "diligenceos.delegation/1"
 DOMAIN = "diligenceos.delegation/1"
 SCOPES = frozenset({"spend", "revoke"})
 MAX_CHAIN = 4
+CLOCK_SKEW_SECONDS = 300  # how far apart two parties' clocks may be before a timestamp is not believed
 
 
 def _now() -> str:
@@ -79,7 +80,7 @@ def verify_chain(chain, *, root_issuers, now: str, revocations=None) -> ChainRes
     policy: Policy | None = None
     try:
         now_dt = _parse_time(now)
-    except ValueError:
+    except (TypeError, ValueError):
         return ChainResult(False, ("now is not a timezone-aware ISO-8601 timestamp",))
 
     for i, d in enumerate(chain):
@@ -96,6 +97,11 @@ def verify_chain(chain, *, root_issuers, now: str, revocations=None) -> ChainRes
                 raise ValueError("scopes must be a non-empty subset of the known scopes")
             policy = Policy.from_dict(d["policy"]) if d.get("policy") is not None else None
             expires = _parse_time(d["expires"])
+            issued = _parse_time(d["issued_at"])  # unreadable is malformed, like every other field here
+            if issued > expires:
+                errors.append(f"link {i}: issued after it expires")
+            if issued > now_dt + timedelta(seconds=CLOCK_SKEW_SECONDS):
+                errors.append(f"link {i}: is not valid yet (issued_at is in the future)")
             if not isinstance(d["delegate"], str):
                 raise ValueError("delegate must be a string")
             if now_dt >= expires:
@@ -115,6 +121,8 @@ def verify_chain(chain, *, root_issuers, now: str, revocations=None) -> ChainRes
                     errors.append(f"link {i}: parent does not name the previous link")
                 if not set(scopes) <= set(prev["scopes"]):
                     errors.append(f"link {i}: widens scopes")
+                if issued < _parse_time(prev["issued_at"]) - timedelta(seconds=CLOCK_SKEW_SECONDS):
+                    errors.append(f"link {i}: is dated before its parent")
                 if expires > _parse_time(prev["expires"]):
                     errors.append(f"link {i}: expires later than its parent")
                 if prev.get("budget_id") is not None and d.get("budget_id") != prev["budget_id"]:
@@ -127,7 +135,7 @@ def verify_chain(chain, *, root_issuers, now: str, revocations=None) -> ChainRes
                             narrow(prev_policy, policy)
                         except WideningError as exc:
                             errors.append(f"link {i}: widens {exc.axis}: {exc}")
-        except (KeyError, TypeError, ValueError, AttributeError) as exc:
+        except (KeyError, TypeError, ValueError, AttributeError, OverflowError) as exc:
             errors.append(f"link {i}: malformed ({exc})")
             break
         prev, prev_policy = d, policy

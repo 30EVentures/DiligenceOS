@@ -5,6 +5,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import Callable
 
+from diligenceos.names import normalize_name
 from diligenceos.types import CheckStatus, Finding
 
 CATEGORY = "identity"
@@ -19,10 +20,6 @@ class RegistryRecord:
 
 
 RegistryLookup = Callable[[str], "RegistryRecord | None"]
-
-
-def _normalize(name: str) -> str:
-    return " ".join(name.strip().casefold().split())
 
 
 def check_identity(name: str, registration_id: str, lookup: RegistryLookup) -> Finding:
@@ -42,7 +39,7 @@ def check_identity(name: str, registration_id: str, lookup: RegistryLookup) -> F
             detail=f"{registration_id} is registered but not active (status: {record.status!r})",
         )
 
-    if _normalize(record.name) != _normalize(name):
+    if normalize_name(record.name) != normalize_name(name):
         return Finding(
             category=CATEGORY,
             status=CheckStatus.FLAG,

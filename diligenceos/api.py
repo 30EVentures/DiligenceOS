@@ -25,7 +25,7 @@ MAX_BODY_BYTES = 1024 * 1024
 DEFAULT_TTL_SECONDS = 24 * 60 * 60
 DEFAULT_LOG_PAGE = 100  # GET /v1/log/entries: entries per page when `limit` is omitted
 MAX_LOG_PAGE = 500      # ...and the most a caller may ask for; more is a 400, not a clamp
-_RECEIPT_ID = re.compile(r"^sha256:[0-9a-f]{64}$")
+_RECEIPT_ID = re.compile(r"sha256:[0-9a-f]{64}")  # used with fullmatch: "$" would also accept a trailing newline
 CATEGORIES = ("sanctions", "identity", "track_record", "document_scan")
 
 _ROUTES = {
@@ -140,7 +140,7 @@ def _capabilities():
         "auth": {
             "envelope": {
                 "signer": "ed25519 id of the request key", "chain": "[delegation, ...] (empty = the operator)",
-                "issued_at": "iso8601, within 300s of the server", "nonce": "single-use string",
+                "issued_at": "iso8601, within 300s of the server", "nonce": "string; refused if seen again while the server runs (not remembered across a restart)",
                 "signature": "over {path, body without auth, issued_at, nonce}, domain diligenceos.request/1",
             },
             "delegation": "diligenceos.delegation/1: scopes, policy?, budget_id?, expires; each link may only narrow",
@@ -155,13 +155,28 @@ def _capabilities():
     }
 
 
+def _no_duplicate_keys(pairs):
+    keys = [k for k, _ in pairs]
+    if len(keys) != len(set(keys)):
+        raise ValueError("an object repeats a key (which value a reader keeps is not defined)")
+    return dict(pairs)
+
+
+def _no_nonfinite(token):
+    raise ValueError(f"{token} is not a JSON number")
+
+
 def _parse_body(body: bytes):
     if len(body) > MAX_BODY_BYTES:
         return None, _error(413, "body_too_large", f"body exceeds {MAX_BODY_BYTES} bytes")
     try:
-        return json.loads(body.decode("utf-8")), None
+        return json.loads(
+            body.decode("utf-8"), object_pairs_hook=_no_duplicate_keys, parse_constant=_no_nonfinite,
+        ), None
     except (UnicodeDecodeError, ValueError) as exc:
         return None, _error(400, "invalid_json", f"body is not valid JSON: {exc}")
+    except RecursionError:
+        return None, _error(400, "invalid_json", "body is nested too deeply")
 
 
 def _witnesses() -> list[str]:
@@ -217,7 +232,7 @@ def _server_trusted_issuers(store: Store) -> list[str]:
     return [store.signer.issuer_id]
 
 
-_DIGITS = re.compile(r"^[0-9]{1,15}$")  # ASCII only: str.isdigit() would accept other scripts
+_DIGITS = re.compile(r"[0-9]{1,15}")  # ASCII only: str.isdigit() would accept other scripts
 
 
 def _page_params(query: str):
@@ -234,7 +249,7 @@ def _page_params(query: str):
     for name, found in params.items():
         if len(found) != 1:
             return None, None, _error(400, "invalid_request", f"{name} may be given only once", name)
-        if not _DIGITS.match(found[0]):
+        if not _DIGITS.fullmatch(found[0]):
             return None, None, _error(400, "invalid_request", f"{name} must be a non-negative integer", name)
         values[name] = int(found[0])
     limit = values.get("limit", DEFAULT_LOG_PAGE)
@@ -302,7 +317,7 @@ def _log_endpoint(path: str, body: bytes, store: Store, query: str = ""):
     if err:
         return err
     receipt_id = data.get("receipt_id") if isinstance(data, dict) else None
-    if not isinstance(receipt_id, str) or not _RECEIPT_ID.match(receipt_id):
+    if not isinstance(receipt_id, str) or not _RECEIPT_ID.fullmatch(receipt_id):
         return _error(400, "invalid_request", "receipt_id must look like sha256:<64 hex>", "receipt_id")
     entry = log.lookup(receipt_id)
     if entry is None:
@@ -310,11 +325,18 @@ def _log_endpoint(path: str, body: bytes, store: Store, query: str = ""):
     return _json(200, {"entry": entry, "head_hash": log.head})
 
 
+MAX_TTL_SECONDS = 365 * 24 * 60 * 60
+
+
 def _ttl_seconds() -> int:
+    """DILIGENCEOS_RECEIPT_TTL_SECONDS, 0 to a year. Anything else (not a number, negative, or so
+    long that the receipt would outlive any freshness claim, or overflow a date) is the default:
+    a misconfiguration must not make every verdict a 500, nor quietly issue receipts valid for centuries."""
     try:
-        return int(os.environ.get("DILIGENCEOS_RECEIPT_TTL_SECONDS", DEFAULT_TTL_SECONDS))
+        ttl = int(os.environ.get("DILIGENCEOS_RECEIPT_TTL_SECONDS", DEFAULT_TTL_SECONDS))
     except ValueError:
         return DEFAULT_TTL_SECONDS
+    return ttl if 0 <= ttl <= MAX_TTL_SECONDS else DEFAULT_TTL_SECONDS
 
 
 def _now() -> str:
@@ -567,7 +589,7 @@ def _revoke(body: bytes, store: Store):
                 "delegation_id",
             )
         target_id = data.get("delegation_id")
-        if not isinstance(target_id, str) or not _RECEIPT_ID.match(target_id):
+        if not isinstance(target_id, str) or not _RECEIPT_ID.fullmatch(target_id):
             return _error(400, "invalid_request", "delegation_id must look like sha256:<64 hex>", "delegation_id")
         key = "delegation_id"
     else:
@@ -578,7 +600,7 @@ def _revoke(body: bytes, store: Store):
                 "receipt_id",
             )
         target_id = data.get("receipt_id")
-        if not isinstance(target_id, str) or not _RECEIPT_ID.match(target_id):
+        if not isinstance(target_id, str) or not _RECEIPT_ID.fullmatch(target_id):
             return _error(400, "invalid_request", "receipt_id must look like sha256:<64 hex>", "receipt_id")
         key = "receipt_id"
 

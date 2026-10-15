@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+import os
 from dataclasses import dataclass, field
 from pathlib import Path
 
@@ -54,12 +55,29 @@ def verify_cosignature(doc) -> bool:
     try:
         if doc["witness"] == doc["issuer"]:
             return False
+        if type(doc["length"]) is not int or doc["length"] < 0 or not isinstance(doc["head_hash"], str) \
+                or not isinstance(doc["issuer"], str):
+            return False  # the signed message is text: "3" must not be a second spelling of 3
         return verify_signature(
             doc["witness"], COSIGN_DOMAIN,
             cosign_message(doc["issuer"], doc["length"], doc["head_hash"]), doc["signature"],
         )
     except (KeyError, TypeError):
         return False
+
+
+def _baseline_ok(previous) -> bool:
+    """The shape this witness itself writes: {length: int >= 0 (not a bool), head_hash: str}."""
+    return (
+        isinstance(previous, dict) and type(previous.get("length")) is int and previous["length"] >= 0
+        and isinstance(previous.get("head_hash"), str)
+    )
+
+
+BASELINE_UNREADABLE = (
+    "this witness's saved baseline for the issuer is unreadable, so the log cannot be treated as new: "
+    "refusing (restore the state file, or delete this issuer's entry to start again on purpose)"
+)
 
 
 @dataclass(frozen=True)
@@ -74,7 +92,11 @@ class WitnessResult:
 def check_consistency(previous, entries, head_doc, *, pinned_issuer: str) -> WitnessResult:
     """Is (`entries`, `head_doc`) a genuine, append-only extension of `previous`
     (this witness's last accepted {length, head_hash}, or None on first sight)?
+    `previous` is None only on first sight: a baseline that is present but unreadable is a
+    refusal, never a fresh start (an emptied baseline would otherwise forgive any rewrite).
     Pure; never raises."""
+    if previous is not None and not _baseline_ok(previous):
+        return WitnessResult(False, (BASELINE_UNREADABLE,))
     errors: list[str] = []
     try:
         if head_doc.get("issuer") != pinned_issuer:
@@ -95,7 +117,7 @@ def check_consistency(previous, entries, head_doc, *, pinned_issuer: str) -> Wit
         errors.append("the signed head does not match the entries served with it")
 
     appended = 0
-    if previous:
+    if previous is not None:
         seen_len, seen_hash = previous["length"], previous["head_hash"]
         if len(entries) < seen_len:
             errors.append(
@@ -150,8 +172,15 @@ def run_witness(fetch, state_path: Path, signer: Signer, pinned_issuer: str, sub
     State is written only on success, so a bad round never becomes the new baseline."""
     if signer.issuer_id == pinned_issuer:
         raise SelfWitnessError(SELF_WITNESS_MESSAGE)
-    state = json.loads(state_path.read_text()) if state_path.exists() else {}
-    previous = state.get(pinned_issuer)
+    try:
+        state = json.loads(state_path.read_text(encoding="utf-8")) if state_path.exists() else {}
+    except (OSError, ValueError):
+        state = None
+    if not isinstance(state, dict):
+        return 3, "INCONSISTENT: this witness's state file is unreadable; refusing to start over silently", None
+    previous = state.get(pinned_issuer) if pinned_issuer in state else None
+    if pinned_issuer in state and not _baseline_ok(previous):
+        return 3, "INCONSISTENT: " + BASELINE_UNREADABLE, None
 
     head_doc = fetch("/v1/log/head")
     entries = download_entries(fetch, head_doc.get("length") if isinstance(head_doc, dict) else None)
@@ -162,7 +191,16 @@ def run_witness(fetch, state_path: Path, signer: Signer, pinned_issuer: str, sub
     cosignature = cosign_head(signer, pinned_issuer, result.length, result.head_hash)
     state[pinned_issuer] = {"length": result.length, "head_hash": result.head_hash}
     state_path.parent.mkdir(parents=True, exist_ok=True)
-    state_path.write_text(json.dumps(state, indent=2))
+    # Temp file, then rename: a crash mid-write must not leave a truncated baseline (which would
+    # be read as "unreadable" and lock the witness out, or in the past as "first sight").
+    target = state_path.resolve()  # a symlinked --state stays a symlink to the same file
+    tmp_path = target.with_name(target.name + ".tmp")
+    try:
+        tmp_path.write_text(json.dumps(state, indent=2), encoding="utf-8")
+        os.chmod(tmp_path, (target.stat().st_mode & 0o777) if target.exists() else 0o600)
+        os.replace(tmp_path, target)
+    finally:
+        tmp_path.unlink(missing_ok=True)
     note = f"consistent: {result.appended} new entr{'y' if result.appended == 1 else 'ies'}, head at {result.length}"
     if submit is not None:
         note += "; " + submit(cosignature)

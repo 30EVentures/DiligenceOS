@@ -70,6 +70,7 @@ _RULES = (
     (r"names an issuer but carries no signature", "unsigned-but-names-issuer"),
     (r"^expires/now is not an ISO", "bad-timestamp"),
     (r"does not match the digest the claim", "evidence-digest-mismatch"),
+    (r"is empty, so it proves nothing", "evidence-empty"),
     (r"not found in", "evidence-quote-missing"),
     (r"was claimed absent but appears", "evidence-absent-present"),
     # delegation chains
@@ -84,6 +85,9 @@ _RULES = (
     (r"must not name a parent", "bad-parent"),
     (r"delegator is not the previous", "delegator-mismatch"),
     (r"parent does not name the previous", "parent-mismatch"),
+    (r"link \d+: issued after it expires", "issued-after-expiry"),
+    (r"link \d+: is not valid yet", "not-valid-yet"),
+    (r"link \d+: is dated before its parent", "dated-before-parent"),
     (r"link \d+: widens scopes", "widens-scopes"),
     (r"expires later than its parent", "expires-after-parent"),
     (r"changes the budget", "budget-changed"),

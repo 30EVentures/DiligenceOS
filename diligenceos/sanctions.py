@@ -7,6 +7,7 @@ from dataclasses import dataclass
 from pathlib import Path
 
 from diligenceos.evidence import text_digest
+from diligenceos.names import normalize_name
 from diligenceos.types import CheckStatus, Evidence, Finding
 
 CATEGORY = "sanctions"
@@ -32,16 +33,16 @@ class SanctionsList:
         )
 
     def match(self, name: str) -> SanctionsEntry | None:
-        needle = name.strip().casefold()
+        needle = normalize_name(name)
         for entry in self.entries:
             names = (entry.name, *entry.aliases)
-            if any(needle == candidate.strip().casefold() for candidate in names):
+            if any(needle == normalize_name(candidate) for candidate in names):
                 return entry
         return None
 
 
 def load_sanctions_list(path: str | Path) -> SanctionsList:
-    raw = json.loads(Path(path).read_text())
+    raw = json.loads(Path(path).read_text(encoding="utf-8"))
     entries = tuple(
         SanctionsEntry(
             name=item["name"],

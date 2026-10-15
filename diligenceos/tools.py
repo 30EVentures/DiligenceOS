@@ -33,7 +33,7 @@ def _operator_key_path() -> Path:
 
 
 def _read_json(path: str):
-    return json.loads(sys.stdin.read() if path == "-" else Path(path).read_text())
+    return json.loads(sys.stdin.buffer.read().decode("utf-8") if path == "-" else Path(path).read_text(encoding="utf-8"))
 
 
 def _keygen(args) -> int:
@@ -80,6 +80,21 @@ def _sign_request(args) -> int:
     return 0
 
 
+MAX_RESPONSE_BYTES = 16 * 1024 * 1024  # a full 500-entry log page is well under 1 MiB
+
+
+def _json_from_response(resp) -> object:
+    """Parse a server's reply, reading at most MAX_RESPONSE_BYTES. The witness exists to distrust
+    the server it watches; that server must not be able to make it buffer without limit."""
+    data = resp.read(MAX_RESPONSE_BYTES + 1)
+    if len(data) > MAX_RESPONSE_BYTES:
+        raise ValueError(f"the server's reply is larger than {MAX_RESPONSE_BYTES} bytes; refusing to read it")
+    try:
+        return json.loads(data.decode("utf-8"))
+    except RecursionError:
+        raise ValueError("the server's reply is nested too deeply to read") from None
+
+
 def _witness(args) -> int:
     import urllib.error
     import urllib.request
@@ -90,7 +105,7 @@ def _witness(args) -> int:
 
     def fetch(path: str) -> dict:
         with urllib.request.urlopen(base + path, timeout=15) as resp:
-            return json.load(resp)
+            return _json_from_response(resp)
 
     def submit(cosignature: dict) -> str:
         req = urllib.request.Request(
@@ -101,7 +116,10 @@ def _witness(args) -> int:
             with urllib.request.urlopen(req, timeout=15):
                 return "cosignature accepted by the server"
         except urllib.error.HTTPError as exc:
-            reason = json.load(exc).get("error", {}).get("message", exc.reason)
+            try:
+                reason = _json_from_response(exc).get("error", {}).get("message", exc.reason)
+            except (ValueError, AttributeError):
+                reason = exc.reason
             return f"server did not store the cosignature ({exc.code}: {reason})"
 
     signer = Signer.load_or_create(Path(args.key).expanduser())

@@ -231,7 +231,8 @@ def _require_admin_token(form: dict) -> str | None:
     if configured is None:
         return "writes to /data are disabled: set DILIGENCEOS_ADMIN_TOKEN to enable them"
     supplied = form.get("admin_token", "")
-    if not hmac.compare_digest(supplied, configured):
+    # bytes, not str: compare_digest raises TypeError for a non-ASCII str, which was a 500 for anyone
+    if not hmac.compare_digest(str(supplied).encode("utf-8", "surrogatepass"), configured.encode("utf-8", "surrogatepass")):
         return "admin token is missing or incorrect"
     return None
 
@@ -243,13 +244,35 @@ def _get_store() -> Store:
     return _store
 
 
+class _BadBody(Exception):
+    def __init__(self, status: int, message: str) -> None:
+        super().__init__(message)
+        self.status, self.message = status, message
+
+
+def _read_body(environ) -> bytes:
+    """The request body, never more than api.MAX_BODY_BYTES bytes. Raises _BadBody for a
+    Content-Length that is not a non-negative integer (read(-1) would wait for the peer to close:
+    one connection could hold this single-threaded server forever) or that is over the cap
+    (checked from the header, so an oversize body is refused unread, not buffered)."""
+    raw = str(environ.get("CONTENT_LENGTH") or "0").strip()
+    # at most 15 digits: int() of a longer digit string can raise (Python limits int/str conversion)
+    length = int(raw) if raw.isascii() and raw.isdigit() and len(raw) <= 15 else -1
+    if length < 0 and raw.isascii() and raw.isdigit():
+        length = api.MAX_BODY_BYTES + 1  # too many digits to be anything but too large
+    if length < 0:
+        raise _BadBody(400, "Content-Length must be a non-negative integer")
+    if length > api.MAX_BODY_BYTES:
+        raise _BadBody(413, f"body exceeds {api.MAX_BODY_BYTES} bytes")
+    return environ["wsgi.input"].read(length) if length else b""
+
+
 def _read_form(environ) -> dict:
+    body = _read_body(environ)
     try:
-        length = int(environ.get("CONTENT_LENGTH") or 0)
-    except ValueError:
-        length = 0
-    body = environ["wsgi.input"].read(length) if length else b""
-    return dict(parse_qsl(body.decode("utf-8")))
+        return dict(parse_qsl(body.decode("utf-8"), max_num_fields=64))
+    except (UnicodeDecodeError, ValueError):
+        raise _BadBody(400, "form is not valid UTF-8 form data") from None
 
 
 def _html_response(start_response, subtitle: str, body: str, status: str = "200 OK"):
@@ -264,18 +287,27 @@ def _redirect(start_response, location: str):
 
 
 def app(environ, start_response):
+    try:
+        return _app(environ, start_response)
+    except _BadBody as bad:
+        reason = _REASONS.get(bad.status, "Error")
+        start_response(f"{bad.status} {reason}", [("Content-Type", "text/plain; charset=utf-8")])
+        return [bad.message.encode("utf-8")]
+
+
+def _app(environ, start_response):
     method = environ.get("REQUEST_METHOD", "GET")
     path = environ.get("PATH_INFO", "/")
     store = _get_store()
 
     if path.startswith("/v1/"):
         try:
-            length = int(environ.get("CONTENT_LENGTH") or 0)
-        except ValueError:
-            length = 0
-        # read one byte past the cap so an oversize body is detected, not truncated
-        body = environ["wsgi.input"].read(min(length, api.MAX_BODY_BYTES + 1)) if length else b""
-        status, headers, payload = api.handle(method, path, body, store, environ.get("QUERY_STRING", ""))
+            body = _read_body(environ)
+        except _BadBody as bad:
+            status, headers, payload = api._error(
+                bad.status, "body_too_large" if bad.status == 413 else "invalid_request", bad.message)
+        else:
+            status, headers, payload = api.handle(method, path, body, store, environ.get("QUERY_STRING", ""))
         start_response(f"{status} {_REASONS.get(status, 'Error')}", headers)
         return [payload]
 
