@@ -1,8 +1,14 @@
 """Presence on the mesh that follows what the verdict API is really doing.
 
-Four events, four fixed labels, nothing else. A label is chosen from `EVENTS` by name; no subject
-name, document text, evidence, verdict or score can reach a heartbeat because the only thing a caller
-can hand in is one of those four names.
+Five events, five fixed labels, nothing else. A label is chosen from `EVENTS` by name; no subject
+name, document text, evidence, verdict, amount or score can reach a heartbeat because the only thing a
+caller can hand in is one of those five names.
+
+    issuing a receipt            BUILDING     "Issuing a receipt"
+    verifying                    TESTING      "Verifying"
+    witnessing a log             REVIEWING    "Witnessing a log"
+    a refused or broken chain    INCIDENT     "Chain refused or broken"   (shown longer than the others)
+    nothing happening            IDLE
 
 Rules it keeps:
 - Inert unless FLASHYOS_ORG_ID, FLASHYOS_AGENT_TOKEN and FLASHYOS_AGENT_NAME are all set and valid:
@@ -24,11 +30,13 @@ from diligenceos.flashy import mesh_reporter
 
 # event -> (status, task label). Statuses are mesh_reporter.STATUSES; labels are fixed text.
 EVENTS = {
-    "received": ("PLANNING", "Request received"),
-    "gathering": ("REVIEWING", "Gathering evidence"),
-    "issued": ("PRESENTING", "Verdict issued"),
+    "issuing": ("BUILDING", "Issuing a receipt"),
+    "verifying": ("TESTING", "Verifying"),
+    "witnessing": ("REVIEWING", "Witnessing a log"),
+    "incident": ("INCIDENT", "Chain refused or broken"),
     "idle": ("IDLE", ""),
 }
+INCIDENT_HOLD_FACTOR = 8      # an incident stays visible this many times longer than ordinary activity
 
 
 class Presence:
@@ -75,7 +83,8 @@ class Presence:
             now = self.clock() if now is None else now
             with self._lock:
                 want = self._want
-                if want != "idle" and self._last_activity is not None and now - self._last_activity > self.idle_after:
+                hold = self.idle_after * (INCIDENT_HOLD_FACTOR if want == "incident" else 1)
+                if want != "idle" and self._last_activity is not None and now - self._last_activity > hold:
                     want = "idle"
                 due = self._last_sent is None or now - self._last_sent >= self.refresh
                 changed = want != self._sent

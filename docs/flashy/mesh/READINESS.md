@@ -39,7 +39,7 @@ node -e 'const m=require("@flashyos/aao");console.log(m.validateCharterDocument(
 `NOT sent` reasons: `HTTP_401` wrong token or name, `HTTP_403`/`404` wrong org id, `NETWORK_ERROR`, `API_URL_NOT_HTTPS`.
 
 ## 4. What to look for
-- Dashboard: the agent appears in a room. It moves to a working room for a moment after a verdict ("Request received", "Gathering evidence", "Verdict issued") and returns to the lounge about 15 s later; a quiet server still sends a heartbeat about every minute.
+- Dashboard: the agent appears in a room and its status follows the real loop: issuing a receipt = BUILDING, verifying (receipts, decisions, the log) = TESTING, witnessing a log = REVIEWING, a refused or broken chain = INCIDENT (kept visible about two minutes), nothing happening = IDLE (back to the lounge about 15 s after activity). A quiet server still sends a heartbeat about every minute. A request that is simply refused (a 400) shows nothing.
 - The labels are the only text ever sent. No name, document text, verdict or score appears; if you ever see one, stop the server and tell me.
 - A verdict request with a misspelt field returns 400 naming the field; with `DILIGENCEOS_VERDICT_AUTH=signed` an unsigned request returns 401.
 - `measures` prints `numerator`/`denominator`; `{"ok": false, "code": "LOG_DOES_NOT_VERIFY"}` means the log or the pinned key is wrong, and no number is shown.

@@ -322,7 +322,6 @@ def _app(environ, start_response):
         return _html_response(start_response, "The data checks run against, editable here.", _data_body(store))
 
     if method == "POST" and path == "/verdict":
-        api._presence_note("received")
         form = _read_form(environ)
         name = form.get("name", "").strip()
         registration_id = form.get("registration_id", "").strip()
@@ -336,7 +335,7 @@ def _app(environ, start_response):
                 status="400 Bad Request",
             )
 
-        api._presence_note("gathering")
+        api._presence_note("issuing")
         result = run_diligence(
             name=name,
             registration_id=registration_id,
@@ -345,7 +344,6 @@ def _app(environ, start_response):
             ledger=store.ledger,
             document_text=document_text,
         )
-        api._presence_note("issued")
         return _html_response(start_response, _DEMO_NOTE, _result_body(name, registration_id, result))
 
     if method == "POST" and path == "/data/sanctions":

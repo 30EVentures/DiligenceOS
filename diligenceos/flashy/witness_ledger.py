@@ -18,7 +18,7 @@ import re
 from datetime import datetime, timezone
 from pathlib import Path
 
-from diligenceos.flashy import witness
+from diligenceos.flashy import presence, witness
 from diligenceos.flashy.measures import basis_points, valid_pin
 from diligenceos.receipt import digest
 from diligenceos.receipt_log import GENESIS
@@ -114,6 +114,7 @@ class WitnessLedger:
     def witness(self, plane_entries, pinned_pub, *, issued_at, cap_base_units=None, now=None):
         """(receipt | None, ledger entry). A refusal is recorded, never raised and never signed."""
         receipt, code = None, "OK"
+        presence.note("witnessing")
         try:
             receipt = witness.witness_receipt(plane_entries, pinned_pub, self.signer, issued_at=issued_at, cap_base_units=cap_base_units)
         except witness.PlaneLogInvalid as exc:
@@ -122,6 +123,8 @@ class WitnessLedger:
             code = "BAD_INPUT"
         except Exception:  # noqa: BLE001 - recorded as a refusal; the witness never signs what it could not check
             code = "INTERNAL_ERROR"
+        if receipt is None:
+            presence.note("incident")      # a chain this witness refused
         entry = {
             "seq": len(self._entries), "kind": "witnessing",
             "outcome": "WITNESSED" if receipt else "REFUSED", "code": code,

@@ -244,6 +244,7 @@ def _manifest(store: Store):
 
 
 def _log_unavailable(exc: Exception):
+    _presence_note("incident")   # a log that fails its own verification is a broken chain
     return _error(503, "log_unavailable", str(exc))
 
 
@@ -347,7 +348,10 @@ def _log_endpoint(path: str, body: bytes, store: Store, query: str = ""):
     if path == "/v1/log/conflicts":
         return _json(200, {"conflicts": log.conflicts()})
     if path == "/v1/log/verify":
+        _presence_note("verifying")
         errors = log.verify()
+        if errors:
+            _presence_note("incident")
         return _json(200, {
             "valid": not errors, "errors": errors,
             "length": len(log.entries), "head_hash": log.head,
@@ -389,7 +393,6 @@ def _presence_note(event: str) -> None:
 
 
 def _verdict(body: bytes, store: Store):
-    _presence_note("received")
     data, err = _parse_body(body)
     if err:
         return err
@@ -435,7 +438,7 @@ def _verdict(body: bytes, store: Store):
         transaction = Money.from_dict(raw_tx).to_dict()
 
     name, reg = subject["name"].strip(), subject["registration_id"].strip()
-    _presence_note("gathering")
+    _presence_note("issuing")
     result = run_diligence(
         name=name,
         registration_id=reg,
@@ -462,7 +465,6 @@ def _verdict(body: bytes, store: Store):
         ttl_seconds=_ttl_seconds(), signer=signer,
     )
     entry = log.append(receipt, signer=signer)
-    _presence_note("issued")
     headers = [
         ("X-DiligenceOS-Log-Seq", str(entry["seq"])),
         ("X-DiligenceOS-Log-Entry-Hash", entry["entry_hash"]),
@@ -473,6 +475,7 @@ def _verdict(body: bytes, store: Store):
 
 
 def _verify(body: bytes, store: Store):
+    _presence_note("verifying")
     data, err = _parse_body(body)
     if err:
         return err
@@ -545,6 +548,7 @@ def _sources_of(data: dict):
 
 
 def _decide(body: bytes, store: Store):
+    _presence_note("verifying")
     data, err = _parse_body(body)
     if err:
         return err
