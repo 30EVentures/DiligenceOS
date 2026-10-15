@@ -322,6 +322,7 @@ def _app(environ, start_response):
         return _html_response(start_response, "The data checks run against, editable here.", _data_body(store))
 
     if method == "POST" and path == "/verdict":
+        api._presence_note("received")
         form = _read_form(environ)
         name = form.get("name", "").strip()
         registration_id = form.get("registration_id", "").strip()
@@ -335,6 +336,7 @@ def _app(environ, start_response):
                 status="400 Bad Request",
             )
 
+        api._presence_note("gathering")
         result = run_diligence(
             name=name,
             registration_id=registration_id,
@@ -343,6 +345,7 @@ def _app(environ, start_response):
             ledger=store.ledger,
             document_text=document_text,
         )
+        api._presence_note("issued")
         return _html_response(start_response, _DEMO_NOTE, _result_body(name, registration_id, result))
 
     if method == "POST" and path == "/data/sanctions":
@@ -454,6 +457,8 @@ def serve(host: str | None = None, port: int | None = None) -> None:
     warning = tls_warning(host)
     if warning:
         print(warning, file=sys.stderr)
+    if api._presence is not None:
+        api._presence.default().start()   # no-op unless the three FLASHYOS_* variables are set
     with make_server(host, port, app) as server:
         print(f"DiligenceOS running at http://{host}:{port}", file=sys.stderr)
         server.serve_forever()

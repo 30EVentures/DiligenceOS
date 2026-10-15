@@ -1,0 +1,41 @@
+{
+  "aao": "0.1",
+  "name": "DiligenceOS",
+  "slug": "diligenceos",
+  "description": "The due-diligence agent you call before a transaction, hire or contract: one verdict with a signed receipt and a signed log anyone can check against a pinned key. Pre-alpha: a proof of concept, not to be relied on for real decisions.",
+  "accountableTo": "30eventures@gmail.com",
+  "escalation": "diligence",
+  "roles": [
+    {
+      "name": "diligence",
+      "family": "risk",
+      "purpose": "Returns PROCEED, HOLD or RED_FLAG for a subject and a transaction, from the data its operator has loaded. Sanctions and document findings quote their source so a reader can re-check them; identity and track-record findings do not yet. Every verdict is a signed receipt in an append-only signed log.",
+      "measure": "Receipts logged that were never revoked and never contradicted an earlier verdict on the same inputs, as a share of receipts logged",
+      "capabilities": [
+        "screen",
+        "verify",
+        "report"
+      ],
+      "humanApprovalAtOrAbove": "MEDIUM"
+    },
+    {
+      "name": "witness",
+      "family": "governance",
+      "purpose": "Verifies another party's signed log against a key the caller pinned and signs a receipt about what it checked. It witnesses integrity and contents; it never approves or authorizes a spend, and holds no spending authority.",
+      "measure": "Plane logs submitted for witnessing that verified end to end and were signed, as a share of logs submitted",
+      "capabilities": [
+        "verify",
+        "attest"
+      ],
+      "humanApprovalAtOrAbove": "HIGH"
+    }
+  ],
+  "network": {
+    "offers": [
+      "due-diligence-verdict"
+    ],
+    "wants": [
+      "design-partner-transactions"
+    ]
+  }
+}

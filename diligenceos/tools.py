@@ -144,7 +144,7 @@ def main(argv: list[str]) -> int:
 
     p = sub.add_parser("delegate", help="mint a delegation chain for a subject key")
     p.add_argument("--subject", required=True, help="the delegate's issuer id (ed25519:...)")
-    p.add_argument("--scopes", required=True, help="comma-separated: spend,revoke")
+    p.add_argument("--scopes", required=True, help="comma-separated: spend,revoke,verdict")
     p.add_argument("--key", help="signing key file (default: the operator key)")
     p.add_argument("--chain", help="existing chain (JSON file or -) when delegating onward")
     p.add_argument("--ttl", type=int, default=86400, help="seconds until expiry (default 86400)")

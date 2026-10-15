@@ -69,7 +69,7 @@ class ServedManifestTest(unittest.TestCase):
         self.assertEqual(d["log_entry"]["signature"]["domain"], receipt_log.LOG_ENTRY_DOMAIN)
         self.assertEqual(d["log_head"]["signature"]["domain"], signing.LOG_HEAD_DOMAIN)
         self.assertEqual(d["cosignature"]["signature"]["domain"], witness.COSIGN_DOMAIN)
-        self.assertEqual(d["delegation"]["scopes"], ["revoke", "spend"])
+        self.assertEqual(d["delegation"]["scopes"], ["revoke", "spend", "verdict"])
         replay = d["receipt"]["replay"]
         self.assertEqual((replay["base_trust_score"], replay["sanctions_penalty"], replay["other_penalty"]),
                          (engine.DEFAULT_BASE_TRUST_SCORE, engine.SANCTIONS_PENALTY, engine.OTHER_PENALTY))

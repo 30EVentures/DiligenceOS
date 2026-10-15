@@ -18,6 +18,11 @@ from diligenceos.receipt_log import LogCorruptError
 from diligenceos.signing import LOG_HEAD_DOMAIN, SignerError, head_message, verify_signature
 from diligenceos.receipt import RULES, SCHEMA, digest, unsanitized_fields_doc, issue_receipt, verify_receipt
 from diligenceos.store import Store
+
+try:  # presence on the mesh is optional and must never be able to stop the API from loading
+    from diligenceos.flashy import presence as _presence
+except Exception:  # noqa: BLE001
+    _presence = None
 from diligenceos.witness import SelfWitnessError
 from diligenceos.types import CheckStatus, Money, Verdict
 
@@ -47,6 +52,36 @@ _ROUTES = {
 }
 AUTHENTICATED = ("/v1/revoke", "/v1/spend")
 
+VERDICT_AUTH_VAR = "DILIGENCEOS_VERDICT_AUTH"
+_VERDICT_KEYS = frozenset({"subject", "document_text", "transaction", "auth"})
+_SUBJECT_KEYS = frozenset({"name", "registration_id"})
+_TRANSACTION_KEYS = frozenset({"amount_minor", "currency"})
+
+
+def verdict_auth_mode(environ=None) -> str:
+    """"open" (the default, for a server on this machine) or "signed" (every verdict request carries a
+    signed auth envelope, scope 'verdict'). DILIGENCEOS_VERDICT_AUTH=open is the only way to get open
+    when the variable is set at all: any other value, an empty one included, is read as signed, so a
+    typo closes the door instead of opening it."""
+    value = (os.environ if environ is None else environ).get(VERDICT_AUTH_VAR)
+    if value is None or value.strip().lower() == "open":
+        return "open"
+    return "signed"
+
+
+def _unknown_verdict_field(data: dict):
+    """The path of the first field a verdict request has no business carrying, or None."""
+    for key in data:
+        if key not in _VERDICT_KEYS:
+            return key
+    for outer, allowed in (("subject", _SUBJECT_KEYS), ("transaction", _TRANSACTION_KEYS)):
+        inner = data.get(outer)
+        if isinstance(inner, dict):
+            for key in inner:
+                if key not in allowed:
+                    return f"{outer}.{key}"
+    return None
+
 
 def _json(status: int, payload, extra_headers=()):
     body = json.dumps(payload, sort_keys=True).encode("utf-8")
@@ -70,12 +105,15 @@ def _capabilities():
         "finding_statuses": [s.value for s in CheckStatus],
         "categories": list(CATEGORIES),
         "untrusted_fields": unsanitized_fields_doc(),
+        "verdict_auth": verdict_auth_mode(),
         "endpoints": {
             "POST /v1/verdict": {
                 "request": {
                     "subject": {"name": "string", "registration_id": "string"},
                     "document_text": "string, optional",
                     "transaction": {"amount_minor": "integer minor units, never a float; 0 to 9007199254740991 (2^53-1) inclusive", "currency": "3-letter uppercase code"},
+                    "auth": "auth envelope, scope 'verdict'; required when verdict_auth is 'signed', checked whenever present",
+                    "closed": "any other field, at the top level or inside subject or transaction, is a 400 invalid_request naming it",
                 },
                 "response": "receipt (schema above)",
             },
@@ -190,7 +228,8 @@ def _manifest(store: Store):
         return _signer_unavailable(exc)
     listed = [w for w in _witnesses() if w != signer.issuer_id]  # the issuer is never its own witness
     doc = manifest_doc.build_manifest(
-        issuer_id=signer.issuer_id, routes=_ROUTES, authenticated=AUTHENTICATED,
+        issuer_id=signer.issuer_id, routes=_ROUTES,
+        authenticated=AUTHENTICATED + (('/v1/verdict',) if verdict_auth_mode() == 'signed' else ()),
         witnesses=listed, generated_at=_now(),
         limits={
             "max_body_bytes": MAX_BODY_BYTES,
@@ -343,12 +382,26 @@ def _now() -> str:
     return datetime.now(timezone.utc).replace(microsecond=0).isoformat()
 
 
+def _presence_note(event: str) -> None:
+    """A fixed event name, never data from the request. No-op unless the three FLASHYOS_* variables are set."""
+    if _presence is not None:
+        _presence.note(event)
+
+
 def _verdict(body: bytes, store: Store):
+    _presence_note("received")
     data, err = _parse_body(body)
     if err:
         return err
     if not isinstance(data, dict):
         return _error(400, "invalid_request", "body must be a JSON object")
+    if verdict_auth_mode() == "signed" or "auth" in data:  # an envelope that is given is always checked
+        _, err = _authenticate("/v1/verdict", data, store, "verdict")
+        if err:
+            return err
+    unknown = _unknown_verdict_field(data)
+    if unknown is not None:  # closed schema: a misspelt field must not quietly mean "none"
+        return _error(400, "invalid_request", "unknown field", unknown[:80])
     subject = data.get("subject")
     if not isinstance(subject, dict):
         return _error(400, "invalid_request", "subject must be an object", "subject")
@@ -382,6 +435,7 @@ def _verdict(body: bytes, store: Store):
         transaction = Money.from_dict(raw_tx).to_dict()
 
     name, reg = subject["name"].strip(), subject["registration_id"].strip()
+    _presence_note("gathering")
     result = run_diligence(
         name=name,
         registration_id=reg,
@@ -408,6 +462,7 @@ def _verdict(body: bytes, store: Store):
         ttl_seconds=_ttl_seconds(), signer=signer,
     )
     entry = log.append(receipt, signer=signer)
+    _presence_note("issued")
     headers = [
         ("X-DiligenceOS-Log-Seq", str(entry["seq"])),
         ("X-DiligenceOS-Log-Entry-Hash", entry["entry_hash"]),
