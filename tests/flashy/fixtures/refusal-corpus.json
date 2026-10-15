@@ -1,0 +1,3776 @@
+{
+ "corpus": "flashy-refusal/1",
+ "about": "Refusal cases for the invoice verifier and the transaction-outcome reader. Both the JS spine and the Python adapter answer every case; `expect` is the required answer, `gap` records a known difference exactly.",
+ "sets": [
+  {
+   "name": "invoice",
+   "now": "2026-10-14T12:00:00.000Z",
+   "cases": [
+    {
+     "id": "inv-valid",
+     "note": "A well-formed invoice.",
+     "invoice": {
+      "ver": "30e-demo-invoice/1",
+      "invoiceId": "inv-1",
+      "seller": "demo-seller",
+      "payee": "0x2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b",
+      "chain": "evm:31337",
+      "asset": "0xabababababababababababababababababababab",
+      "amount": "1000",
+      "deliverableHash": "abababababababababababababababababababababababababababababababab",
+      "expiresAt": "2026-10-15T12:00:00.000Z",
+      "sellerKey": "bc7cbcb5636375fa1d82434d466724d92377f53b980695dd49d26d0ce12205a5",
+      "sig": "8150d0bcbc3f88c7fe7bdbbabc6df37359ff22818711a547d52ef876f91b9d4a3e283a70e21bb0e153c049e6af1d18ff2a76ed9be427640d9472676510cf1a0f"
+     },
+     "pinned": "bc7cbcb5636375fa1d82434d466724d92377f53b980695dd49d26d0ce12205a5",
+     "now_ms": 1791979200000,
+     "expect": {
+      "valid": true
+     }
+    },
+    {
+     "id": "inv-valid-84532",
+     "note": "Every allowlisted chain is accepted.",
+     "invoice": {
+      "ver": "30e-demo-invoice/1",
+      "invoiceId": "inv-1",
+      "seller": "demo-seller",
+      "payee": "0x2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b",
+      "chain": "evm:84532",
+      "asset": "0xabababababababababababababababababababab",
+      "amount": "1000",
+      "deliverableHash": "abababababababababababababababababababababababababababababababab",
+      "expiresAt": "2026-10-15T12:00:00.000Z",
+      "sellerKey": "bc7cbcb5636375fa1d82434d466724d92377f53b980695dd49d26d0ce12205a5",
+      "sig": "9f11170529b242a397b1fe3e2279f9a1c4843149bc17a8310111a243ef629d5d919de71fc5ad4dc2cd6a00679f2e8fecbe420afc4affda14e80b285f9d137808"
+     },
+     "pinned": "bc7cbcb5636375fa1d82434d466724d92377f53b980695dd49d26d0ce12205a5",
+     "now_ms": 1791979200000,
+     "expect": {
+      "valid": true
+     }
+    },
+    {
+     "id": "inv-valid-43113",
+     "note": "Every allowlisted chain is accepted.",
+     "invoice": {
+      "ver": "30e-demo-invoice/1",
+      "invoiceId": "inv-1",
+      "seller": "demo-seller",
+      "payee": "0x2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b",
+      "chain": "evm:43113",
+      "asset": "0xabababababababababababababababababababab",
+      "amount": "1000",
+      "deliverableHash": "abababababababababababababababababababababababababababababababab",
+      "expiresAt": "2026-10-15T12:00:00.000Z",
+      "sellerKey": "bc7cbcb5636375fa1d82434d466724d92377f53b980695dd49d26d0ce12205a5",
+      "sig": "9a9519baa4cfceb2a5fadc4f7f95e97065ec0a92b2b19679f07b9c419d4956cb50270c467b28d1a96ea1274c328e85888c9c67f0e2feb8286ebb44d2fd13db03"
+     },
+     "pinned": "bc7cbcb5636375fa1d82434d466724d92377f53b980695dd49d26d0ce12205a5",
+     "now_ms": 1791979200000,
+     "expect": {
+      "valid": true
+     }
+    },
+    {
+     "id": "inv-valid-31337",
+     "note": "Every allowlisted chain is accepted.",
+     "invoice": {
+      "ver": "30e-demo-invoice/1",
+      "invoiceId": "inv-1",
+      "seller": "demo-seller",
+      "payee": "0x2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b",
+      "chain": "evm:31337",
+      "asset": "0xabababababababababababababababababababab",
+      "amount": "1000",
+      "deliverableHash": "abababababababababababababababababababababababababababababababab",
+      "expiresAt": "2026-10-15T12:00:00.000Z",
+      "sellerKey": "bc7cbcb5636375fa1d82434d466724d92377f53b980695dd49d26d0ce12205a5",
+      "sig": "8150d0bcbc3f88c7fe7bdbbabc6df37359ff22818711a547d52ef876f91b9d4a3e283a70e21bb0e153c049e6af1d18ff2a76ed9be427640d9472676510cf1a0f"
+     },
+     "pinned": "bc7cbcb5636375fa1d82434d466724d92377f53b980695dd49d26d0ce12205a5",
+     "now_ms": 1791979200000,
+     "expect": {
+      "valid": true
+     }
+    },
+    {
+     "id": "inv-valid-huge-amount",
+     "note": "A very large integer string is still an integer string.",
+     "invoice": {
+      "ver": "30e-demo-invoice/1",
+      "invoiceId": "inv-1",
+      "seller": "demo-seller",
+      "payee": "0x2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b",
+      "chain": "evm:31337",
+      "asset": "0xabababababababababababababababababababab",
+      "amount": "10000000000000000000000000000000000000000",
+      "deliverableHash": "abababababababababababababababababababababababababababababababab",
+      "expiresAt": "2026-10-15T12:00:00.000Z",
+      "sellerKey": "bc7cbcb5636375fa1d82434d466724d92377f53b980695dd49d26d0ce12205a5",
+      "sig": "59181982af300c9f94d43f24fe81c69bf10e194a2458a0d415e6ff3230f9238db2806f29446c7aaa0e3a400c8e21523c2a56f8bdd8db05627836a39c1c2e1105"
+     },
+     "pinned": "bc7cbcb5636375fa1d82434d466724d92377f53b980695dd49d26d0ce12205a5",
+     "now_ms": 1791979200000,
+     "expect": {
+      "valid": true
+     }
+    },
+    {
+     "id": "inv-extra-field-signed",
+     "note": "An unknown field, correctly signed: closed schemas refuse it.",
+     "invoice": {
+      "ver": "30e-demo-invoice/1",
+      "invoiceId": "inv-1",
+      "seller": "demo-seller",
+      "payee": "0x2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b",
+      "chain": "evm:31337",
+      "asset": "0xabababababababababababababababababababab",
+      "amount": "1000",
+      "deliverableHash": "abababababababababababababababababababababababababababababababab",
+      "expiresAt": "2026-10-15T12:00:00.000Z",
+      "sellerKey": "bc7cbcb5636375fa1d82434d466724d92377f53b980695dd49d26d0ce12205a5",
+      "memo": "x",
+      "sig": "df36c047feceac498b90d62d70a5eb4cf606ebcdcca4efe70c2f16929f6fc62bac771e97db0b856422de1397bbe828e99152c5856e600d21bebe2a44fe44fd0d"
+     },
+     "pinned": "bc7cbcb5636375fa1d82434d466724d92377f53b980695dd49d26d0ce12205a5",
+     "now_ms": 1791979200000,
+     "expect": {
+      "valid": false
+     }
+    },
+    {
+     "id": "inv-extra-field-unsigned",
+     "note": "An unknown field added after signing.",
+     "invoice": {
+      "ver": "30e-demo-invoice/1",
+      "invoiceId": "inv-1",
+      "seller": "demo-seller",
+      "payee": "0x2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b",
+      "chain": "evm:31337",
+      "asset": "0xabababababababababababababababababababab",
+      "amount": "1000",
+      "deliverableHash": "abababababababababababababababababababababababababababababababab",
+      "expiresAt": "2026-10-15T12:00:00.000Z",
+      "sellerKey": "bc7cbcb5636375fa1d82434d466724d92377f53b980695dd49d26d0ce12205a5",
+      "sig": "8150d0bcbc3f88c7fe7bdbbabc6df37359ff22818711a547d52ef876f91b9d4a3e283a70e21bb0e153c049e6af1d18ff2a76ed9be427640d9472676510cf1a0f",
+      "memo": "x"
+     },
+     "pinned": "bc7cbcb5636375fa1d82434d466724d92377f53b980695dd49d26d0ce12205a5",
+     "now_ms": 1791979200000,
+     "expect": {
+      "valid": false
+     }
+    },
+    {
+     "id": "inv-missing-ver",
+     "note": "The ver field is missing.",
+     "invoice": {
+      "invoiceId": "inv-1",
+      "seller": "demo-seller",
+      "payee": "0x2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b",
+      "chain": "evm:31337",
+      "asset": "0xabababababababababababababababababababab",
+      "amount": "1000",
+      "deliverableHash": "abababababababababababababababababababababababababababababababab",
+      "expiresAt": "2026-10-15T12:00:00.000Z",
+      "sellerKey": "bc7cbcb5636375fa1d82434d466724d92377f53b980695dd49d26d0ce12205a5",
+      "sig": "8150d0bcbc3f88c7fe7bdbbabc6df37359ff22818711a547d52ef876f91b9d4a3e283a70e21bb0e153c049e6af1d18ff2a76ed9be427640d9472676510cf1a0f"
+     },
+     "pinned": "bc7cbcb5636375fa1d82434d466724d92377f53b980695dd49d26d0ce12205a5",
+     "now_ms": 1791979200000,
+     "expect": {
+      "valid": false
+     }
+    },
+    {
+     "id": "inv-missing-invoiceId",
+     "note": "The invoiceId field is missing.",
+     "invoice": {
+      "ver": "30e-demo-invoice/1",
+      "seller": "demo-seller",
+      "payee": "0x2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b",
+      "chain": "evm:31337",
+      "asset": "0xabababababababababababababababababababab",
+      "amount": "1000",
+      "deliverableHash": "abababababababababababababababababababababababababababababababab",
+      "expiresAt": "2026-10-15T12:00:00.000Z",
+      "sellerKey": "bc7cbcb5636375fa1d82434d466724d92377f53b980695dd49d26d0ce12205a5",
+      "sig": "8150d0bcbc3f88c7fe7bdbbabc6df37359ff22818711a547d52ef876f91b9d4a3e283a70e21bb0e153c049e6af1d18ff2a76ed9be427640d9472676510cf1a0f"
+     },
+     "pinned": "bc7cbcb5636375fa1d82434d466724d92377f53b980695dd49d26d0ce12205a5",
+     "now_ms": 1791979200000,
+     "expect": {
+      "valid": false
+     }
+    },
+    {
+     "id": "inv-missing-seller",
+     "note": "The seller field is missing.",
+     "invoice": {
+      "ver": "30e-demo-invoice/1",
+      "invoiceId": "inv-1",
+      "payee": "0x2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b",
+      "chain": "evm:31337",
+      "asset": "0xabababababababababababababababababababab",
+      "amount": "1000",
+      "deliverableHash": "abababababababababababababababababababababababababababababababab",
+      "expiresAt": "2026-10-15T12:00:00.000Z",
+      "sellerKey": "bc7cbcb5636375fa1d82434d466724d92377f53b980695dd49d26d0ce12205a5",
+      "sig": "8150d0bcbc3f88c7fe7bdbbabc6df37359ff22818711a547d52ef876f91b9d4a3e283a70e21bb0e153c049e6af1d18ff2a76ed9be427640d9472676510cf1a0f"
+     },
+     "pinned": "bc7cbcb5636375fa1d82434d466724d92377f53b980695dd49d26d0ce12205a5",
+     "now_ms": 1791979200000,
+     "expect": {
+      "valid": false
+     }
+    },
+    {
+     "id": "inv-missing-payee",
+     "note": "The payee field is missing.",
+     "invoice": {
+      "ver": "30e-demo-invoice/1",
+      "invoiceId": "inv-1",
+      "seller": "demo-seller",
+      "chain": "evm:31337",
+      "asset": "0xabababababababababababababababababababab",
+      "amount": "1000",
+      "deliverableHash": "abababababababababababababababababababababababababababababababab",
+      "expiresAt": "2026-10-15T12:00:00.000Z",
+      "sellerKey": "bc7cbcb5636375fa1d82434d466724d92377f53b980695dd49d26d0ce12205a5",
+      "sig": "8150d0bcbc3f88c7fe7bdbbabc6df37359ff22818711a547d52ef876f91b9d4a3e283a70e21bb0e153c049e6af1d18ff2a76ed9be427640d9472676510cf1a0f"
+     },
+     "pinned": "bc7cbcb5636375fa1d82434d466724d92377f53b980695dd49d26d0ce12205a5",
+     "now_ms": 1791979200000,
+     "expect": {
+      "valid": false
+     }
+    },
+    {
+     "id": "inv-missing-chain",
+     "note": "The chain field is missing.",
+     "invoice": {
+      "ver": "30e-demo-invoice/1",
+      "invoiceId": "inv-1",
+      "seller": "demo-seller",
+      "payee": "0x2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b",
+      "asset": "0xabababababababababababababababababababab",
+      "amount": "1000",
+      "deliverableHash": "abababababababababababababababababababababababababababababababab",
+      "expiresAt": "2026-10-15T12:00:00.000Z",
+      "sellerKey": "bc7cbcb5636375fa1d82434d466724d92377f53b980695dd49d26d0ce12205a5",
+      "sig": "8150d0bcbc3f88c7fe7bdbbabc6df37359ff22818711a547d52ef876f91b9d4a3e283a70e21bb0e153c049e6af1d18ff2a76ed9be427640d9472676510cf1a0f"
+     },
+     "pinned": "bc7cbcb5636375fa1d82434d466724d92377f53b980695dd49d26d0ce12205a5",
+     "now_ms": 1791979200000,
+     "expect": {
+      "valid": false
+     }
+    },
+    {
+     "id": "inv-missing-asset",
+     "note": "The asset field is missing.",
+     "invoice": {
+      "ver": "30e-demo-invoice/1",
+      "invoiceId": "inv-1",
+      "seller": "demo-seller",
+      "payee": "0x2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b",
+      "chain": "evm:31337",
+      "amount": "1000",
+      "deliverableHash": "abababababababababababababababababababababababababababababababab",
+      "expiresAt": "2026-10-15T12:00:00.000Z",
+      "sellerKey": "bc7cbcb5636375fa1d82434d466724d92377f53b980695dd49d26d0ce12205a5",
+      "sig": "8150d0bcbc3f88c7fe7bdbbabc6df37359ff22818711a547d52ef876f91b9d4a3e283a70e21bb0e153c049e6af1d18ff2a76ed9be427640d9472676510cf1a0f"
+     },
+     "pinned": "bc7cbcb5636375fa1d82434d466724d92377f53b980695dd49d26d0ce12205a5",
+     "now_ms": 1791979200000,
+     "expect": {
+      "valid": false
+     }
+    },
+    {
+     "id": "inv-missing-amount",
+     "note": "The amount field is missing.",
+     "invoice": {
+      "ver": "30e-demo-invoice/1",
+      "invoiceId": "inv-1",
+      "seller": "demo-seller",
+      "payee": "0x2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b",
+      "chain": "evm:31337",
+      "asset": "0xabababababababababababababababababababab",
+      "deliverableHash": "abababababababababababababababababababababababababababababababab",
+      "expiresAt": "2026-10-15T12:00:00.000Z",
+      "sellerKey": "bc7cbcb5636375fa1d82434d466724d92377f53b980695dd49d26d0ce12205a5",
+      "sig": "8150d0bcbc3f88c7fe7bdbbabc6df37359ff22818711a547d52ef876f91b9d4a3e283a70e21bb0e153c049e6af1d18ff2a76ed9be427640d9472676510cf1a0f"
+     },
+     "pinned": "bc7cbcb5636375fa1d82434d466724d92377f53b980695dd49d26d0ce12205a5",
+     "now_ms": 1791979200000,
+     "expect": {
+      "valid": false
+     }
+    },
+    {
+     "id": "inv-missing-deliverableHash",
+     "note": "The deliverableHash field is missing.",
+     "invoice": {
+      "ver": "30e-demo-invoice/1",
+      "invoiceId": "inv-1",
+      "seller": "demo-seller",
+      "payee": "0x2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b",
+      "chain": "evm:31337",
+      "asset": "0xabababababababababababababababababababab",
+      "amount": "1000",
+      "expiresAt": "2026-10-15T12:00:00.000Z",
+      "sellerKey": "bc7cbcb5636375fa1d82434d466724d92377f53b980695dd49d26d0ce12205a5",
+      "sig": "8150d0bcbc3f88c7fe7bdbbabc6df37359ff22818711a547d52ef876f91b9d4a3e283a70e21bb0e153c049e6af1d18ff2a76ed9be427640d9472676510cf1a0f"
+     },
+     "pinned": "bc7cbcb5636375fa1d82434d466724d92377f53b980695dd49d26d0ce12205a5",
+     "now_ms": 1791979200000,
+     "expect": {
+      "valid": false
+     }
+    },
+    {
+     "id": "inv-missing-expiresAt",
+     "note": "The expiresAt field is missing.",
+     "invoice": {
+      "ver": "30e-demo-invoice/1",
+      "invoiceId": "inv-1",
+      "seller": "demo-seller",
+      "payee": "0x2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b",
+      "chain": "evm:31337",
+      "asset": "0xabababababababababababababababababababab",
+      "amount": "1000",
+      "deliverableHash": "abababababababababababababababababababababababababababababababab",
+      "sellerKey": "bc7cbcb5636375fa1d82434d466724d92377f53b980695dd49d26d0ce12205a5",
+      "sig": "8150d0bcbc3f88c7fe7bdbbabc6df37359ff22818711a547d52ef876f91b9d4a3e283a70e21bb0e153c049e6af1d18ff2a76ed9be427640d9472676510cf1a0f"
+     },
+     "pinned": "bc7cbcb5636375fa1d82434d466724d92377f53b980695dd49d26d0ce12205a5",
+     "now_ms": 1791979200000,
+     "expect": {
+      "valid": false
+     }
+    },
+    {
+     "id": "inv-missing-sellerKey",
+     "note": "The sellerKey field is missing.",
+     "invoice": {
+      "ver": "30e-demo-invoice/1",
+      "invoiceId": "inv-1",
+      "seller": "demo-seller",
+      "payee": "0x2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b",
+      "chain": "evm:31337",
+      "asset": "0xabababababababababababababababababababab",
+      "amount": "1000",
+      "deliverableHash": "abababababababababababababababababababababababababababababababab",
+      "expiresAt": "2026-10-15T12:00:00.000Z",
+      "sig": "8150d0bcbc3f88c7fe7bdbbabc6df37359ff22818711a547d52ef876f91b9d4a3e283a70e21bb0e153c049e6af1d18ff2a76ed9be427640d9472676510cf1a0f"
+     },
+     "pinned": "bc7cbcb5636375fa1d82434d466724d92377f53b980695dd49d26d0ce12205a5",
+     "now_ms": 1791979200000,
+     "expect": {
+      "valid": false
+     }
+    },
+    {
+     "id": "inv-missing-sig",
+     "note": "The sig field is missing.",
+     "invoice": {
+      "ver": "30e-demo-invoice/1",
+      "invoiceId": "inv-1",
+      "seller": "demo-seller",
+      "payee": "0x2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b",
+      "chain": "evm:31337",
+      "asset": "0xabababababababababababababababababababab",
+      "amount": "1000",
+      "deliverableHash": "abababababababababababababababababababababababababababababababab",
+      "expiresAt": "2026-10-15T12:00:00.000Z",
+      "sellerKey": "bc7cbcb5636375fa1d82434d466724d92377f53b980695dd49d26d0ce12205a5"
+     },
+     "pinned": "bc7cbcb5636375fa1d82434d466724d92377f53b980695dd49d26d0ce12205a5",
+     "now_ms": 1791979200000,
+     "expect": {
+      "valid": false
+     }
+    },
+    {
+     "id": "inv-not-an-object-array",
+     "note": "The invoice is a array.",
+     "invoice": [],
+     "pinned": "bc7cbcb5636375fa1d82434d466724d92377f53b980695dd49d26d0ce12205a5",
+     "now_ms": 1791979200000,
+     "expect": {
+      "valid": false
+     }
+    },
+    {
+     "id": "inv-not-an-object-string",
+     "note": "The invoice is a string.",
+     "invoice": "inv",
+     "pinned": "bc7cbcb5636375fa1d82434d466724d92377f53b980695dd49d26d0ce12205a5",
+     "now_ms": 1791979200000,
+     "expect": {
+      "valid": false
+     }
+    },
+    {
+     "id": "inv-not-an-object-null",
+     "note": "The invoice is a null.",
+     "invoice": null,
+     "pinned": "bc7cbcb5636375fa1d82434d466724d92377f53b980695dd49d26d0ce12205a5",
+     "now_ms": 1791979200000,
+     "expect": {
+      "valid": false
+     }
+    },
+    {
+     "id": "inv-not-an-object-number",
+     "note": "The invoice is a number.",
+     "invoice": 5,
+     "pinned": "bc7cbcb5636375fa1d82434d466724d92377f53b980695dd49d26d0ce12205a5",
+     "now_ms": 1791979200000,
+     "expect": {
+      "valid": false
+     }
+    },
+    {
+     "id": "inv-amount-leading-zero",
+     "note": "Amount '01' is not a canonical integer string.",
+     "invoice": {
+      "ver": "30e-demo-invoice/1",
+      "invoiceId": "inv-1",
+      "seller": "demo-seller",
+      "payee": "0x2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b",
+      "chain": "evm:31337",
+      "asset": "0xabababababababababababababababababababab",
+      "amount": "01",
+      "deliverableHash": "abababababababababababababababababababababababababababababababab",
+      "expiresAt": "2026-10-15T12:00:00.000Z",
+      "sellerKey": "bc7cbcb5636375fa1d82434d466724d92377f53b980695dd49d26d0ce12205a5",
+      "sig": "2397a216c74cdbb7e721e0943150e3e98270fd10febf8491f8577afc25036c0e16361018d44e0efcf016505b4bd1106d6eb6ed812190666cf6a1cda34e56eb05"
+     },
+     "pinned": "bc7cbcb5636375fa1d82434d466724d92377f53b980695dd49d26d0ce12205a5",
+     "now_ms": 1791979200000,
+     "expect": {
+      "valid": false
+     }
+    },
+    {
+     "id": "inv-amount-double-zero",
+     "note": "Amount '00' is not a canonical integer string.",
+     "invoice": {
+      "ver": "30e-demo-invoice/1",
+      "invoiceId": "inv-1",
+      "seller": "demo-seller",
+      "payee": "0x2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b",
+      "chain": "evm:31337",
+      "asset": "0xabababababababababababababababababababab",
+      "amount": "00",
+      "deliverableHash": "abababababababababababababababababababababababababababababababab",
+      "expiresAt": "2026-10-15T12:00:00.000Z",
+      "sellerKey": "bc7cbcb5636375fa1d82434d466724d92377f53b980695dd49d26d0ce12205a5",
+      "sig": "d3bc8592eba14819d1a59d6252951e34e99127d0353ab66879a00d842fd2ac830f32974a00c0e1ce2d20f78cc69c6733f213c592a0809d7cf6c2087622aadf00"
+     },
+     "pinned": "bc7cbcb5636375fa1d82434d466724d92377f53b980695dd49d26d0ce12205a5",
+     "now_ms": 1791979200000,
+     "expect": {
+      "valid": false
+     }
+    },
+    {
+     "id": "inv-amount-negative",
+     "note": "Amount '-1' is not a canonical integer string.",
+     "invoice": {
+      "ver": "30e-demo-invoice/1",
+      "invoiceId": "inv-1",
+      "seller": "demo-seller",
+      "payee": "0x2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b",
+      "chain": "evm:31337",
+      "asset": "0xabababababababababababababababababababab",
+      "amount": "-1",
+      "deliverableHash": "abababababababababababababababababababababababababababababababab",
+      "expiresAt": "2026-10-15T12:00:00.000Z",
+      "sellerKey": "bc7cbcb5636375fa1d82434d466724d92377f53b980695dd49d26d0ce12205a5",
+      "sig": "0469871a481e2861a7e82e7c35c4d7751dd1d1bceb03c7042ed853954a90f9cfcea87b9765a7e62193befd6d49de8afb37f35b272e2a9bb8677e7b1c95c8070e"
+     },
+     "pinned": "bc7cbcb5636375fa1d82434d466724d92377f53b980695dd49d26d0ce12205a5",
+     "now_ms": 1791979200000,
+     "expect": {
+      "valid": false
+     }
+    },
+    {
+     "id": "inv-amount-plus",
+     "note": "Amount '+1' is not a canonical integer string.",
+     "invoice": {
+      "ver": "30e-demo-invoice/1",
+      "invoiceId": "inv-1",
+      "seller": "demo-seller",
+      "payee": "0x2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b",
+      "chain": "evm:31337",
+      "asset": "0xabababababababababababababababababababab",
+      "amount": "+1",
+      "deliverableHash": "abababababababababababababababababababababababababababababababab",
+      "expiresAt": "2026-10-15T12:00:00.000Z",
+      "sellerKey": "bc7cbcb5636375fa1d82434d466724d92377f53b980695dd49d26d0ce12205a5",
+      "sig": "2c688f8b6d185e524a62b59d40adc2fa436c2bc97bb503d8f0eda7919a2056d8ccb21fce13daba0bed2c234f9dd351331614cc6ee88826fc51fa715b7832a009"
+     },
+     "pinned": "bc7cbcb5636375fa1d82434d466724d92377f53b980695dd49d26d0ce12205a5",
+     "now_ms": 1791979200000,
+     "expect": {
+      "valid": false
+     }
+    },
+    {
+     "id": "inv-amount-decimal",
+     "note": "Amount '1.5' is not a canonical integer string.",
+     "invoice": {
+      "ver": "30e-demo-invoice/1",
+      "invoiceId": "inv-1",
+      "seller": "demo-seller",
+      "payee": "0x2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b",
+      "chain": "evm:31337",
+      "asset": "0xabababababababababababababababababababab",
+      "amount": "1.5",
+      "deliverableHash": "abababababababababababababababababababababababababababababababab",
+      "expiresAt": "2026-10-15T12:00:00.000Z",
+      "sellerKey": "bc7cbcb5636375fa1d82434d466724d92377f53b980695dd49d26d0ce12205a5",
+      "sig": "783245c9ae11a18d1c8b123156297fc8b3631ab288c69ccd9cde9dd42f0f9553cce2371f90fc843557518399423b9062ba5d9a59e9aa7fbc4f459c7ae6979e0d"
+     },
+     "pinned": "bc7cbcb5636375fa1d82434d466724d92377f53b980695dd49d26d0ce12205a5",
+     "now_ms": 1791979200000,
+     "expect": {
+      "valid": false
+     }
+    },
+    {
+     "id": "inv-amount-exponent",
+     "note": "Amount '1e3' is not a canonical integer string.",
+     "invoice": {
+      "ver": "30e-demo-invoice/1",
+      "invoiceId": "inv-1",
+      "seller": "demo-seller",
+      "payee": "0x2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b",
+      "chain": "evm:31337",
+      "asset": "0xabababababababababababababababababababab",
+      "amount": "1e3",
+      "deliverableHash": "abababababababababababababababababababababababababababababababab",
+      "expiresAt": "2026-10-15T12:00:00.000Z",
+      "sellerKey": "bc7cbcb5636375fa1d82434d466724d92377f53b980695dd49d26d0ce12205a5",
+      "sig": "0df8c622f5d0e3a56e0bf0ab8a68943034690173c94beedfad1717e25ad984882769d9af44b143a71dbcd19302f54d95ae72d4406918cfd4b18039a0e5a4e300"
+     },
+     "pinned": "bc7cbcb5636375fa1d82434d466724d92377f53b980695dd49d26d0ce12205a5",
+     "now_ms": 1791979200000,
+     "expect": {
+      "valid": false
+     }
+    },
+    {
+     "id": "inv-amount-leading-space",
+     "note": "Amount ' 1' is not a canonical integer string.",
+     "invoice": {
+      "ver": "30e-demo-invoice/1",
+      "invoiceId": "inv-1",
+      "seller": "demo-seller",
+      "payee": "0x2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b",
+      "chain": "evm:31337",
+      "asset": "0xabababababababababababababababababababab",
+      "amount": " 1",
+      "deliverableHash": "abababababababababababababababababababababababababababababababab",
+      "expiresAt": "2026-10-15T12:00:00.000Z",
+      "sellerKey": "bc7cbcb5636375fa1d82434d466724d92377f53b980695dd49d26d0ce12205a5",
+      "sig": "c13bdcc29cf7e42b7c0f0e12dc18c500cea1346e9ba5394a2a7423345c7fc6050865eb8a1ae732d6f94bb8408017d37e962bab3bf28d789b01976b5e62562602"
+     },
+     "pinned": "bc7cbcb5636375fa1d82434d466724d92377f53b980695dd49d26d0ce12205a5",
+     "now_ms": 1791979200000,
+     "expect": {
+      "valid": false
+     }
+    },
+    {
+     "id": "inv-amount-trailing-space",
+     "note": "Amount '1 ' is not a canonical integer string.",
+     "invoice": {
+      "ver": "30e-demo-invoice/1",
+      "invoiceId": "inv-1",
+      "seller": "demo-seller",
+      "payee": "0x2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b",
+      "chain": "evm:31337",
+      "asset": "0xabababababababababababababababababababab",
+      "amount": "1 ",
+      "deliverableHash": "abababababababababababababababababababababababababababababababab",
+      "expiresAt": "2026-10-15T12:00:00.000Z",
+      "sellerKey": "bc7cbcb5636375fa1d82434d466724d92377f53b980695dd49d26d0ce12205a5",
+      "sig": "14a171e5ca60870e2f39c098cee3bec194f5d290a8c46cd78e8a325a97cd5f334bd329786aa501e318b802283b2ad2b07ee6faa2a0f4719dee964687ad90ec09"
+     },
+     "pinned": "bc7cbcb5636375fa1d82434d466724d92377f53b980695dd49d26d0ce12205a5",
+     "now_ms": 1791979200000,
+     "expect": {
+      "valid": false
+     }
+    },
+    {
+     "id": "inv-amount-empty",
+     "note": "Amount '' is not a canonical integer string.",
+     "invoice": {
+      "ver": "30e-demo-invoice/1",
+      "invoiceId": "inv-1",
+      "seller": "demo-seller",
+      "payee": "0x2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b",
+      "chain": "evm:31337",
+      "asset": "0xabababababababababababababababababababab",
+      "amount": "",
+      "deliverableHash": "abababababababababababababababababababababababababababababababab",
+      "expiresAt": "2026-10-15T12:00:00.000Z",
+      "sellerKey": "bc7cbcb5636375fa1d82434d466724d92377f53b980695dd49d26d0ce12205a5",
+      "sig": "fc53efaf69a9fd7bed05078c2964ae8a0964868eb42c1aad9535b75b3542c0d829699de077e8b79940d08982658d466030bcb6c9bbf03d9436d9c6120c323b0d"
+     },
+     "pinned": "bc7cbcb5636375fa1d82434d466724d92377f53b980695dd49d26d0ce12205a5",
+     "now_ms": 1791979200000,
+     "expect": {
+      "valid": false
+     }
+    },
+    {
+     "id": "inv-amount-hex",
+     "note": "Amount '0x10' is not a canonical integer string.",
+     "invoice": {
+      "ver": "30e-demo-invoice/1",
+      "invoiceId": "inv-1",
+      "seller": "demo-seller",
+      "payee": "0x2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b",
+      "chain": "evm:31337",
+      "asset": "0xabababababababababababababababababababab",
+      "amount": "0x10",
+      "deliverableHash": "abababababababababababababababababababababababababababababababab",
+      "expiresAt": "2026-10-15T12:00:00.000Z",
+      "sellerKey": "bc7cbcb5636375fa1d82434d466724d92377f53b980695dd49d26d0ce12205a5",
+      "sig": "dab054272abc2edddb95695f0c878edc2440838deb99c78a6509c476160887e26cec1caa23f7c71a24bd1036c7e38bdd8906f47839293245dd919c066b233d05"
+     },
+     "pinned": "bc7cbcb5636375fa1d82434d466724d92377f53b980695dd49d26d0ce12205a5",
+     "now_ms": 1791979200000,
+     "expect": {
+      "valid": false
+     }
+    },
+    {
+     "id": "inv-amount-trailing-newline",
+     "note": "Amount '1\\n' is not a canonical integer string.",
+     "invoice": {
+      "ver": "30e-demo-invoice/1",
+      "invoiceId": "inv-1",
+      "seller": "demo-seller",
+      "payee": "0x2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b",
+      "chain": "evm:31337",
+      "asset": "0xabababababababababababababababababababab",
+      "amount": "1\n",
+      "deliverableHash": "abababababababababababababababababababababababababababababababab",
+      "expiresAt": "2026-10-15T12:00:00.000Z",
+      "sellerKey": "bc7cbcb5636375fa1d82434d466724d92377f53b980695dd49d26d0ce12205a5",
+      "sig": "be10fbfd8052cc632c4638a5c16d537e25f385a1e2acecb2985b2b9912eec99bcd1a66c909b06c602aa29f9dd40e7105cc21d4988034bcb3aa55f1d1cf31f605"
+     },
+     "pinned": "bc7cbcb5636375fa1d82434d466724d92377f53b980695dd49d26d0ce12205a5",
+     "now_ms": 1791979200000,
+     "expect": {
+      "valid": false
+     }
+    },
+    {
+     "id": "inv-amount-arabic-indic-digits",
+     "note": "Amount '\u0661\u0662\u0663' is not a canonical integer string.",
+     "invoice": {
+      "ver": "30e-demo-invoice/1",
+      "invoiceId": "inv-1",
+      "seller": "demo-seller",
+      "payee": "0x2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b",
+      "chain": "evm:31337",
+      "asset": "0xabababababababababababababababababababab",
+      "amount": "\u0661\u0662\u0663",
+      "deliverableHash": "abababababababababababababababababababababababababababababababab",
+      "expiresAt": "2026-10-15T12:00:00.000Z",
+      "sellerKey": "bc7cbcb5636375fa1d82434d466724d92377f53b980695dd49d26d0ce12205a5",
+      "sig": "36a2eeddfe8efffe2fd2e723ca151d582f34dd24dadd9ab5ec2d78fcafccf7b6cc052cf963d98ea1764970e1a2ed4ae2d93a5f4be508a2f7ce8a0671760bf706"
+     },
+     "pinned": "bc7cbcb5636375fa1d82434d466724d92377f53b980695dd49d26d0ce12205a5",
+     "now_ms": 1791979200000,
+     "expect": {
+      "valid": false
+     }
+    },
+    {
+     "id": "inv-amount-fullwidth-digits",
+     "note": "Amount '\uff11\uff12' is not a canonical integer string.",
+     "invoice": {
+      "ver": "30e-demo-invoice/1",
+      "invoiceId": "inv-1",
+      "seller": "demo-seller",
+      "payee": "0x2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b",
+      "chain": "evm:31337",
+      "asset": "0xabababababababababababababababababababab",
+      "amount": "\uff11\uff12",
+      "deliverableHash": "abababababababababababababababababababababababababababababababab",
+      "expiresAt": "2026-10-15T12:00:00.000Z",
+      "sellerKey": "bc7cbcb5636375fa1d82434d466724d92377f53b980695dd49d26d0ce12205a5",
+      "sig": "9cafaeaf7e1c268decd8060577e2b599572d210f781956b19bb888ea6cb952ac58ba6a8ac75f485660c619305213bd7ef775504e5f6a7b81a9f1e3dbf13ce300"
+     },
+     "pinned": "bc7cbcb5636375fa1d82434d466724d92377f53b980695dd49d26d0ce12205a5",
+     "now_ms": 1791979200000,
+     "expect": {
+      "valid": false
+     }
+    },
+    {
+     "id": "inv-amount-type-number",
+     "note": "Amount is a number, not a string.",
+     "invoice": {
+      "ver": "30e-demo-invoice/1",
+      "invoiceId": "inv-1",
+      "seller": "demo-seller",
+      "payee": "0x2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b",
+      "chain": "evm:31337",
+      "asset": "0xabababababababababababababababababababab",
+      "amount": 1000,
+      "deliverableHash": "abababababababababababababababababababababababababababababababab",
+      "expiresAt": "2026-10-15T12:00:00.000Z",
+      "sellerKey": "bc7cbcb5636375fa1d82434d466724d92377f53b980695dd49d26d0ce12205a5",
+      "sig": "8bcf72c25fcdd939be332e11d216c7f37618bacdbca7541a2a9296c4c89e8a1a679176711b051901b00d304beece619e276d954b505454bea972ba421e92140c"
+     },
+     "pinned": "bc7cbcb5636375fa1d82434d466724d92377f53b980695dd49d26d0ce12205a5",
+     "now_ms": 1791979200000,
+     "expect": {
+      "valid": false
+     }
+    },
+    {
+     "id": "inv-amount-type-null",
+     "note": "Amount is a null, not a string.",
+     "invoice": {
+      "ver": "30e-demo-invoice/1",
+      "invoiceId": "inv-1",
+      "seller": "demo-seller",
+      "payee": "0x2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b",
+      "chain": "evm:31337",
+      "asset": "0xabababababababababababababababababababab",
+      "amount": null,
+      "deliverableHash": "abababababababababababababababababababababababababababababababab",
+      "expiresAt": "2026-10-15T12:00:00.000Z",
+      "sellerKey": "bc7cbcb5636375fa1d82434d466724d92377f53b980695dd49d26d0ce12205a5",
+      "sig": "71b9d5b0510fb6e5e3666e04bdbf0501f9c942fa500d871552b4ca2190f37d90252720164dc35d5b5949a4390e3e72a3360d8b10805835a8a7195f9137633800"
+     },
+     "pinned": "bc7cbcb5636375fa1d82434d466724d92377f53b980695dd49d26d0ce12205a5",
+     "now_ms": 1791979200000,
+     "expect": {
+      "valid": false
+     }
+    },
+    {
+     "id": "inv-amount-type-list",
+     "note": "Amount is a list, not a string.",
+     "invoice": {
+      "ver": "30e-demo-invoice/1",
+      "invoiceId": "inv-1",
+      "seller": "demo-seller",
+      "payee": "0x2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b",
+      "chain": "evm:31337",
+      "asset": "0xabababababababababababababababababababab",
+      "amount": [
+       "1"
+      ],
+      "deliverableHash": "abababababababababababababababababababababababababababababababab",
+      "expiresAt": "2026-10-15T12:00:00.000Z",
+      "sellerKey": "bc7cbcb5636375fa1d82434d466724d92377f53b980695dd49d26d0ce12205a5",
+      "sig": "83bc74826f06fc8c0a1af5a927e1dafbf485e633da50a12b396ceaee9ca3f97c4973575c62e37e71f211ff0e8d2e05c71b62f51878e51b050878334bc3c67e0b"
+     },
+     "pinned": "bc7cbcb5636375fa1d82434d466724d92377f53b980695dd49d26d0ce12205a5",
+     "now_ms": 1791979200000,
+     "expect": {
+      "valid": false
+     }
+    },
+    {
+     "id": "inv-amount-type-bool",
+     "note": "Amount is a bool, not a string.",
+     "invoice": {
+      "ver": "30e-demo-invoice/1",
+      "invoiceId": "inv-1",
+      "seller": "demo-seller",
+      "payee": "0x2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b",
+      "chain": "evm:31337",
+      "asset": "0xabababababababababababababababababababab",
+      "amount": true,
+      "deliverableHash": "abababababababababababababababababababababababababababababababab",
+      "expiresAt": "2026-10-15T12:00:00.000Z",
+      "sellerKey": "bc7cbcb5636375fa1d82434d466724d92377f53b980695dd49d26d0ce12205a5",
+      "sig": "9b461830b71c30ddb1c572c2e4b35f31360a5dae5e39a288d3fd7d99892ab27f244057a351cd1ad4339d52afd83acaa4405358e7708f892d14b45c1cdbd5e40e"
+     },
+     "pinned": "bc7cbcb5636375fa1d82434d466724d92377f53b980695dd49d26d0ce12205a5",
+     "now_ms": 1791979200000,
+     "expect": {
+      "valid": false
+     }
+    },
+    {
+     "id": "inv-amount-zero",
+     "note": "A zero amount: a valid integer string, but an invoice for nothing.",
+     "invoice": {
+      "ver": "30e-demo-invoice/1",
+      "invoiceId": "inv-1",
+      "seller": "demo-seller",
+      "payee": "0x2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b",
+      "chain": "evm:31337",
+      "asset": "0xabababababababababababababababababababab",
+      "amount": "0",
+      "deliverableHash": "abababababababababababababababababababababababababababababababab",
+      "expiresAt": "2026-10-15T12:00:00.000Z",
+      "sellerKey": "bc7cbcb5636375fa1d82434d466724d92377f53b980695dd49d26d0ce12205a5",
+      "sig": "43d9db8dc053060af41130dffd2bb99a9cf5e36d53a16d6568308d1a333108367e9782d578f4978aa53fd205c53edafb2cf29e4a3da3b07c2f7f06ad21643109"
+     },
+     "pinned": "bc7cbcb5636375fa1d82434d466724d92377f53b980695dd49d26d0ce12205a5",
+     "now_ms": 1791979200000,
+     "expect": {
+      "valid": false
+     },
+     "gap": {
+      "js": {
+       "valid": true
+      },
+      "why": "JS verifyInvoice allows '0' (the regex does); Python refuses BAD_AMOUNT"
+     }
+    },
+    {
+     "id": "inv-chain-unlisted",
+     "note": "Chain 'evm:1' is not on the testnet allowlist.",
+     "invoice": {
+      "ver": "30e-demo-invoice/1",
+      "invoiceId": "inv-1",
+      "seller": "demo-seller",
+      "payee": "0x2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b",
+      "chain": "evm:1",
+      "asset": "0xabababababababababababababababababababab",
+      "amount": "1000",
+      "deliverableHash": "abababababababababababababababababababababababababababababababab",
+      "expiresAt": "2026-10-15T12:00:00.000Z",
+      "sellerKey": "bc7cbcb5636375fa1d82434d466724d92377f53b980695dd49d26d0ce12205a5",
+      "sig": "ec24f18002950ae1607a04800b762405d71fec4f583bed6d35bc2522fd242e5fad32e97abe4c1bffad3a66dc098c94b8df8e1fe6f12ee5e334f94a3992d15908"
+     },
+     "pinned": "bc7cbcb5636375fa1d82434d466724d92377f53b980695dd49d26d0ce12205a5",
+     "now_ms": 1791979200000,
+     "expect": {
+      "valid": false
+     }
+    },
+    {
+     "id": "inv-chain-mainnet",
+     "note": "Chain 'evm:8453' is not on the testnet allowlist.",
+     "invoice": {
+      "ver": "30e-demo-invoice/1",
+      "invoiceId": "inv-1",
+      "seller": "demo-seller",
+      "payee": "0x2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b",
+      "chain": "evm:8453",
+      "asset": "0xabababababababababababababababababababab",
+      "amount": "1000",
+      "deliverableHash": "abababababababababababababababababababababababababababababababab",
+      "expiresAt": "2026-10-15T12:00:00.000Z",
+      "sellerKey": "bc7cbcb5636375fa1d82434d466724d92377f53b980695dd49d26d0ce12205a5",
+      "sig": "b9b5cea27030bbe81942b1198112f2c278dd0c061bb5f80fdee3c6acbef8e0df5b8d2a6db98341fa6b390421697b4497bfa6fe54e9df9726934552a574996000"
+     },
+     "pinned": "bc7cbcb5636375fa1d82434d466724d92377f53b980695dd49d26d0ce12205a5",
+     "now_ms": 1791979200000,
+     "expect": {
+      "valid": false
+     }
+    },
+    {
+     "id": "inv-chain-trailing-space",
+     "note": "Chain 'evm:84532 ' is not on the testnet allowlist.",
+     "invoice": {
+      "ver": "30e-demo-invoice/1",
+      "invoiceId": "inv-1",
+      "seller": "demo-seller",
+      "payee": "0x2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b",
+      "chain": "evm:84532 ",
+      "asset": "0xabababababababababababababababababababab",
+      "amount": "1000",
+      "deliverableHash": "abababababababababababababababababababababababababababababababab",
+      "expiresAt": "2026-10-15T12:00:00.000Z",
+      "sellerKey": "bc7cbcb5636375fa1d82434d466724d92377f53b980695dd49d26d0ce12205a5",
+      "sig": "944eebcb0d4f6ef506ff4f79bd3fa26747f476c69a090b8dc93d931c45207675ff742167f779a86e0c04414ce350e8b527f778046f173ec5053ea77be280f104"
+     },
+     "pinned": "bc7cbcb5636375fa1d82434d466724d92377f53b980695dd49d26d0ce12205a5",
+     "now_ms": 1791979200000,
+     "expect": {
+      "valid": false
+     }
+    },
+    {
+     "id": "inv-chain-upper",
+     "note": "Chain 'EVM:84532' is not on the testnet allowlist.",
+     "invoice": {
+      "ver": "30e-demo-invoice/1",
+      "invoiceId": "inv-1",
+      "seller": "demo-seller",
+      "payee": "0x2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b",
+      "chain": "EVM:84532",
+      "asset": "0xabababababababababababababababababababab",
+      "amount": "1000",
+      "deliverableHash": "abababababababababababababababababababababababababababababababab",
+      "expiresAt": "2026-10-15T12:00:00.000Z",
+      "sellerKey": "bc7cbcb5636375fa1d82434d466724d92377f53b980695dd49d26d0ce12205a5",
+      "sig": "aa7b2c2120329e71ce3077bc500273986fb188b2eeed9d2d190667e297aef23401324b08160e81edc19aab30b70f9a88ea5bf7a119ddb403d0bfbfb2724b970d"
+     },
+     "pinned": "bc7cbcb5636375fa1d82434d466724d92377f53b980695dd49d26d0ce12205a5",
+     "now_ms": 1791979200000,
+     "expect": {
+      "valid": false
+     }
+    },
+    {
+     "id": "inv-chain-empty",
+     "note": "Chain '' is not on the testnet allowlist.",
+     "invoice": {
+      "ver": "30e-demo-invoice/1",
+      "invoiceId": "inv-1",
+      "seller": "demo-seller",
+      "payee": "0x2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b",
+      "chain": "",
+      "asset": "0xabababababababababababababababababababab",
+      "amount": "1000",
+      "deliverableHash": "abababababababababababababababababababababababababababababababab",
+      "expiresAt": "2026-10-15T12:00:00.000Z",
+      "sellerKey": "bc7cbcb5636375fa1d82434d466724d92377f53b980695dd49d26d0ce12205a5",
+      "sig": "c00926ea8d1e2814078cb5ff255a28ec944cb1b262f169f28fbfb2aa26b76eda572ab08532f24d1cdea99f95062d0974df53a2aef7f33a391804a68dfcc86f05"
+     },
+     "pinned": "bc7cbcb5636375fa1d82434d466724d92377f53b980695dd49d26d0ce12205a5",
+     "now_ms": 1791979200000,
+     "expect": {
+      "valid": false
+     }
+    },
+    {
+     "id": "inv-chain-number",
+     "note": "Chain 84532 is not on the testnet allowlist.",
+     "invoice": {
+      "ver": "30e-demo-invoice/1",
+      "invoiceId": "inv-1",
+      "seller": "demo-seller",
+      "payee": "0x2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b",
+      "chain": 84532,
+      "asset": "0xabababababababababababababababababababab",
+      "amount": "1000",
+      "deliverableHash": "abababababababababababababababababababababababababababababababab",
+      "expiresAt": "2026-10-15T12:00:00.000Z",
+      "sellerKey": "bc7cbcb5636375fa1d82434d466724d92377f53b980695dd49d26d0ce12205a5",
+      "sig": "c9e6aa21252866deb58247d6c9bb6e1fe33ee49f860bca4d52bbc0bc8d14df377dadcbb25f43a4d199ec98b409537b41402ecdc97101dea58b6fab66aed21d05"
+     },
+     "pinned": "bc7cbcb5636375fa1d82434d466724d92377f53b980695dd49d26d0ce12205a5",
+     "now_ms": 1791979200000,
+     "expect": {
+      "valid": false
+     }
+    },
+    {
+     "id": "inv-chain-null",
+     "note": "Chain None is not on the testnet allowlist.",
+     "invoice": {
+      "ver": "30e-demo-invoice/1",
+      "invoiceId": "inv-1",
+      "seller": "demo-seller",
+      "payee": "0x2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b",
+      "chain": null,
+      "asset": "0xabababababababababababababababababababab",
+      "amount": "1000",
+      "deliverableHash": "abababababababababababababababababababababababababababababababab",
+      "expiresAt": "2026-10-15T12:00:00.000Z",
+      "sellerKey": "bc7cbcb5636375fa1d82434d466724d92377f53b980695dd49d26d0ce12205a5",
+      "sig": "e38e1269a37011f9f81f8fdc8dc163e8532ca4f1535bfbee1dfa9861683fea80153d533279bb66b60f9703bf16d31083db39bc3d9a5cc33b621cf3c97d836e0d"
+     },
+     "pinned": "bc7cbcb5636375fa1d82434d466724d92377f53b980695dd49d26d0ce12205a5",
+     "now_ms": 1791979200000,
+     "expect": {
+      "valid": false
+     }
+    },
+    {
+     "id": "inv-wrong-version",
+     "note": "ver is not 30e-demo-invoice/1.",
+     "invoice": {
+      "ver": "30e-demo-invoice/2",
+      "invoiceId": "inv-1",
+      "seller": "demo-seller",
+      "payee": "0x2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b",
+      "chain": "evm:31337",
+      "asset": "0xabababababababababababababababababababab",
+      "amount": "1000",
+      "deliverableHash": "abababababababababababababababababababababababababababababababab",
+      "expiresAt": "2026-10-15T12:00:00.000Z",
+      "sellerKey": "bc7cbcb5636375fa1d82434d466724d92377f53b980695dd49d26d0ce12205a5",
+      "sig": "3c7feb1fd5efd32ef165796bc73214eb849f066b0a953fe39ffff3494345a3b7a1255aa7b2dda83741c8003677fb50040f47a8e717a47601e00f2136bc73ad00"
+     },
+     "pinned": "bc7cbcb5636375fa1d82434d466724d92377f53b980695dd49d26d0ce12205a5",
+     "now_ms": 1791979200000,
+     "expect": {
+      "valid": false
+     }
+    },
+    {
+     "id": "inv-key-not-pinned",
+     "note": "Signed by a key the verifier did not pin.",
+     "invoice": {
+      "ver": "30e-demo-invoice/1",
+      "invoiceId": "inv-1",
+      "seller": "demo-seller",
+      "payee": "0x2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b",
+      "chain": "evm:31337",
+      "asset": "0xabababababababababababababababababababab",
+      "amount": "1000",
+      "deliverableHash": "abababababababababababababababababababababababababababababababab",
+      "expiresAt": "2026-10-15T12:00:00.000Z",
+      "sellerKey": "55154f42065ea5a1bea05463826be2684eb92df92c100027aabaae57ca554207",
+      "sig": "c4fd0783b17442ab17861956a2c21607f038819f454de5ec8b5be64caba2802eea988502f5d8930bf6dd187182345740717a0173c23618ccbadee670358d4803"
+     },
+     "pinned": "bc7cbcb5636375fa1d82434d466724d92377f53b980695dd49d26d0ce12205a5",
+     "now_ms": 1791979200000,
+     "expect": {
+      "valid": false
+     }
+    },
+    {
+     "id": "inv-wrong-pin",
+     "note": "The pinned key is another key.",
+     "invoice": {
+      "ver": "30e-demo-invoice/1",
+      "invoiceId": "inv-1",
+      "seller": "demo-seller",
+      "payee": "0x2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b",
+      "chain": "evm:31337",
+      "asset": "0xabababababababababababababababababababab",
+      "amount": "1000",
+      "deliverableHash": "abababababababababababababababababababababababababababababababab",
+      "expiresAt": "2026-10-15T12:00:00.000Z",
+      "sellerKey": "bc7cbcb5636375fa1d82434d466724d92377f53b980695dd49d26d0ce12205a5",
+      "sig": "8150d0bcbc3f88c7fe7bdbbabc6df37359ff22818711a547d52ef876f91b9d4a3e283a70e21bb0e153c049e6af1d18ff2a76ed9be427640d9472676510cf1a0f"
+     },
+     "pinned": "55154f42065ea5a1bea05463826be2684eb92df92c100027aabaae57ca554207",
+     "now_ms": 1791979200000,
+     "expect": {
+      "valid": false
+     }
+    },
+    {
+     "id": "inv-pin-none",
+     "note": "A pin that is not 64 lowercase hex.",
+     "invoice": {
+      "ver": "30e-demo-invoice/1",
+      "invoiceId": "inv-1",
+      "seller": "demo-seller",
+      "payee": "0x2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b",
+      "chain": "evm:31337",
+      "asset": "0xabababababababababababababababababababab",
+      "amount": "1000",
+      "deliverableHash": "abababababababababababababababababababababababababababababababab",
+      "expiresAt": "2026-10-15T12:00:00.000Z",
+      "sellerKey": "bc7cbcb5636375fa1d82434d466724d92377f53b980695dd49d26d0ce12205a5",
+      "sig": "8150d0bcbc3f88c7fe7bdbbabc6df37359ff22818711a547d52ef876f91b9d4a3e283a70e21bb0e153c049e6af1d18ff2a76ed9be427640d9472676510cf1a0f"
+     },
+     "pinned": null,
+     "now_ms": 1791979200000,
+     "expect": {
+      "valid": false
+     }
+    },
+    {
+     "id": "inv-pin-uppercase",
+     "note": "A pin that is not 64 lowercase hex.",
+     "invoice": {
+      "ver": "30e-demo-invoice/1",
+      "invoiceId": "inv-1",
+      "seller": "demo-seller",
+      "payee": "0x2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b",
+      "chain": "evm:31337",
+      "asset": "0xabababababababababababababababababababab",
+      "amount": "1000",
+      "deliverableHash": "abababababababababababababababababababababababababababababababab",
+      "expiresAt": "2026-10-15T12:00:00.000Z",
+      "sellerKey": "bc7cbcb5636375fa1d82434d466724d92377f53b980695dd49d26d0ce12205a5",
+      "sig": "8150d0bcbc3f88c7fe7bdbbabc6df37359ff22818711a547d52ef876f91b9d4a3e283a70e21bb0e153c049e6af1d18ff2a76ed9be427640d9472676510cf1a0f"
+     },
+     "pinned": "BC7CBCB5636375FA1D82434D466724D92377F53B980695DD49D26D0CE12205A5",
+     "now_ms": 1791979200000,
+     "expect": {
+      "valid": false
+     }
+    },
+    {
+     "id": "inv-pin-short",
+     "note": "A pin that is not 64 lowercase hex.",
+     "invoice": {
+      "ver": "30e-demo-invoice/1",
+      "invoiceId": "inv-1",
+      "seller": "demo-seller",
+      "payee": "0x2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b",
+      "chain": "evm:31337",
+      "asset": "0xabababababababababababababababababababab",
+      "amount": "1000",
+      "deliverableHash": "abababababababababababababababababababababababababababababababab",
+      "expiresAt": "2026-10-15T12:00:00.000Z",
+      "sellerKey": "bc7cbcb5636375fa1d82434d466724d92377f53b980695dd49d26d0ce12205a5",
+      "sig": "8150d0bcbc3f88c7fe7bdbbabc6df37359ff22818711a547d52ef876f91b9d4a3e283a70e21bb0e153c049e6af1d18ff2a76ed9be427640d9472676510cf1a0f"
+     },
+     "pinned": "bc7cbcb5636375fa1d82434d466724d92377f53b980695dd49d26d0ce12205",
+     "now_ms": 1791979200000,
+     "expect": {
+      "valid": false
+     }
+    },
+    {
+     "id": "inv-pin-empty",
+     "note": "A pin that is not 64 lowercase hex.",
+     "invoice": {
+      "ver": "30e-demo-invoice/1",
+      "invoiceId": "inv-1",
+      "seller": "demo-seller",
+      "payee": "0x2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b",
+      "chain": "evm:31337",
+      "asset": "0xabababababababababababababababababababab",
+      "amount": "1000",
+      "deliverableHash": "abababababababababababababababababababababababababababababababab",
+      "expiresAt": "2026-10-15T12:00:00.000Z",
+      "sellerKey": "bc7cbcb5636375fa1d82434d466724d92377f53b980695dd49d26d0ce12205a5",
+      "sig": "8150d0bcbc3f88c7fe7bdbbabc6df37359ff22818711a547d52ef876f91b9d4a3e283a70e21bb0e153c049e6af1d18ff2a76ed9be427640d9472676510cf1a0f"
+     },
+     "pinned": "",
+     "now_ms": 1791979200000,
+     "expect": {
+      "valid": false
+     }
+    },
+    {
+     "id": "inv-sig-tampered",
+     "note": "A bad signature.",
+     "invoice": {
+      "ver": "30e-demo-invoice/1",
+      "invoiceId": "inv-1",
+      "seller": "demo-seller",
+      "payee": "0x2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b",
+      "chain": "evm:31337",
+      "asset": "0xabababababababababababababababababababab",
+      "amount": "1000",
+      "deliverableHash": "abababababababababababababababababababababababababababababababab",
+      "expiresAt": "2026-10-15T12:00:00.000Z",
+      "sellerKey": "bc7cbcb5636375fa1d82434d466724d92377f53b980695dd49d26d0ce12205a5",
+      "sig": "8150d0bcbc3f88c7fe7bdbbabc6df37359ff22818711a547d52ef876f91b9d4a3e283a70e21bb0e153c049e6af1d18ff2a76ed9be427640d9472676510cf1a00"
+     },
+     "pinned": "bc7cbcb5636375fa1d82434d466724d92377f53b980695dd49d26d0ce12205a5",
+     "now_ms": 1791979200000,
+     "expect": {
+      "valid": false
+     }
+    },
+    {
+     "id": "inv-sig-uppercase",
+     "note": "A bad signature.",
+     "invoice": {
+      "ver": "30e-demo-invoice/1",
+      "invoiceId": "inv-1",
+      "seller": "demo-seller",
+      "payee": "0x2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b",
+      "chain": "evm:31337",
+      "asset": "0xabababababababababababababababababababab",
+      "amount": "1000",
+      "deliverableHash": "abababababababababababababababababababababababababababababababab",
+      "expiresAt": "2026-10-15T12:00:00.000Z",
+      "sellerKey": "bc7cbcb5636375fa1d82434d466724d92377f53b980695dd49d26d0ce12205a5",
+      "sig": "8150D0BCBC3F88C7FE7BDBBABC6DF37359FF22818711A547D52EF876F91B9D4A3E283A70E21BB0E153C049E6AF1D18FF2A76ED9BE427640D9472676510CF1A0F"
+     },
+     "pinned": "bc7cbcb5636375fa1d82434d466724d92377f53b980695dd49d26d0ce12205a5",
+     "now_ms": 1791979200000,
+     "expect": {
+      "valid": false
+     }
+    },
+    {
+     "id": "inv-sig-short",
+     "note": "A bad signature.",
+     "invoice": {
+      "ver": "30e-demo-invoice/1",
+      "invoiceId": "inv-1",
+      "seller": "demo-seller",
+      "payee": "0x2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b",
+      "chain": "evm:31337",
+      "asset": "0xabababababababababababababababababababab",
+      "amount": "1000",
+      "deliverableHash": "abababababababababababababababababababababababababababababababab",
+      "expiresAt": "2026-10-15T12:00:00.000Z",
+      "sellerKey": "bc7cbcb5636375fa1d82434d466724d92377f53b980695dd49d26d0ce12205a5",
+      "sig": "8150d0bcbc3f88c7fe7bdbbabc6df37359ff22818711a547d52ef876f91b9d4a3e283a70e21bb0e153c049e6af1d18ff2a76ed9be427640d9472676510cf1a"
+     },
+     "pinned": "bc7cbcb5636375fa1d82434d466724d92377f53b980695dd49d26d0ce12205a5",
+     "now_ms": 1791979200000,
+     "expect": {
+      "valid": false
+     }
+    },
+    {
+     "id": "inv-sig-long",
+     "note": "A bad signature.",
+     "invoice": {
+      "ver": "30e-demo-invoice/1",
+      "invoiceId": "inv-1",
+      "seller": "demo-seller",
+      "payee": "0x2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b",
+      "chain": "evm:31337",
+      "asset": "0xabababababababababababababababababababab",
+      "amount": "1000",
+      "deliverableHash": "abababababababababababababababababababababababababababababababab",
+      "expiresAt": "2026-10-15T12:00:00.000Z",
+      "sellerKey": "bc7cbcb5636375fa1d82434d466724d92377f53b980695dd49d26d0ce12205a5",
+      "sig": "8150d0bcbc3f88c7fe7bdbbabc6df37359ff22818711a547d52ef876f91b9d4a3e283a70e21bb0e153c049e6af1d18ff2a76ed9be427640d9472676510cf1a0f00"
+     },
+     "pinned": "bc7cbcb5636375fa1d82434d466724d92377f53b980695dd49d26d0ce12205a5",
+     "now_ms": 1791979200000,
+     "expect": {
+      "valid": false
+     }
+    },
+    {
+     "id": "inv-sig-not-hex",
+     "note": "A bad signature.",
+     "invoice": {
+      "ver": "30e-demo-invoice/1",
+      "invoiceId": "inv-1",
+      "seller": "demo-seller",
+      "payee": "0x2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b",
+      "chain": "evm:31337",
+      "asset": "0xabababababababababababababababababababab",
+      "amount": "1000",
+      "deliverableHash": "abababababababababababababababababababababababababababababababab",
+      "expiresAt": "2026-10-15T12:00:00.000Z",
+      "sellerKey": "bc7cbcb5636375fa1d82434d466724d92377f53b980695dd49d26d0ce12205a5",
+      "sig": "zzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzz"
+     },
+     "pinned": "bc7cbcb5636375fa1d82434d466724d92377f53b980695dd49d26d0ce12205a5",
+     "now_ms": 1791979200000,
+     "expect": {
+      "valid": false
+     }
+    },
+    {
+     "id": "inv-sig-empty",
+     "note": "A bad signature.",
+     "invoice": {
+      "ver": "30e-demo-invoice/1",
+      "invoiceId": "inv-1",
+      "seller": "demo-seller",
+      "payee": "0x2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b",
+      "chain": "evm:31337",
+      "asset": "0xabababababababababababababababababababab",
+      "amount": "1000",
+      "deliverableHash": "abababababababababababababababababababababababababababababababab",
+      "expiresAt": "2026-10-15T12:00:00.000Z",
+      "sellerKey": "bc7cbcb5636375fa1d82434d466724d92377f53b980695dd49d26d0ce12205a5",
+      "sig": ""
+     },
+     "pinned": "bc7cbcb5636375fa1d82434d466724d92377f53b980695dd49d26d0ce12205a5",
+     "now_ms": 1791979200000,
+     "expect": {
+      "valid": false
+     }
+    },
+    {
+     "id": "inv-sig-null",
+     "note": "A bad signature.",
+     "invoice": {
+      "ver": "30e-demo-invoice/1",
+      "invoiceId": "inv-1",
+      "seller": "demo-seller",
+      "payee": "0x2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b",
+      "chain": "evm:31337",
+      "asset": "0xabababababababababababababababababababab",
+      "amount": "1000",
+      "deliverableHash": "abababababababababababababababababababababababababababababababab",
+      "expiresAt": "2026-10-15T12:00:00.000Z",
+      "sellerKey": "bc7cbcb5636375fa1d82434d466724d92377f53b980695dd49d26d0ce12205a5",
+      "sig": null
+     },
+     "pinned": "bc7cbcb5636375fa1d82434d466724d92377f53b980695dd49d26d0ce12205a5",
+     "now_ms": 1791979200000,
+     "expect": {
+      "valid": false
+     }
+    },
+    {
+     "id": "inv-sig-number",
+     "note": "A bad signature.",
+     "invoice": {
+      "ver": "30e-demo-invoice/1",
+      "invoiceId": "inv-1",
+      "seller": "demo-seller",
+      "payee": "0x2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b",
+      "chain": "evm:31337",
+      "asset": "0xabababababababababababababababababababab",
+      "amount": "1000",
+      "deliverableHash": "abababababababababababababababababababababababababababababababab",
+      "expiresAt": "2026-10-15T12:00:00.000Z",
+      "sellerKey": "bc7cbcb5636375fa1d82434d466724d92377f53b980695dd49d26d0ce12205a5",
+      "sig": 5
+     },
+     "pinned": "bc7cbcb5636375fa1d82434d466724d92377f53b980695dd49d26d0ce12205a5",
+     "now_ms": 1791979200000,
+     "expect": {
+      "valid": false
+     }
+    },
+    {
+     "id": "inv-sig-other-key",
+     "note": "A bad signature.",
+     "invoice": {
+      "ver": "30e-demo-invoice/1",
+      "invoiceId": "inv-1",
+      "seller": "demo-seller",
+      "payee": "0x2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b",
+      "chain": "evm:31337",
+      "asset": "0xabababababababababababababababababababab",
+      "amount": "1000",
+      "deliverableHash": "abababababababababababababababababababababababababababababababab",
+      "expiresAt": "2026-10-15T12:00:00.000Z",
+      "sellerKey": "bc7cbcb5636375fa1d82434d466724d92377f53b980695dd49d26d0ce12205a5",
+      "sig": "93335d9c6eafe921cb4e9173d30806d9db55ab5f83a53a757662ebbe9e2807a2ae78e2de6346361a0a032cb39029dc467458b0883e9a212c1d4aeb76f759b00a"
+     },
+     "pinned": "bc7cbcb5636375fa1d82434d466724d92377f53b980695dd49d26d0ce12205a5",
+     "now_ms": 1791979200000,
+     "expect": {
+      "valid": false
+     }
+    },
+    {
+     "id": "inv-wrong-domain",
+     "note": "Signed under the receipt domain.",
+     "invoice": {
+      "ver": "30e-demo-invoice/1",
+      "invoiceId": "inv-1",
+      "seller": "demo-seller",
+      "payee": "0x2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b",
+      "chain": "evm:31337",
+      "asset": "0xabababababababababababababababababababab",
+      "amount": "1000",
+      "deliverableHash": "abababababababababababababababababababababababababababababababab",
+      "expiresAt": "2026-10-15T12:00:00.000Z",
+      "sellerKey": "bc7cbcb5636375fa1d82434d466724d92377f53b980695dd49d26d0ce12205a5",
+      "sig": "2c0f47105470198ce5e9100cb0c36fa14fb900d3830ef87873e4d643004d4a65518dd4d198f387f42ce2fe1e99fd0c9b97a4acd2a05347c038bbdbaf0ace420c"
+     },
+     "pinned": "bc7cbcb5636375fa1d82434d466724d92377f53b980695dd49d26d0ce12205a5",
+     "now_ms": 1791979200000,
+     "expect": {
+      "valid": false
+     }
+    },
+    {
+     "id": "inv-field-tampered",
+     "note": "A field changed after signing.",
+     "invoice": {
+      "ver": "30e-demo-invoice/1",
+      "invoiceId": "inv-1",
+      "seller": "demo-seller",
+      "payee": "0x2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b",
+      "chain": "evm:31337",
+      "asset": "0xabababababababababababababababababababab",
+      "amount": "9999",
+      "deliverableHash": "abababababababababababababababababababababababababababababababab",
+      "expiresAt": "2026-10-15T12:00:00.000Z",
+      "sellerKey": "bc7cbcb5636375fa1d82434d466724d92377f53b980695dd49d26d0ce12205a5",
+      "sig": "8150d0bcbc3f88c7fe7bdbbabc6df37359ff22818711a547d52ef876f91b9d4a3e283a70e21bb0e153c049e6af1d18ff2a76ed9be427640d9472676510cf1a0f"
+     },
+     "pinned": "bc7cbcb5636375fa1d82434d466724d92377f53b980695dd49d26d0ce12205a5",
+     "now_ms": 1791979200000,
+     "expect": {
+      "valid": false
+     }
+    },
+    {
+     "id": "inv-expired-past",
+     "note": "Not strictly in the future.",
+     "invoice": {
+      "ver": "30e-demo-invoice/1",
+      "invoiceId": "inv-1",
+      "seller": "demo-seller",
+      "payee": "0x2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b",
+      "chain": "evm:31337",
+      "asset": "0xabababababababababababababababababababab",
+      "amount": "1000",
+      "deliverableHash": "abababababababababababababababababababababababababababababababab",
+      "expiresAt": "2026-10-13T12:00:00.000Z",
+      "sellerKey": "bc7cbcb5636375fa1d82434d466724d92377f53b980695dd49d26d0ce12205a5",
+      "sig": "8cb91148ccd22deeed0e920c154eef7e42365efb789c6b355c99668b0e68585c6e8fa4e35db255d8587024ca2ff811b109c342717b29bd747137a5ee78c8720e"
+     },
+     "pinned": "bc7cbcb5636375fa1d82434d466724d92377f53b980695dd49d26d0ce12205a5",
+     "now_ms": 1791979200000,
+     "expect": {
+      "valid": false
+     }
+    },
+    {
+     "id": "inv-expired-exactly-now",
+     "note": "Not strictly in the future.",
+     "invoice": {
+      "ver": "30e-demo-invoice/1",
+      "invoiceId": "inv-1",
+      "seller": "demo-seller",
+      "payee": "0x2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b",
+      "chain": "evm:31337",
+      "asset": "0xabababababababababababababababababababab",
+      "amount": "1000",
+      "deliverableHash": "abababababababababababababababababababababababababababababababab",
+      "expiresAt": "2026-10-14T12:00:00.000Z",
+      "sellerKey": "bc7cbcb5636375fa1d82434d466724d92377f53b980695dd49d26d0ce12205a5",
+      "sig": "00f6d59d5d250e3665016ecce468f4656e187bc246d6fd5ab388ab009993a4fa3332c4fa2716e063ca6918df00f99db4f808120fea8cee02a25d41c06e4b1204"
+     },
+     "pinned": "bc7cbcb5636375fa1d82434d466724d92377f53b980695dd49d26d0ce12205a5",
+     "now_ms": 1791979200000,
+     "expect": {
+      "valid": false
+     }
+    },
+    {
+     "id": "inv-expired-one-ms-ago",
+     "note": "Not strictly in the future.",
+     "invoice": {
+      "ver": "30e-demo-invoice/1",
+      "invoiceId": "inv-1",
+      "seller": "demo-seller",
+      "payee": "0x2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b",
+      "chain": "evm:31337",
+      "asset": "0xabababababababababababababababababababab",
+      "amount": "1000",
+      "deliverableHash": "abababababababababababababababababababababababababababababababab",
+      "expiresAt": "2026-10-14T11:59:59.999Z",
+      "sellerKey": "bc7cbcb5636375fa1d82434d466724d92377f53b980695dd49d26d0ce12205a5",
+      "sig": "34df31724e8d8dbb26d759831a6b8575de2d320adc8cbf625f9189192bab068e113456cf26bef9dff5a78cef63f28a2983dd91875c02c239ca9e52c898b1340d"
+     },
+     "pinned": "bc7cbcb5636375fa1d82434d466724d92377f53b980695dd49d26d0ce12205a5",
+     "now_ms": 1791979200000,
+     "expect": {
+      "valid": false
+     }
+    },
+    {
+     "id": "inv-expiry-without-milliseconds",
+     "note": "A UTC 'Z' timestamp without milliseconds is unambiguous and accepted.",
+     "invoice": {
+      "ver": "30e-demo-invoice/1",
+      "invoiceId": "inv-1",
+      "seller": "demo-seller",
+      "payee": "0x2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b",
+      "chain": "evm:31337",
+      "asset": "0xabababababababababababababababababababab",
+      "amount": "1000",
+      "deliverableHash": "abababababababababababababababababababababababababababababababab",
+      "expiresAt": "2030-01-01T00:00:00Z",
+      "sellerKey": "bc7cbcb5636375fa1d82434d466724d92377f53b980695dd49d26d0ce12205a5",
+      "sig": "c918bee42dde207c02cbeb5d054b8f518db6c1d99e6468d9e4228dfbf89cb9449062406181534d57c32f4c06d683d0bd8dc01ff11258bd4d3116550f7e639004"
+     },
+     "pinned": "bc7cbcb5636375fa1d82434d466724d92377f53b980695dd49d26d0ce12205a5",
+     "now_ms": 1791979200000,
+     "expect": {
+      "valid": true
+     }
+    },
+    {
+     "id": "inv-expires-one-ms-ahead",
+     "note": "One millisecond ahead is still valid.",
+     "invoice": {
+      "ver": "30e-demo-invoice/1",
+      "invoiceId": "inv-1",
+      "seller": "demo-seller",
+      "payee": "0x2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b",
+      "chain": "evm:31337",
+      "asset": "0xabababababababababababababababababababab",
+      "amount": "1000",
+      "deliverableHash": "abababababababababababababababababababababababababababababababab",
+      "expiresAt": "2026-10-14T12:00:00.001Z",
+      "sellerKey": "bc7cbcb5636375fa1d82434d466724d92377f53b980695dd49d26d0ce12205a5",
+      "sig": "c9ae0fac446ea881f2e8c37dd35a3f15254db8f667644c868001fead569e88d75892e919b6abbfbb00869808ac8e16fac53f6988c2f1afad3101ec7846c5740b"
+     },
+     "pinned": "bc7cbcb5636375fa1d82434d466724d92377f53b980695dd49d26d0ce12205a5",
+     "now_ms": 1791979200000,
+     "expect": {
+      "valid": true
+     }
+    },
+    {
+     "id": "inv-expiry-unreadable-word",
+     "note": "expiresAt is not a timestamp.",
+     "invoice": {
+      "ver": "30e-demo-invoice/1",
+      "invoiceId": "inv-1",
+      "seller": "demo-seller",
+      "payee": "0x2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b",
+      "chain": "evm:31337",
+      "asset": "0xabababababababababababababababababababab",
+      "amount": "1000",
+      "deliverableHash": "abababababababababababababababababababababababababababababababab",
+      "expiresAt": "tomorrow",
+      "sellerKey": "bc7cbcb5636375fa1d82434d466724d92377f53b980695dd49d26d0ce12205a5",
+      "sig": "7a399864d2638dd5cb0db2f0ea5de14d207d29edd0d426d903b9e1f259e5695fca8e853d3ed72ec38f69605d459d4047961dbeb928c95692d367507a094c730b"
+     },
+     "pinned": "bc7cbcb5636375fa1d82434d466724d92377f53b980695dd49d26d0ce12205a5",
+     "now_ms": 1791979200000,
+     "expect": {
+      "valid": false
+     }
+    },
+    {
+     "id": "inv-expiry-unreadable-empty",
+     "note": "expiresAt is not a timestamp.",
+     "invoice": {
+      "ver": "30e-demo-invoice/1",
+      "invoiceId": "inv-1",
+      "seller": "demo-seller",
+      "payee": "0x2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b",
+      "chain": "evm:31337",
+      "asset": "0xabababababababababababababababababababab",
+      "amount": "1000",
+      "deliverableHash": "abababababababababababababababababababababababababababababababab",
+      "expiresAt": "",
+      "sellerKey": "bc7cbcb5636375fa1d82434d466724d92377f53b980695dd49d26d0ce12205a5",
+      "sig": "7156a6d84af1f8892c9df97b08f3cde85adbb4e9cf6f963adeb6115c36eb31cc3c4cb6a0f224b32b9c76ae5f0183c8514d5e2b7398e088db2f58f1171d228c04"
+     },
+     "pinned": "bc7cbcb5636375fa1d82434d466724d92377f53b980695dd49d26d0ce12205a5",
+     "now_ms": 1791979200000,
+     "expect": {
+      "valid": false
+     }
+    },
+    {
+     "id": "inv-expiry-unreadable-number",
+     "note": "expiresAt is not a timestamp.",
+     "invoice": {
+      "ver": "30e-demo-invoice/1",
+      "invoiceId": "inv-1",
+      "seller": "demo-seller",
+      "payee": "0x2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b",
+      "chain": "evm:31337",
+      "asset": "0xabababababababababababababababababababab",
+      "amount": "1000",
+      "deliverableHash": "abababababababababababababababababababababababababababababababab",
+      "expiresAt": 4102444800000,
+      "sellerKey": "bc7cbcb5636375fa1d82434d466724d92377f53b980695dd49d26d0ce12205a5",
+      "sig": "728fd0d7fb86e3e63b3f5671eb0734363042b0b86e43505c168bfb7839210839faa05fa3b26ffa5faf78d88e9981255a01c4f8244bf0d78f8e2115e654f5e70e"
+     },
+     "pinned": "bc7cbcb5636375fa1d82434d466724d92377f53b980695dd49d26d0ce12205a5",
+     "now_ms": 1791979200000,
+     "expect": {
+      "valid": false
+     }
+    },
+    {
+     "id": "inv-expiry-unreadable-null",
+     "note": "expiresAt is not a timestamp.",
+     "invoice": {
+      "ver": "30e-demo-invoice/1",
+      "invoiceId": "inv-1",
+      "seller": "demo-seller",
+      "payee": "0x2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b",
+      "chain": "evm:31337",
+      "asset": "0xabababababababababababababababababababab",
+      "amount": "1000",
+      "deliverableHash": "abababababababababababababababababababababababababababababababab",
+      "expiresAt": null,
+      "sellerKey": "bc7cbcb5636375fa1d82434d466724d92377f53b980695dd49d26d0ce12205a5",
+      "sig": "32b132ab02694f73e7aa71fa6dba5758e6df48b9b436c1e4e7098cd0c3175d8e20fb3b607627cee83e0814f0534cb72f901d29cc8635aa6543c2f2ab09b3f10d"
+     },
+     "pinned": "bc7cbcb5636375fa1d82434d466724d92377f53b980695dd49d26d0ce12205a5",
+     "now_ms": 1791979200000,
+     "expect": {
+      "valid": false
+     }
+    },
+    {
+     "id": "inv-expiry-loose-year-only",
+     "note": "'2030' is not the spine's timestamp form (UTC, milliseconds, Z).",
+     "invoice": {
+      "ver": "30e-demo-invoice/1",
+      "invoiceId": "inv-1",
+      "seller": "demo-seller",
+      "payee": "0x2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b",
+      "chain": "evm:31337",
+      "asset": "0xabababababababababababababababababababab",
+      "amount": "1000",
+      "deliverableHash": "abababababababababababababababababababababababababababababababab",
+      "expiresAt": "2030",
+      "sellerKey": "bc7cbcb5636375fa1d82434d466724d92377f53b980695dd49d26d0ce12205a5",
+      "sig": "1a317b29e2fcdd621d1b13a1f30c68d88ea0bec40b7f3a0b0a390882166ac3a30d5e599ee473053e43b647962f1c31b1b7e69c687135c1efe7dad7f6e472b807"
+     },
+     "pinned": "bc7cbcb5636375fa1d82434d466724d92377f53b980695dd49d26d0ce12205a5",
+     "now_ms": 1791979200000,
+     "expect": {
+      "valid": false
+     },
+     "gap": {
+      "js": {
+       "valid": true
+      },
+      "why": "JS verifyInvoice uses Date.parse, which accepts many forms; Python accepts only YYYY-MM-DDTHH:MM:SS.mmmZ"
+     }
+    },
+    {
+     "id": "inv-expiry-loose-date-only",
+     "note": "'2030-01-01' is not the spine's timestamp form (UTC, milliseconds, Z).",
+     "invoice": {
+      "ver": "30e-demo-invoice/1",
+      "invoiceId": "inv-1",
+      "seller": "demo-seller",
+      "payee": "0x2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b",
+      "chain": "evm:31337",
+      "asset": "0xabababababababababababababababababababab",
+      "amount": "1000",
+      "deliverableHash": "abababababababababababababababababababababababababababababababab",
+      "expiresAt": "2030-01-01",
+      "sellerKey": "bc7cbcb5636375fa1d82434d466724d92377f53b980695dd49d26d0ce12205a5",
+      "sig": "fd3a981c40b98f54b2b8d0c38f04c9b3540a5a36c3a3cbdf22445b6c3c8cd4a65d44b06841525b6e03df13fdf57eabde22ada9faa8595dfd56657ed586ac1006"
+     },
+     "pinned": "bc7cbcb5636375fa1d82434d466724d92377f53b980695dd49d26d0ce12205a5",
+     "now_ms": 1791979200000,
+     "expect": {
+      "valid": false
+     },
+     "gap": {
+      "js": {
+       "valid": true
+      },
+      "why": "JS verifyInvoice uses Date.parse, which accepts many forms; Python accepts only YYYY-MM-DDTHH:MM:SS.mmmZ"
+     }
+    },
+    {
+     "id": "inv-expiry-loose-no-zone",
+     "note": "'2030-01-01T00:00:00' is not the spine's timestamp form (UTC, milliseconds, Z).",
+     "invoice": {
+      "ver": "30e-demo-invoice/1",
+      "invoiceId": "inv-1",
+      "seller": "demo-seller",
+      "payee": "0x2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b",
+      "chain": "evm:31337",
+      "asset": "0xabababababababababababababababababababab",
+      "amount": "1000",
+      "deliverableHash": "abababababababababababababababababababababababababababababababab",
+      "expiresAt": "2030-01-01T00:00:00",
+      "sellerKey": "bc7cbcb5636375fa1d82434d466724d92377f53b980695dd49d26d0ce12205a5",
+      "sig": "0763ef7304ae5c7b6b4ce17cb549264e9a8eb6340b61025c9597818970bcd5bf53f1dba8cb7398835682ea43cc60ebe423aaf8671171f383c841c798f1698506"
+     },
+     "pinned": "bc7cbcb5636375fa1d82434d466724d92377f53b980695dd49d26d0ce12205a5",
+     "now_ms": 1791979200000,
+     "expect": {
+      "valid": false
+     },
+     "gap": {
+      "js": {
+       "valid": true
+      },
+      "why": "JS verifyInvoice uses Date.parse, which accepts many forms; Python accepts only YYYY-MM-DDTHH:MM:SS.mmmZ"
+     }
+    },
+    {
+     "id": "inv-expiry-loose-offset",
+     "note": "'2030-01-01T00:00:00.000+00:00' is not the spine's timestamp form (UTC, milliseconds, Z).",
+     "invoice": {
+      "ver": "30e-demo-invoice/1",
+      "invoiceId": "inv-1",
+      "seller": "demo-seller",
+      "payee": "0x2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b",
+      "chain": "evm:31337",
+      "asset": "0xabababababababababababababababababababab",
+      "amount": "1000",
+      "deliverableHash": "abababababababababababababababababababababababababababababababab",
+      "expiresAt": "2030-01-01T00:00:00.000+00:00",
+      "sellerKey": "bc7cbcb5636375fa1d82434d466724d92377f53b980695dd49d26d0ce12205a5",
+      "sig": "5cbc519c30785e37c11b170c9e2b70dc64c5417f19cc4c9a02d4fc681f6bbe5a4b8c307a86d5d9ba709972ddbea070c56b00f6664ca1592ab59d36075a790c04"
+     },
+     "pinned": "bc7cbcb5636375fa1d82434d466724d92377f53b980695dd49d26d0ce12205a5",
+     "now_ms": 1791979200000,
+     "expect": {
+      "valid": false
+     },
+     "gap": {
+      "js": {
+       "valid": true
+      },
+      "why": "JS verifyInvoice uses Date.parse, which accepts many forms; Python accepts only YYYY-MM-DDTHH:MM:SS.mmmZ"
+     }
+    },
+    {
+     "id": "inv-expiry-loose-english",
+     "note": "'Jan 1 2030' is not the spine's timestamp form (UTC, milliseconds, Z).",
+     "invoice": {
+      "ver": "30e-demo-invoice/1",
+      "invoiceId": "inv-1",
+      "seller": "demo-seller",
+      "payee": "0x2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b",
+      "chain": "evm:31337",
+      "asset": "0xabababababababababababababababababababab",
+      "amount": "1000",
+      "deliverableHash": "abababababababababababababababababababababababababababababababab",
+      "expiresAt": "Jan 1 2030",
+      "sellerKey": "bc7cbcb5636375fa1d82434d466724d92377f53b980695dd49d26d0ce12205a5",
+      "sig": "b321ffc9b67b57f36222e2a2b4c0a3f9f856c52d6572385df3325897d0183b1c27251e51a1c406197e816e04a0f55742e06d7c7d2ff25e2aa0199f034b4bad0a"
+     },
+     "pinned": "bc7cbcb5636375fa1d82434d466724d92377f53b980695dd49d26d0ce12205a5",
+     "now_ms": 1791979200000,
+     "expect": {
+      "valid": false
+     },
+     "gap": {
+      "js": {
+       "valid": true
+      },
+      "why": "JS verifyInvoice uses Date.parse, which accepts many forms; Python accepts only YYYY-MM-DDTHH:MM:SS.mmmZ"
+     }
+    },
+    {
+     "id": "inv-payee-uppercase",
+     "note": "payee is not 0x + 40 lowercase hex.",
+     "invoice": {
+      "ver": "30e-demo-invoice/1",
+      "invoiceId": "inv-1",
+      "seller": "demo-seller",
+      "payee": "0x2B2B2B2B2B2B2B2B2B2B2B2B2B2B2B2B2B2B2B2B",
+      "chain": "evm:31337",
+      "asset": "0xabababababababababababababababababababab",
+      "amount": "1000",
+      "deliverableHash": "abababababababababababababababababababababababababababababababab",
+      "expiresAt": "2026-10-15T12:00:00.000Z",
+      "sellerKey": "bc7cbcb5636375fa1d82434d466724d92377f53b980695dd49d26d0ce12205a5",
+      "sig": "89d554184773a415f1c7f79a9a8c8220e3123082be8867fc617d476745e2d078210f7944cdf4b36281fca4b9c9ae70813373a3739af7f85db0ffb72d227f6c0a"
+     },
+     "pinned": "bc7cbcb5636375fa1d82434d466724d92377f53b980695dd49d26d0ce12205a5",
+     "now_ms": 1791979200000,
+     "expect": {
+      "valid": false
+     },
+     "gap": {
+      "js": {
+       "valid": true
+      },
+      "why": "JS verifyInvoice does not check the shape of payee or asset (it matches transfers by string equality later)"
+     }
+    },
+    {
+     "id": "inv-payee-short",
+     "note": "payee is not 0x + 40 lowercase hex.",
+     "invoice": {
+      "ver": "30e-demo-invoice/1",
+      "invoiceId": "inv-1",
+      "seller": "demo-seller",
+      "payee": "0x1234",
+      "chain": "evm:31337",
+      "asset": "0xabababababababababababababababababababab",
+      "amount": "1000",
+      "deliverableHash": "abababababababababababababababababababababababababababababababab",
+      "expiresAt": "2026-10-15T12:00:00.000Z",
+      "sellerKey": "bc7cbcb5636375fa1d82434d466724d92377f53b980695dd49d26d0ce12205a5",
+      "sig": "9f345dc956d7b1ba3fda24877722b95caef4171a5b8024dd0ede69871ac7bc8a7e50933636c533eb50161757f10e0f8451fb76ca10e9cca2143337afcd0fa109"
+     },
+     "pinned": "bc7cbcb5636375fa1d82434d466724d92377f53b980695dd49d26d0ce12205a5",
+     "now_ms": 1791979200000,
+     "expect": {
+      "valid": false
+     },
+     "gap": {
+      "js": {
+       "valid": true
+      },
+      "why": "JS verifyInvoice does not check the shape of payee or asset (it matches transfers by string equality later)"
+     }
+    },
+    {
+     "id": "inv-payee-null",
+     "note": "payee is not 0x + 40 lowercase hex.",
+     "invoice": {
+      "ver": "30e-demo-invoice/1",
+      "invoiceId": "inv-1",
+      "seller": "demo-seller",
+      "payee": null,
+      "chain": "evm:31337",
+      "asset": "0xabababababababababababababababababababab",
+      "amount": "1000",
+      "deliverableHash": "abababababababababababababababababababababababababababababababab",
+      "expiresAt": "2026-10-15T12:00:00.000Z",
+      "sellerKey": "bc7cbcb5636375fa1d82434d466724d92377f53b980695dd49d26d0ce12205a5",
+      "sig": "47ef64ed1f668a54d1a32c7ea44048c697e21c9ece5a2d37ea969ce457b6c21992f09ce36a4fbf6c351b10bb4d39baa436429935cc09acd50caa18144ea17606"
+     },
+     "pinned": "bc7cbcb5636375fa1d82434d466724d92377f53b980695dd49d26d0ce12205a5",
+     "now_ms": 1791979200000,
+     "expect": {
+      "valid": false
+     },
+     "gap": {
+      "js": {
+       "valid": true
+      },
+      "why": "JS verifyInvoice does not check the shape of payee or asset (it matches transfers by string equality later)"
+     }
+    },
+    {
+     "id": "inv-asset-uppercase",
+     "note": "asset is not 0x + 40 lowercase hex.",
+     "invoice": {
+      "ver": "30e-demo-invoice/1",
+      "invoiceId": "inv-1",
+      "seller": "demo-seller",
+      "payee": "0x2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b",
+      "chain": "evm:31337",
+      "asset": "0xABABABABABABABABABABABABABABABABABABABAB",
+      "amount": "1000",
+      "deliverableHash": "abababababababababababababababababababababababababababababababab",
+      "expiresAt": "2026-10-15T12:00:00.000Z",
+      "sellerKey": "bc7cbcb5636375fa1d82434d466724d92377f53b980695dd49d26d0ce12205a5",
+      "sig": "561c529ea90fc0fea31e115fce1fd3cb546305f730ecf575b7139dbccae8175f93e0d4e3ac93ae28aa283866f1acbff90b3c1bf9382c5b84c5fdf0ce0798f801"
+     },
+     "pinned": "bc7cbcb5636375fa1d82434d466724d92377f53b980695dd49d26d0ce12205a5",
+     "now_ms": 1791979200000,
+     "expect": {
+      "valid": false
+     },
+     "gap": {
+      "js": {
+       "valid": true
+      },
+      "why": "JS verifyInvoice does not check the shape of payee or asset (it matches transfers by string equality later)"
+     }
+    },
+    {
+     "id": "inv-asset-short",
+     "note": "asset is not 0x + 40 lowercase hex.",
+     "invoice": {
+      "ver": "30e-demo-invoice/1",
+      "invoiceId": "inv-1",
+      "seller": "demo-seller",
+      "payee": "0x2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b",
+      "chain": "evm:31337",
+      "asset": "0xabc",
+      "amount": "1000",
+      "deliverableHash": "abababababababababababababababababababababababababababababababab",
+      "expiresAt": "2026-10-15T12:00:00.000Z",
+      "sellerKey": "bc7cbcb5636375fa1d82434d466724d92377f53b980695dd49d26d0ce12205a5",
+      "sig": "2274584cbe0ee35defe1ff19e3b400f1af501aa8240aa08bb682ac4e5b7eb256256a93f48ac69c32f9d8a70e42f4f75ddf377268c7d8e5a652f432c39f437601"
+     },
+     "pinned": "bc7cbcb5636375fa1d82434d466724d92377f53b980695dd49d26d0ce12205a5",
+     "now_ms": 1791979200000,
+     "expect": {
+      "valid": false
+     },
+     "gap": {
+      "js": {
+       "valid": true
+      },
+      "why": "JS verifyInvoice does not check the shape of payee or asset (it matches transfers by string equality later)"
+     }
+    },
+    {
+     "id": "inv-asset-number",
+     "note": "asset is not 0x + 40 lowercase hex.",
+     "invoice": {
+      "ver": "30e-demo-invoice/1",
+      "invoiceId": "inv-1",
+      "seller": "demo-seller",
+      "payee": "0x2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b",
+      "chain": "evm:31337",
+      "asset": 5,
+      "amount": "1000",
+      "deliverableHash": "abababababababababababababababababababababababababababababababab",
+      "expiresAt": "2026-10-15T12:00:00.000Z",
+      "sellerKey": "bc7cbcb5636375fa1d82434d466724d92377f53b980695dd49d26d0ce12205a5",
+      "sig": "7d83963570d96bebfe23212868e67d2879286ebad3f6b2b6904101848c89ac02d1c226d8f3aa8b822d06ee91e78ae503a7b62976e35fbd32668efb3f3ff8b807"
+     },
+     "pinned": "bc7cbcb5636375fa1d82434d466724d92377f53b980695dd49d26d0ce12205a5",
+     "now_ms": 1791979200000,
+     "expect": {
+      "valid": false
+     },
+     "gap": {
+      "js": {
+       "valid": true
+      },
+      "why": "JS verifyInvoice does not check the shape of payee or asset (it matches transfers by string equality later)"
+     }
+    },
+    {
+     "id": "inv-payee-trailing-newline",
+     "note": "payee is not 0x + 40 lowercase hex.",
+     "invoice": {
+      "ver": "30e-demo-invoice/1",
+      "invoiceId": "inv-1",
+      "seller": "demo-seller",
+      "payee": "0x2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b\n",
+      "chain": "evm:31337",
+      "asset": "0xabababababababababababababababababababab",
+      "amount": "1000",
+      "deliverableHash": "abababababababababababababababababababababababababababababababab",
+      "expiresAt": "2026-10-15T12:00:00.000Z",
+      "sellerKey": "bc7cbcb5636375fa1d82434d466724d92377f53b980695dd49d26d0ce12205a5",
+      "sig": "ffabd79f333216b75ebd02296f43409d31a7c99f757ee5e4206f688a0bd6c36604a01889a10ef6bb70f714241aa1120d1fceeb47e8be81fa483ae3c9b9dc1109"
+     },
+     "pinned": "bc7cbcb5636375fa1d82434d466724d92377f53b980695dd49d26d0ce12205a5",
+     "now_ms": 1791979200000,
+     "expect": {
+      "valid": false
+     },
+     "gap": {
+      "js": {
+       "valid": true
+      },
+      "why": "JS verifyInvoice does not check the shape of payee or asset (it matches transfers by string equality later)"
+     }
+    }
+   ]
+  },
+  {
+   "name": "tx",
+   "cases": [
+    {
+     "id": "tx-confirmed",
+     "note": "A confirmed transfer of the invoiced asset.",
+     "chain": "evm:31337",
+     "txHash": "0xcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcd",
+     "minConfirmations": 1,
+     "rpc": {
+      "eth_chainId": "0x7a69",
+      "eth_blockNumber": "0x20",
+      "eth_getTransactionReceipt": {
+       "status": "0x1",
+       "blockNumber": "0x10",
+       "transactionHash": "0xcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcd",
+       "logs": [
+        {
+         "address": "0xabababababababababababababababababababab",
+         "topics": [
+          "0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef",
+          "0x0000000000000000000000001c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c",
+          "0x0000000000000000000000002b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b"
+         ],
+         "data": "0x00000000000000000000000000000000000000000000000000000000000003e8"
+        }
+       ]
+      }
+     },
+     "throws": [],
+     "expect": {
+      "state": "confirmed",
+      "transfers": [
+       {
+        "token": "0xabababababababababababababababababababab",
+        "from": "0x1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c",
+        "to": "0x2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b",
+        "amount": "1000"
+       }
+      ]
+     }
+    },
+    {
+     "id": "tx-pending-not-enough-confirmations",
+     "note": "17 confirmations are not 100.",
+     "chain": "evm:31337",
+     "txHash": "0xcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcd",
+     "minConfirmations": 100,
+     "rpc": {
+      "eth_chainId": "0x7a69",
+      "eth_blockNumber": "0x20",
+      "eth_getTransactionReceipt": {
+       "status": "0x1",
+       "blockNumber": "0x10",
+       "transactionHash": "0xcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcd",
+       "logs": [
+        {
+         "address": "0xabababababababababababababababababababab",
+         "topics": [
+          "0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef",
+          "0x0000000000000000000000001c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c",
+          "0x0000000000000000000000002b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b"
+         ],
+         "data": "0x00000000000000000000000000000000000000000000000000000000000003e8"
+        }
+       ]
+      }
+     },
+     "throws": [],
+     "expect": {
+      "state": "pending",
+      "transfers": [
+       {
+        "token": "0xabababababababababababababababababababab",
+        "from": "0x1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c",
+        "to": "0x2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b",
+        "amount": "1000"
+       }
+      ]
+     }
+    },
+    {
+     "id": "tx-null-receipt-is-pending",
+     "note": "No receipt yet.",
+     "chain": "evm:31337",
+     "txHash": "0xcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcd",
+     "minConfirmations": 1,
+     "rpc": {
+      "eth_chainId": "0x7a69",
+      "eth_blockNumber": "0x20",
+      "eth_getTransactionReceipt": null
+     },
+     "throws": [],
+     "expect": {
+      "state": "pending",
+      "transfers": []
+     }
+    },
+    {
+     "id": "tx-failed",
+     "note": "status 0x0: failed, and no transfers count.",
+     "chain": "evm:31337",
+     "txHash": "0xcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcd",
+     "minConfirmations": 1,
+     "rpc": {
+      "eth_chainId": "0x7a69",
+      "eth_blockNumber": "0x20",
+      "eth_getTransactionReceipt": {
+       "status": "0x0",
+       "blockNumber": "0x10",
+       "transactionHash": "0xcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcd",
+       "logs": [
+        {
+         "address": "0xabababababababababababababababababababab",
+         "topics": [
+          "0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef",
+          "0x0000000000000000000000001c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c",
+          "0x0000000000000000000000002b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b"
+         ],
+         "data": "0x00000000000000000000000000000000000000000000000000000000000003e8"
+        }
+       ]
+      }
+     },
+     "throws": [],
+     "expect": {
+      "state": "failed",
+      "transfers": []
+     }
+    },
+    {
+     "id": "tx-status-missing",
+     "note": "A missing or odd status is UNKNOWN, never success.",
+     "chain": "evm:31337",
+     "txHash": "0xcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcd",
+     "minConfirmations": 1,
+     "rpc": {
+      "eth_chainId": "0x7a69",
+      "eth_blockNumber": "0x20",
+      "eth_getTransactionReceipt": {
+       "blockNumber": "0x10",
+       "transactionHash": "0xcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcd",
+       "logs": [
+        {
+         "address": "0xabababababababababababababababababababab",
+         "topics": [
+          "0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef",
+          "0x0000000000000000000000001c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c",
+          "0x0000000000000000000000002b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b"
+         ],
+         "data": "0x00000000000000000000000000000000000000000000000000000000000003e8"
+        }
+       ]
+      }
+     },
+     "throws": [],
+     "expect": {
+      "state": "unknown",
+      "transfers": []
+     }
+    },
+    {
+     "id": "tx-status-null",
+     "note": "A missing or odd status is UNKNOWN, never success.",
+     "chain": "evm:31337",
+     "txHash": "0xcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcd",
+     "minConfirmations": 1,
+     "rpc": {
+      "eth_chainId": "0x7a69",
+      "eth_blockNumber": "0x20",
+      "eth_getTransactionReceipt": {
+       "status": null,
+       "blockNumber": "0x10",
+       "transactionHash": "0xcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcd",
+       "logs": [
+        {
+         "address": "0xabababababababababababababababababababab",
+         "topics": [
+          "0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef",
+          "0x0000000000000000000000001c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c",
+          "0x0000000000000000000000002b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b"
+         ],
+         "data": "0x00000000000000000000000000000000000000000000000000000000000003e8"
+        }
+       ]
+      }
+     },
+     "throws": [],
+     "expect": {
+      "state": "unknown",
+      "transfers": []
+     }
+    },
+    {
+     "id": "tx-status-zero-x-two",
+     "note": "A missing or odd status is UNKNOWN, never success.",
+     "chain": "evm:31337",
+     "txHash": "0xcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcd",
+     "minConfirmations": 1,
+     "rpc": {
+      "eth_chainId": "0x7a69",
+      "eth_blockNumber": "0x20",
+      "eth_getTransactionReceipt": {
+       "status": "0x2",
+       "blockNumber": "0x10",
+       "transactionHash": "0xcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcd",
+       "logs": [
+        {
+         "address": "0xabababababababababababababababababababab",
+         "topics": [
+          "0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef",
+          "0x0000000000000000000000001c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c",
+          "0x0000000000000000000000002b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b"
+         ],
+         "data": "0x00000000000000000000000000000000000000000000000000000000000003e8"
+        }
+       ]
+      }
+     },
+     "throws": [],
+     "expect": {
+      "state": "unknown",
+      "transfers": []
+     }
+    },
+    {
+     "id": "tx-status-padded",
+     "note": "A missing or odd status is UNKNOWN, never success.",
+     "chain": "evm:31337",
+     "txHash": "0xcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcd",
+     "minConfirmations": 1,
+     "rpc": {
+      "eth_chainId": "0x7a69",
+      "eth_blockNumber": "0x20",
+      "eth_getTransactionReceipt": {
+       "status": "0x01",
+       "blockNumber": "0x10",
+       "transactionHash": "0xcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcd",
+       "logs": [
+        {
+         "address": "0xabababababababababababababababababababab",
+         "topics": [
+          "0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef",
+          "0x0000000000000000000000001c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c",
+          "0x0000000000000000000000002b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b"
+         ],
+         "data": "0x00000000000000000000000000000000000000000000000000000000000003e8"
+        }
+       ]
+      }
+     },
+     "throws": [],
+     "expect": {
+      "state": "unknown",
+      "transfers": []
+     }
+    },
+    {
+     "id": "tx-status-number",
+     "note": "A missing or odd status is UNKNOWN, never success.",
+     "chain": "evm:31337",
+     "txHash": "0xcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcd",
+     "minConfirmations": 1,
+     "rpc": {
+      "eth_chainId": "0x7a69",
+      "eth_blockNumber": "0x20",
+      "eth_getTransactionReceipt": {
+       "status": 1,
+       "blockNumber": "0x10",
+       "transactionHash": "0xcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcd",
+       "logs": [
+        {
+         "address": "0xabababababababababababababababababababab",
+         "topics": [
+          "0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef",
+          "0x0000000000000000000000001c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c",
+          "0x0000000000000000000000002b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b"
+         ],
+         "data": "0x00000000000000000000000000000000000000000000000000000000000003e8"
+        }
+       ]
+      }
+     },
+     "throws": [],
+     "expect": {
+      "state": "unknown",
+      "transfers": []
+     }
+    },
+    {
+     "id": "tx-status-true",
+     "note": "A missing or odd status is UNKNOWN, never success.",
+     "chain": "evm:31337",
+     "txHash": "0xcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcd",
+     "minConfirmations": 1,
+     "rpc": {
+      "eth_chainId": "0x7a69",
+      "eth_blockNumber": "0x20",
+      "eth_getTransactionReceipt": {
+       "status": true,
+       "blockNumber": "0x10",
+       "transactionHash": "0xcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcd",
+       "logs": [
+        {
+         "address": "0xabababababababababababababababababababab",
+         "topics": [
+          "0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef",
+          "0x0000000000000000000000001c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c",
+          "0x0000000000000000000000002b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b"
+         ],
+         "data": "0x00000000000000000000000000000000000000000000000000000000000003e8"
+        }
+       ]
+      }
+     },
+     "throws": [],
+     "expect": {
+      "state": "unknown",
+      "transfers": []
+     }
+    },
+    {
+     "id": "tx-status-empty",
+     "note": "A missing or odd status is UNKNOWN, never success.",
+     "chain": "evm:31337",
+     "txHash": "0xcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcd",
+     "minConfirmations": 1,
+     "rpc": {
+      "eth_chainId": "0x7a69",
+      "eth_blockNumber": "0x20",
+      "eth_getTransactionReceipt": {
+       "status": "",
+       "blockNumber": "0x10",
+       "transactionHash": "0xcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcd",
+       "logs": [
+        {
+         "address": "0xabababababababababababababababababababab",
+         "topics": [
+          "0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef",
+          "0x0000000000000000000000001c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c",
+          "0x0000000000000000000000002b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b"
+         ],
+         "data": "0x00000000000000000000000000000000000000000000000000000000000003e8"
+        }
+       ]
+      }
+     },
+     "throws": [],
+     "expect": {
+      "state": "unknown",
+      "transfers": []
+     }
+    },
+    {
+     "id": "tx-status-upper",
+     "note": "A missing or odd status is UNKNOWN, never success.",
+     "chain": "evm:31337",
+     "txHash": "0xcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcd",
+     "minConfirmations": 1,
+     "rpc": {
+      "eth_chainId": "0x7a69",
+      "eth_blockNumber": "0x20",
+      "eth_getTransactionReceipt": {
+       "status": "0X1",
+       "blockNumber": "0x10",
+       "transactionHash": "0xcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcd",
+       "logs": [
+        {
+         "address": "0xabababababababababababababababababababab",
+         "topics": [
+          "0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef",
+          "0x0000000000000000000000001c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c",
+          "0x0000000000000000000000002b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b"
+         ],
+         "data": "0x00000000000000000000000000000000000000000000000000000000000003e8"
+        }
+       ]
+      }
+     },
+     "throws": [],
+     "expect": {
+      "state": "unknown",
+      "transfers": []
+     }
+    },
+    {
+     "id": "tx-receipt-not-an-object",
+     "note": "The receipt is a string.",
+     "chain": "evm:31337",
+     "txHash": "0xcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcd",
+     "minConfirmations": 1,
+     "rpc": {
+      "eth_chainId": "0x7a69",
+      "eth_blockNumber": "0x20",
+      "eth_getTransactionReceipt": "0x1"
+     },
+     "throws": [],
+     "expect": {
+      "state": "unknown",
+      "transfers": []
+     }
+    },
+    {
+     "id": "tx-chain-id-mismatch",
+     "note": "The endpoint is another chain.",
+     "chain": "evm:31337",
+     "txHash": "0xcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcd",
+     "minConfirmations": 1,
+     "rpc": {
+      "eth_chainId": "0x1",
+      "eth_blockNumber": "0x20",
+      "eth_getTransactionReceipt": {
+       "status": "0x1",
+       "blockNumber": "0x10",
+       "transactionHash": "0xcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcd",
+       "logs": [
+        {
+         "address": "0xabababababababababababababababababababab",
+         "topics": [
+          "0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef",
+          "0x0000000000000000000000001c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c",
+          "0x0000000000000000000000002b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b"
+         ],
+         "data": "0x00000000000000000000000000000000000000000000000000000000000003e8"
+        }
+       ]
+      }
+     },
+     "throws": [],
+     "expect": {
+      "state": "refused",
+      "transfers": []
+     }
+    },
+    {
+     "id": "tx-chain-id-unreadable",
+     "note": "eth_chainId does not decode.",
+     "chain": "evm:31337",
+     "txHash": "0xcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcd",
+     "minConfirmations": 1,
+     "rpc": {
+      "eth_chainId": "31337",
+      "eth_blockNumber": "0x20",
+      "eth_getTransactionReceipt": {
+       "status": "0x1",
+       "blockNumber": "0x10",
+       "transactionHash": "0xcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcd",
+       "logs": [
+        {
+         "address": "0xabababababababababababababababababababab",
+         "topics": [
+          "0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef",
+          "0x0000000000000000000000001c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c",
+          "0x0000000000000000000000002b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b"
+         ],
+         "data": "0x00000000000000000000000000000000000000000000000000000000000003e8"
+        }
+       ]
+      }
+     },
+     "throws": [],
+     "expect": {
+      "state": "refused",
+      "transfers": []
+     }
+    },
+    {
+     "id": "tx-chain-not-allowlisted",
+     "note": "The invoice chain is not on the allowlist.",
+     "chain": "evm:1",
+     "txHash": "0xcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcd",
+     "minConfirmations": 1,
+     "rpc": {
+      "eth_chainId": "0x7a69",
+      "eth_blockNumber": "0x20",
+      "eth_getTransactionReceipt": {
+       "status": "0x1",
+       "blockNumber": "0x10",
+       "transactionHash": "0xcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcd",
+       "logs": [
+        {
+         "address": "0xabababababababababababababababababababab",
+         "topics": [
+          "0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef",
+          "0x0000000000000000000000001c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c",
+          "0x0000000000000000000000002b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b"
+         ],
+         "data": "0x00000000000000000000000000000000000000000000000000000000000003e8"
+        }
+       ]
+      }
+     },
+     "throws": [],
+     "expect": {
+      "state": "refused",
+      "transfers": []
+     }
+    },
+    {
+     "id": "tx-block-number-missing",
+     "note": "The receipt's block number is unreadable.",
+     "chain": "evm:31337",
+     "txHash": "0xcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcd",
+     "minConfirmations": 1,
+     "rpc": {
+      "eth_chainId": "0x7a69",
+      "eth_blockNumber": "0x20",
+      "eth_getTransactionReceipt": {
+       "status": "0x1",
+       "transactionHash": "0xcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcd",
+       "logs": [
+        {
+         "address": "0xabababababababababababababababababababab",
+         "topics": [
+          "0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef",
+          "0x0000000000000000000000001c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c",
+          "0x0000000000000000000000002b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b"
+         ],
+         "data": "0x00000000000000000000000000000000000000000000000000000000000003e8"
+        }
+       ]
+      }
+     },
+     "throws": [],
+     "expect": {
+      "state": "unknown",
+      "transfers": []
+     }
+    },
+    {
+     "id": "tx-block-number-not-hex",
+     "note": "The receipt's block number is unreadable.",
+     "chain": "evm:31337",
+     "txHash": "0xcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcd",
+     "minConfirmations": 1,
+     "rpc": {
+      "eth_chainId": "0x7a69",
+      "eth_blockNumber": "0x20",
+      "eth_getTransactionReceipt": {
+       "status": "0x1",
+       "blockNumber": "16",
+       "transactionHash": "0xcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcd",
+       "logs": [
+        {
+         "address": "0xabababababababababababababababababababab",
+         "topics": [
+          "0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef",
+          "0x0000000000000000000000001c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c",
+          "0x0000000000000000000000002b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b"
+         ],
+         "data": "0x00000000000000000000000000000000000000000000000000000000000003e8"
+        }
+       ]
+      }
+     },
+     "throws": [],
+     "expect": {
+      "state": "unknown",
+      "transfers": []
+     }
+    },
+    {
+     "id": "tx-block-number-null",
+     "note": "The receipt's block number is unreadable.",
+     "chain": "evm:31337",
+     "txHash": "0xcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcd",
+     "minConfirmations": 1,
+     "rpc": {
+      "eth_chainId": "0x7a69",
+      "eth_blockNumber": "0x20",
+      "eth_getTransactionReceipt": {
+       "status": "0x1",
+       "blockNumber": null,
+       "transactionHash": "0xcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcd",
+       "logs": [
+        {
+         "address": "0xabababababababababababababababababababab",
+         "topics": [
+          "0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef",
+          "0x0000000000000000000000001c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c",
+          "0x0000000000000000000000002b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b"
+         ],
+         "data": "0x00000000000000000000000000000000000000000000000000000000000003e8"
+        }
+       ]
+      }
+     },
+     "throws": [],
+     "expect": {
+      "state": "unknown",
+      "transfers": []
+     }
+    },
+    {
+     "id": "tx-tip-unreadable",
+     "note": "The chain tip does not decode.",
+     "chain": "evm:31337",
+     "txHash": "0xcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcd",
+     "minConfirmations": 1,
+     "rpc": {
+      "eth_chainId": "0x7a69",
+      "eth_blockNumber": "latest",
+      "eth_getTransactionReceipt": {
+       "status": "0x1",
+       "blockNumber": "0x10",
+       "transactionHash": "0xcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcd",
+       "logs": [
+        {
+         "address": "0xabababababababababababababababababababab",
+         "topics": [
+          "0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef",
+          "0x0000000000000000000000001c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c",
+          "0x0000000000000000000000002b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b"
+         ],
+         "data": "0x00000000000000000000000000000000000000000000000000000000000003e8"
+        }
+       ]
+      }
+     },
+     "throws": [],
+     "expect": {
+      "state": "unknown",
+      "transfers": []
+     },
+     "gap": {
+      "js": {
+       "state": "THREW",
+       "transfers": []
+      },
+      "why": "JS txOutcome throws on an unreadable tip instead of returning unknown"
+     }
+    },
+    {
+     "id": "tx-rpc-error-on-receipt",
+     "note": "The endpoint errors on getTransactionReceipt.",
+     "chain": "evm:31337",
+     "txHash": "0xcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcd",
+     "minConfirmations": 1,
+     "rpc": {
+      "eth_chainId": "0x7a69",
+      "eth_blockNumber": "0x20",
+      "eth_getTransactionReceipt": {
+       "status": "0x1",
+       "blockNumber": "0x10",
+       "transactionHash": "0xcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcd",
+       "logs": [
+        {
+         "address": "0xabababababababababababababababababababab",
+         "topics": [
+          "0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef",
+          "0x0000000000000000000000001c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c",
+          "0x0000000000000000000000002b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b"
+         ],
+         "data": "0x00000000000000000000000000000000000000000000000000000000000003e8"
+        }
+       ]
+      }
+     },
+     "throws": [
+      "eth_getTransactionReceipt"
+     ],
+     "expect": {
+      "state": "unknown",
+      "transfers": []
+     }
+    },
+    {
+     "id": "tx-topic-from-upper-bytes",
+     "note": "The 'from' topic has non-zero bytes above the address.",
+     "chain": "evm:31337",
+     "txHash": "0xcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcd",
+     "minConfirmations": 1,
+     "rpc": {
+      "eth_chainId": "0x7a69",
+      "eth_blockNumber": "0x20",
+      "eth_getTransactionReceipt": {
+       "status": "0x1",
+       "blockNumber": "0x10",
+       "transactionHash": "0xcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcd",
+       "logs": [
+        {
+         "address": "0xabababababababababababababababababababab",
+         "topics": [
+          "0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef",
+          "0x0000000000000000000000011c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c",
+          "0x0000000000000000000000002b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b"
+         ],
+         "data": "0x00000000000000000000000000000000000000000000000000000000000003e8"
+        }
+       ]
+      }
+     },
+     "throws": [],
+     "expect": {
+      "state": "confirmed",
+      "transfers": []
+     }
+    },
+    {
+     "id": "tx-topic-to-upper-bytes",
+     "note": "The 'to' topic has non-zero bytes above the address.",
+     "chain": "evm:31337",
+     "txHash": "0xcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcd",
+     "minConfirmations": 1,
+     "rpc": {
+      "eth_chainId": "0x7a69",
+      "eth_blockNumber": "0x20",
+      "eth_getTransactionReceipt": {
+       "status": "0x1",
+       "blockNumber": "0x10",
+       "transactionHash": "0xcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcd",
+       "logs": [
+        {
+         "address": "0xabababababababababababababababababababab",
+         "topics": [
+          "0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef",
+          "0x0000000000000000000000001c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c",
+          "0xffffffffffffffffffffffff2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b"
+         ],
+         "data": "0x00000000000000000000000000000000000000000000000000000000000003e8"
+        }
+       ]
+      }
+     },
+     "throws": [],
+     "expect": {
+      "state": "confirmed",
+      "transfers": []
+     }
+    },
+    {
+     "id": "tx-topic-uppercase-hex",
+     "note": "A topic written with uppercase hex is not the canonical form.",
+     "chain": "evm:31337",
+     "txHash": "0xcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcd",
+     "minConfirmations": 1,
+     "rpc": {
+      "eth_chainId": "0x7a69",
+      "eth_blockNumber": "0x20",
+      "eth_getTransactionReceipt": {
+       "status": "0x1",
+       "blockNumber": "0x10",
+       "transactionHash": "0xcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcd",
+       "logs": [
+        {
+         "address": "0xabababababababababababababababababababab",
+         "topics": [
+          "0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef",
+          "0x0000000000000000000000001c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c",
+          "0x0000000000000000000000002B2B2B2B2B2B2B2B2B2B2B2B2B2B2B2B2B2B2B2B"
+         ],
+         "data": "0x00000000000000000000000000000000000000000000000000000000000003e8"
+        }
+       ]
+      }
+     },
+     "throws": [],
+     "expect": {
+      "state": "confirmed",
+      "transfers": []
+     }
+    },
+    {
+     "id": "tx-topic-too-short",
+     "note": "A topic that is not 32 bytes.",
+     "chain": "evm:31337",
+     "txHash": "0xcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcd",
+     "minConfirmations": 1,
+     "rpc": {
+      "eth_chainId": "0x7a69",
+      "eth_blockNumber": "0x20",
+      "eth_getTransactionReceipt": {
+       "status": "0x1",
+       "blockNumber": "0x10",
+       "transactionHash": "0xcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcd",
+       "logs": [
+        {
+         "address": "0xabababababababababababababababababababab",
+         "topics": [
+          "0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef",
+          "0x0000000000000000000000001c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c",
+          "0x2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b"
+         ],
+         "data": "0x00000000000000000000000000000000000000000000000000000000000003e8"
+        }
+       ]
+      }
+     },
+     "throws": [],
+     "expect": {
+      "state": "confirmed",
+      "transfers": []
+     }
+    },
+    {
+     "id": "tx-topic-too-long",
+     "note": "A topic longer than 32 bytes.",
+     "chain": "evm:31337",
+     "txHash": "0xcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcd",
+     "minConfirmations": 1,
+     "rpc": {
+      "eth_chainId": "0x7a69",
+      "eth_blockNumber": "0x20",
+      "eth_getTransactionReceipt": {
+       "status": "0x1",
+       "blockNumber": "0x10",
+       "transactionHash": "0xcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcd",
+       "logs": [
+        {
+         "address": "0xabababababababababababababababababababab",
+         "topics": [
+          "0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef",
+          "0x0000000000000000000000001c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c",
+          "0x0000000000000000000000002b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b00"
+         ],
+         "data": "0x00000000000000000000000000000000000000000000000000000000000003e8"
+        }
+       ]
+      }
+     },
+     "throws": [],
+     "expect": {
+      "state": "confirmed",
+      "transfers": []
+     }
+    },
+    {
+     "id": "tx-four-topics",
+     "note": "An ERC-721 style Transfer has four topics: not this event.",
+     "chain": "evm:31337",
+     "txHash": "0xcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcd",
+     "minConfirmations": 1,
+     "rpc": {
+      "eth_chainId": "0x7a69",
+      "eth_blockNumber": "0x20",
+      "eth_getTransactionReceipt": {
+       "status": "0x1",
+       "blockNumber": "0x10",
+       "transactionHash": "0xcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcd",
+       "logs": [
+        {
+         "address": "0xabababababababababababababababababababab",
+         "topics": [
+          "0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef",
+          "0x0000000000000000000000001c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c",
+          "0x0000000000000000000000002b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b",
+          "0x0000000000000000000000000000000000000000000000000000000000000007"
+         ],
+         "data": "0x00000000000000000000000000000000000000000000000000000000000003e8"
+        }
+       ]
+      }
+     },
+     "throws": [],
+     "expect": {
+      "state": "confirmed",
+      "transfers": []
+     }
+    },
+    {
+     "id": "tx-two-topics",
+     "note": "Too few topics.",
+     "chain": "evm:31337",
+     "txHash": "0xcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcd",
+     "minConfirmations": 1,
+     "rpc": {
+      "eth_chainId": "0x7a69",
+      "eth_blockNumber": "0x20",
+      "eth_getTransactionReceipt": {
+       "status": "0x1",
+       "blockNumber": "0x10",
+       "transactionHash": "0xcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcd",
+       "logs": [
+        {
+         "address": "0xabababababababababababababababababababab",
+         "topics": [
+          "0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef",
+          "0x0000000000000000000000001c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c"
+         ],
+         "data": "0x00000000000000000000000000000000000000000000000000000000000003e8"
+        }
+       ]
+      }
+     },
+     "throws": [],
+     "expect": {
+      "state": "confirmed",
+      "transfers": []
+     }
+    },
+    {
+     "id": "tx-other-event",
+     "note": "A different event signature.",
+     "chain": "evm:31337",
+     "txHash": "0xcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcd",
+     "minConfirmations": 1,
+     "rpc": {
+      "eth_chainId": "0x7a69",
+      "eth_blockNumber": "0x20",
+      "eth_getTransactionReceipt": {
+       "status": "0x1",
+       "blockNumber": "0x10",
+       "transactionHash": "0xcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcd",
+       "logs": [
+        {
+         "address": "0xabababababababababababababababababababab",
+         "topics": [
+          "0xeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+          "0x0000000000000000000000001c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c",
+          "0x0000000000000000000000002b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b"
+         ],
+         "data": "0x00000000000000000000000000000000000000000000000000000000000003e8"
+        }
+       ]
+      }
+     },
+     "throws": [],
+     "expect": {
+      "state": "confirmed",
+      "transfers": []
+     }
+    },
+    {
+     "id": "tx-topic-not-strings",
+     "note": "Topics that are not strings.",
+     "chain": "evm:31337",
+     "txHash": "0xcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcd",
+     "minConfirmations": 1,
+     "rpc": {
+      "eth_chainId": "0x7a69",
+      "eth_blockNumber": "0x20",
+      "eth_getTransactionReceipt": {
+       "status": "0x1",
+       "blockNumber": "0x10",
+       "transactionHash": "0xcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcd",
+       "logs": [
+        {
+         "address": "0xabababababababababababababababababababab",
+         "topics": [
+          "0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef",
+          1,
+          2
+         ],
+         "data": "0x00000000000000000000000000000000000000000000000000000000000003e8"
+        }
+       ]
+      }
+     },
+     "throws": [],
+     "expect": {
+      "state": "confirmed",
+      "transfers": []
+     }
+    },
+    {
+     "id": "tx-topics-not-a-list",
+     "note": "topics is a string.",
+     "chain": "evm:31337",
+     "txHash": "0xcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcd",
+     "minConfirmations": 1,
+     "rpc": {
+      "eth_chainId": "0x7a69",
+      "eth_blockNumber": "0x20",
+      "eth_getTransactionReceipt": {
+       "status": "0x1",
+       "blockNumber": "0x10",
+       "transactionHash": "0xcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcd",
+       "logs": [
+        {
+         "address": "0xabababababababababababababababababababab",
+         "topics": "x",
+         "data": "0x00000000000000000000000000000000000000000000000000000000000003e8"
+        }
+       ]
+      }
+     },
+     "throws": [],
+     "expect": {
+      "state": "confirmed",
+      "transfers": []
+     }
+    },
+    {
+     "id": "tx-data-empty-0x",
+     "note": "Transfer data that is not one canonical 32-byte unsigned integer.",
+     "chain": "evm:31337",
+     "txHash": "0xcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcd",
+     "minConfirmations": 1,
+     "rpc": {
+      "eth_chainId": "0x7a69",
+      "eth_blockNumber": "0x20",
+      "eth_getTransactionReceipt": {
+       "status": "0x1",
+       "blockNumber": "0x10",
+       "transactionHash": "0xcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcd",
+       "logs": [
+        {
+         "address": "0xabababababababababababababababababababab",
+         "topics": [
+          "0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef",
+          "0x0000000000000000000000001c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c",
+          "0x0000000000000000000000002b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b"
+         ],
+         "data": "0x"
+        }
+       ]
+      }
+     },
+     "throws": [],
+     "expect": {
+      "state": "confirmed",
+      "transfers": []
+     }
+    },
+    {
+     "id": "tx-data-63-hex-digits",
+     "note": "Transfer data that is not one canonical 32-byte unsigned integer.",
+     "chain": "evm:31337",
+     "txHash": "0xcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcd",
+     "minConfirmations": 1,
+     "rpc": {
+      "eth_chainId": "0x7a69",
+      "eth_blockNumber": "0x20",
+      "eth_getTransactionReceipt": {
+       "status": "0x1",
+       "blockNumber": "0x10",
+       "transactionHash": "0xcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcd",
+       "logs": [
+        {
+         "address": "0xabababababababababababababababababababab",
+         "topics": [
+          "0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef",
+          "0x0000000000000000000000001c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c",
+          "0x0000000000000000000000002b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b"
+         ],
+         "data": "0x00000000000000000000000000000000000000000000000000000000000003e"
+        }
+       ]
+      }
+     },
+     "throws": [],
+     "expect": {
+      "state": "confirmed",
+      "transfers": []
+     },
+     "gap": {
+      "js": {
+       "state": "confirmed",
+       "transfers": [
+        {
+         "token": "0xabababababababababababababababababababab",
+         "from": "0x1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c",
+         "to": "0x2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b",
+         "amount": "62"
+        }
+       ]
+      },
+      "why": "JS decodeUint accepts any 1-64 hex digits for log data; Transfer data is exactly one 32-byte word"
+     }
+    },
+    {
+     "id": "tx-data-65-bytes",
+     "note": "Transfer data that is not one canonical 32-byte unsigned integer.",
+     "chain": "evm:31337",
+     "txHash": "0xcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcd",
+     "minConfirmations": 1,
+     "rpc": {
+      "eth_chainId": "0x7a69",
+      "eth_blockNumber": "0x20",
+      "eth_getTransactionReceipt": {
+       "status": "0x1",
+       "blockNumber": "0x10",
+       "transactionHash": "0xcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcd",
+       "logs": [
+        {
+         "address": "0xabababababababababababababababababababab",
+         "topics": [
+          "0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef",
+          "0x0000000000000000000000001c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c",
+          "0x0000000000000000000000002b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b"
+         ],
+         "data": "0x000000000000000000000000000000000000000000000000000000000000000a00"
+        }
+       ]
+      }
+     },
+     "throws": [],
+     "expect": {
+      "state": "confirmed",
+      "transfers": []
+     }
+    },
+    {
+     "id": "tx-data-not-hex",
+     "note": "Transfer data that is not one canonical 32-byte unsigned integer.",
+     "chain": "evm:31337",
+     "txHash": "0xcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcd",
+     "minConfirmations": 1,
+     "rpc": {
+      "eth_chainId": "0x7a69",
+      "eth_blockNumber": "0x20",
+      "eth_getTransactionReceipt": {
+       "status": "0x1",
+       "blockNumber": "0x10",
+       "transactionHash": "0xcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcd",
+       "logs": [
+        {
+         "address": "0xabababababababababababababababababababab",
+         "topics": [
+          "0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef",
+          "0x0000000000000000000000001c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c",
+          "0x0000000000000000000000002b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b"
+         ],
+         "data": "0xzz"
+        }
+       ]
+      }
+     },
+     "throws": [],
+     "expect": {
+      "state": "confirmed",
+      "transfers": []
+     }
+    },
+    {
+     "id": "tx-data-uppercase",
+     "note": "Transfer data that is not one canonical 32-byte unsigned integer.",
+     "chain": "evm:31337",
+     "txHash": "0xcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcd",
+     "minConfirmations": 1,
+     "rpc": {
+      "eth_chainId": "0x7a69",
+      "eth_blockNumber": "0x20",
+      "eth_getTransactionReceipt": {
+       "status": "0x1",
+       "blockNumber": "0x10",
+       "transactionHash": "0xcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcd",
+       "logs": [
+        {
+         "address": "0xabababababababababababababababababababab",
+         "topics": [
+          "0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef",
+          "0x0000000000000000000000001c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c",
+          "0x0000000000000000000000002b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b"
+         ],
+         "data": "0x00000000000000000000000000000000000000000000000000000000000003E8"
+        }
+       ]
+      }
+     },
+     "throws": [],
+     "expect": {
+      "state": "confirmed",
+      "transfers": []
+     }
+    },
+    {
+     "id": "tx-data-number",
+     "note": "Transfer data that is not one canonical 32-byte unsigned integer.",
+     "chain": "evm:31337",
+     "txHash": "0xcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcd",
+     "minConfirmations": 1,
+     "rpc": {
+      "eth_chainId": "0x7a69",
+      "eth_blockNumber": "0x20",
+      "eth_getTransactionReceipt": {
+       "status": "0x1",
+       "blockNumber": "0x10",
+       "transactionHash": "0xcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcd",
+       "logs": [
+        {
+         "address": "0xabababababababababababababababababababab",
+         "topics": [
+          "0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef",
+          "0x0000000000000000000000001c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c",
+          "0x0000000000000000000000002b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b"
+         ],
+         "data": 1000
+        }
+       ]
+      }
+     },
+     "throws": [],
+     "expect": {
+      "state": "confirmed",
+      "transfers": []
+     }
+    },
+    {
+     "id": "tx-data-null",
+     "note": "Transfer data that is not one canonical 32-byte unsigned integer.",
+     "chain": "evm:31337",
+     "txHash": "0xcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcd",
+     "minConfirmations": 1,
+     "rpc": {
+      "eth_chainId": "0x7a69",
+      "eth_blockNumber": "0x20",
+      "eth_getTransactionReceipt": {
+       "status": "0x1",
+       "blockNumber": "0x10",
+       "transactionHash": "0xcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcd",
+       "logs": [
+        {
+         "address": "0xabababababababababababababababababababab",
+         "topics": [
+          "0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef",
+          "0x0000000000000000000000001c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c",
+          "0x0000000000000000000000002b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b"
+         ],
+         "data": null
+        }
+       ]
+      }
+     },
+     "throws": [],
+     "expect": {
+      "state": "confirmed",
+      "transfers": []
+     }
+    },
+    {
+     "id": "tx-data-max-uint256",
+     "note": "The largest uint256 is still a number.",
+     "chain": "evm:31337",
+     "txHash": "0xcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcd",
+     "minConfirmations": 1,
+     "rpc": {
+      "eth_chainId": "0x7a69",
+      "eth_blockNumber": "0x20",
+      "eth_getTransactionReceipt": {
+       "status": "0x1",
+       "blockNumber": "0x10",
+       "transactionHash": "0xcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcd",
+       "logs": [
+        {
+         "address": "0xabababababababababababababababababababab",
+         "topics": [
+          "0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef",
+          "0x0000000000000000000000001c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c",
+          "0x0000000000000000000000002b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b"
+         ],
+         "data": "0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff"
+        }
+       ]
+      }
+     },
+     "throws": [],
+     "expect": {
+      "state": "confirmed",
+      "transfers": [
+       {
+        "token": "0xabababababababababababababababababababab",
+        "from": "0x1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c",
+        "to": "0x2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b",
+        "amount": "115792089237316195423570985008687907853269984665640564039457584007913129639935"
+       }
+      ]
+     }
+    },
+    {
+     "id": "tx-log-address-missing",
+     "note": "A log with no emitting address.",
+     "chain": "evm:31337",
+     "txHash": "0xcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcd",
+     "minConfirmations": 1,
+     "rpc": {
+      "eth_chainId": "0x7a69",
+      "eth_blockNumber": "0x20",
+      "eth_getTransactionReceipt": {
+       "status": "0x1",
+       "blockNumber": "0x10",
+       "transactionHash": "0xcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcd",
+       "logs": [
+        {
+         "topics": [
+          "0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef",
+          "0x0000000000000000000000001c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c",
+          "0x0000000000000000000000002b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b"
+         ],
+         "data": "0x00000000000000000000000000000000000000000000000000000000000003e8"
+        }
+       ]
+      }
+     },
+     "throws": [],
+     "expect": {
+      "state": "confirmed",
+      "transfers": []
+     },
+     "gap": {
+      "js": {
+       "state": "confirmed",
+       "transfers": [
+        {
+         "token": null,
+         "from": "0x1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c",
+         "to": "0x2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b",
+         "amount": "1000"
+        }
+       ]
+      },
+      "why": "JS pushes a transfer whose token is undefined instead of dropping the log"
+     }
+    },
+    {
+     "id": "tx-log-address-malformed",
+     "note": "The emitting address is not 0x + 40 hex.",
+     "chain": "evm:31337",
+     "txHash": "0xcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcd",
+     "minConfirmations": 1,
+     "rpc": {
+      "eth_chainId": "0x7a69",
+      "eth_blockNumber": "0x20",
+      "eth_getTransactionReceipt": {
+       "status": "0x1",
+       "blockNumber": "0x10",
+       "transactionHash": "0xcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcd",
+       "logs": [
+        {
+         "address": "0x1234",
+         "topics": [
+          "0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef",
+          "0x0000000000000000000000001c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c",
+          "0x0000000000000000000000002b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b"
+         ],
+         "data": "0x00000000000000000000000000000000000000000000000000000000000003e8"
+        }
+       ]
+      }
+     },
+     "throws": [],
+     "expect": {
+      "state": "confirmed",
+      "transfers": []
+     },
+     "gap": {
+      "js": {
+       "state": "confirmed",
+       "transfers": [
+        {
+         "token": "0x1234",
+         "from": "0x1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c",
+         "to": "0x2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b",
+         "amount": "1000"
+        }
+       ]
+      },
+      "why": "JS does not check the emitting address's shape"
+     }
+    },
+    {
+     "id": "tx-log-removed",
+     "note": "A log flagged removed (reorged out) must not count.",
+     "chain": "evm:31337",
+     "txHash": "0xcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcd",
+     "minConfirmations": 1,
+     "rpc": {
+      "eth_chainId": "0x7a69",
+      "eth_blockNumber": "0x20",
+      "eth_getTransactionReceipt": {
+       "status": "0x1",
+       "blockNumber": "0x10",
+       "transactionHash": "0xcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcd",
+       "logs": [
+        {
+         "address": "0xabababababababababababababababababababab",
+         "topics": [
+          "0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef",
+          "0x0000000000000000000000001c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c",
+          "0x0000000000000000000000002b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b"
+         ],
+         "data": "0x00000000000000000000000000000000000000000000000000000000000003e8",
+         "removed": true
+        }
+       ]
+      }
+     },
+     "throws": [],
+     "expect": {
+      "state": "confirmed",
+      "transfers": []
+     },
+     "gap": {
+      "js": {
+       "state": "confirmed",
+       "transfers": [
+        {
+         "token": "0xabababababababababababababababababababab",
+         "from": "0x1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c",
+         "to": "0x2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b",
+         "amount": "1000"
+        }
+       ]
+      },
+      "why": "JS ignores the removed flag"
+     }
+    },
+    {
+     "id": "tx-logs-not-a-list",
+     "note": "logs is a string.",
+     "chain": "evm:31337",
+     "txHash": "0xcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcd",
+     "minConfirmations": 1,
+     "rpc": {
+      "eth_chainId": "0x7a69",
+      "eth_blockNumber": "0x20",
+      "eth_getTransactionReceipt": {
+       "status": "0x1",
+       "blockNumber": "0x10",
+       "transactionHash": "0xcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcd",
+       "logs": "x"
+      }
+     },
+     "throws": [],
+     "expect": {
+      "state": "confirmed",
+      "transfers": []
+     }
+    },
+    {
+     "id": "tx-logs-missing",
+     "note": "No logs field.",
+     "chain": "evm:31337",
+     "txHash": "0xcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcd",
+     "minConfirmations": 1,
+     "rpc": {
+      "eth_chainId": "0x7a69",
+      "eth_blockNumber": "0x20",
+      "eth_getTransactionReceipt": {
+       "status": "0x1",
+       "blockNumber": "0x10",
+       "transactionHash": "0xcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcd"
+      }
+     },
+     "throws": [],
+     "expect": {
+      "state": "confirmed",
+      "transfers": []
+     }
+    },
+    {
+     "id": "tx-two-transfers-one-bad",
+     "note": "One good transfer and one with bad upper bytes: only the good one counts.",
+     "chain": "evm:31337",
+     "txHash": "0xcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcd",
+     "minConfirmations": 1,
+     "rpc": {
+      "eth_chainId": "0x7a69",
+      "eth_blockNumber": "0x20",
+      "eth_getTransactionReceipt": {
+       "status": "0x1",
+       "blockNumber": "0x10",
+       "transactionHash": "0xcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcd",
+       "logs": [
+        {
+         "address": "0xabababababababababababababababababababab",
+         "topics": [
+          "0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef",
+          "0x0000000000000000000000001c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c",
+          "0x0000000000000000000000002b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b"
+         ],
+         "data": "0x00000000000000000000000000000000000000000000000000000000000003e8"
+        },
+        {
+         "address": "0xabababababababababababababababababababab",
+         "topics": [
+          "0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef",
+          "0x0000000000000000000000011c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c",
+          "0x0000000000000000000000002b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b"
+         ],
+         "data": "0x0000000000000000000000000000000000000000000000000000000000000005"
+        }
+       ]
+      }
+     },
+     "throws": [],
+     "expect": {
+      "state": "confirmed",
+      "transfers": [
+       {
+        "token": "0xabababababababababababababababababababab",
+        "from": "0x1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c",
+        "to": "0x2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b",
+        "amount": "1000"
+       }
+      ]
+     }
+    },
+    {
+     "id": "tx-token-case-is-folded",
+     "note": "The emitting address may be written in mixed case; it is compared lowercase.",
+     "chain": "evm:31337",
+     "txHash": "0xcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcd",
+     "minConfirmations": 1,
+     "rpc": {
+      "eth_chainId": "0x7a69",
+      "eth_blockNumber": "0x20",
+      "eth_getTransactionReceipt": {
+       "status": "0x1",
+       "blockNumber": "0x10",
+       "transactionHash": "0xcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcd",
+       "logs": [
+        {
+         "address": "0xABABABABABABABABABABABABABABABABABABABAB",
+         "topics": [
+          "0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef",
+          "0x0000000000000000000000001c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c",
+          "0x0000000000000000000000002b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b"
+         ],
+         "data": "0x00000000000000000000000000000000000000000000000000000000000003e8"
+        }
+       ]
+      }
+     },
+     "throws": [],
+     "expect": {
+      "state": "confirmed",
+      "transfers": [
+       {
+        "token": "0xabababababababababababababababababababab",
+        "from": "0x1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c",
+        "to": "0x2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b",
+        "amount": "1000"
+       }
+      ]
+     }
+    },
+    {
+     "id": "tx-hash-echo-different",
+     "note": "The receipt echoes a different transaction hash.",
+     "chain": "evm:31337",
+     "txHash": "0xcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcd",
+     "minConfirmations": 1,
+     "rpc": {
+      "eth_chainId": "0x7a69",
+      "eth_blockNumber": "0x20",
+      "eth_getTransactionReceipt": {
+       "status": "0x1",
+       "blockNumber": "0x10",
+       "transactionHash": "0xefefefefefefefefefefefefefefefefefefefefefefefefefefefefefefefef",
+       "logs": [
+        {
+         "address": "0xabababababababababababababababababababab",
+         "topics": [
+          "0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef",
+          "0x0000000000000000000000001c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c",
+          "0x0000000000000000000000002b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b"
+         ],
+         "data": "0x00000000000000000000000000000000000000000000000000000000000003e8"
+        }
+       ]
+      }
+     },
+     "throws": [],
+     "expect": {
+      "state": "unknown",
+      "transfers": []
+     }
+    },
+    {
+     "id": "tx-hash-echo-same-case-folded",
+     "note": "The same hash with different letter case is the same hash.",
+     "chain": "evm:31337",
+     "txHash": "0xcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcd",
+     "minConfirmations": 1,
+     "rpc": {
+      "eth_chainId": "0x7a69",
+      "eth_blockNumber": "0x20",
+      "eth_getTransactionReceipt": {
+       "status": "0x1",
+       "blockNumber": "0x10",
+       "transactionHash": "0xCDCDCDCDCDCDCDCDCDCDCDCDCDCDCDCDCDCDCDCDCDCDCDCDCDCDCDCDCDCDCDCD",
+       "logs": [
+        {
+         "address": "0xabababababababababababababababababababab",
+         "topics": [
+          "0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef",
+          "0x0000000000000000000000001c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c",
+          "0x0000000000000000000000002b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b"
+         ],
+         "data": "0x00000000000000000000000000000000000000000000000000000000000003e8"
+        }
+       ]
+      }
+     },
+     "throws": [],
+     "expect": {
+      "state": "confirmed",
+      "transfers": [
+       {
+        "token": "0xabababababababababababababababababababab",
+        "from": "0x1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c",
+        "to": "0x2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b",
+        "amount": "1000"
+       }
+      ]
+     }
+    },
+    {
+     "id": "tx-hash-requested-uppercase",
+     "note": "The hash was requested in uppercase and echoed in lowercase.",
+     "chain": "evm:31337",
+     "txHash": "0xCDCDCDCDCDCDCDCDCDCDCDCDCDCDCDCDCDCDCDCDCDCDCDCDCDCDCDCDCDCDCDCD",
+     "minConfirmations": 1,
+     "rpc": {
+      "eth_chainId": "0x7a69",
+      "eth_blockNumber": "0x20",
+      "eth_getTransactionReceipt": {
+       "status": "0x1",
+       "blockNumber": "0x10",
+       "transactionHash": "0xcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcd",
+       "logs": [
+        {
+         "address": "0xabababababababababababababababababababab",
+         "topics": [
+          "0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef",
+          "0x0000000000000000000000001c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c",
+          "0x0000000000000000000000002b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b"
+         ],
+         "data": "0x00000000000000000000000000000000000000000000000000000000000003e8"
+        }
+       ]
+      }
+     },
+     "throws": [],
+     "expect": {
+      "state": "confirmed",
+      "transfers": [
+       {
+        "token": "0xabababababababababababababababababababab",
+        "from": "0x1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c",
+        "to": "0x2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b",
+        "amount": "1000"
+       }
+      ]
+     }
+    },
+    {
+     "id": "tx-hash-echo-absent",
+     "note": "No echoed hash: nothing to compare, and the chain was still asked for this hash.",
+     "chain": "evm:31337",
+     "txHash": "0xcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcd",
+     "minConfirmations": 1,
+     "rpc": {
+      "eth_chainId": "0x7a69",
+      "eth_blockNumber": "0x20",
+      "eth_getTransactionReceipt": {
+       "status": "0x1",
+       "blockNumber": "0x10",
+       "logs": [
+        {
+         "address": "0xabababababababababababababababababababab",
+         "topics": [
+          "0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef",
+          "0x0000000000000000000000001c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c",
+          "0x0000000000000000000000002b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b"
+         ],
+         "data": "0x00000000000000000000000000000000000000000000000000000000000003e8"
+        }
+       ]
+      }
+     },
+     "throws": [],
+     "expect": {
+      "state": "confirmed",
+      "transfers": [
+       {
+        "token": "0xabababababababababababababababababababab",
+        "from": "0x1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c",
+        "to": "0x2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b",
+        "amount": "1000"
+       }
+      ]
+     }
+    },
+    {
+     "id": "tx-hash-echo-number",
+     "note": "An echoed hash that is not a hash string: fail closed.",
+     "chain": "evm:31337",
+     "txHash": "0xcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcd",
+     "minConfirmations": 1,
+     "rpc": {
+      "eth_chainId": "0x7a69",
+      "eth_blockNumber": "0x20",
+      "eth_getTransactionReceipt": {
+       "status": "0x1",
+       "blockNumber": "0x10",
+       "transactionHash": 5,
+       "logs": [
+        {
+         "address": "0xabababababababababababababababababababab",
+         "topics": [
+          "0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef",
+          "0x0000000000000000000000001c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c",
+          "0x0000000000000000000000002b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b"
+         ],
+         "data": "0x00000000000000000000000000000000000000000000000000000000000003e8"
+        }
+       ]
+      }
+     },
+     "throws": [],
+     "expect": {
+      "state": "unknown",
+      "transfers": []
+     },
+     "gap": {
+      "js": {
+       "state": "confirmed",
+       "transfers": [
+        {
+         "token": "0xabababababababababababababababababababab",
+         "from": "0x1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c",
+         "to": "0x2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b",
+         "amount": "1000"
+        }
+       ]
+      },
+      "why": "JS ignores an echoed hash that is not a string"
+     }
+    },
+    {
+     "id": "tx-hash-echo-null",
+     "note": "An echoed hash that is not a hash string: fail closed.",
+     "chain": "evm:31337",
+     "txHash": "0xcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcd",
+     "minConfirmations": 1,
+     "rpc": {
+      "eth_chainId": "0x7a69",
+      "eth_blockNumber": "0x20",
+      "eth_getTransactionReceipt": {
+       "status": "0x1",
+       "blockNumber": "0x10",
+       "transactionHash": null,
+       "logs": [
+        {
+         "address": "0xabababababababababababababababababababab",
+         "topics": [
+          "0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef",
+          "0x0000000000000000000000001c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c",
+          "0x0000000000000000000000002b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b"
+         ],
+         "data": "0x00000000000000000000000000000000000000000000000000000000000003e8"
+        }
+       ]
+      }
+     },
+     "throws": [],
+     "expect": {
+      "state": "unknown",
+      "transfers": []
+     },
+     "gap": {
+      "js": {
+       "state": "confirmed",
+       "transfers": [
+        {
+         "token": "0xabababababababababababababababababababab",
+         "from": "0x1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c",
+         "to": "0x2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b",
+         "amount": "1000"
+        }
+       ]
+      },
+      "why": "JS ignores an echoed hash that is not a string"
+     }
+    },
+    {
+     "id": "tx-hash-echo-list",
+     "note": "An echoed hash that is not a hash string: fail closed.",
+     "chain": "evm:31337",
+     "txHash": "0xcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcd",
+     "minConfirmations": 1,
+     "rpc": {
+      "eth_chainId": "0x7a69",
+      "eth_blockNumber": "0x20",
+      "eth_getTransactionReceipt": {
+       "status": "0x1",
+       "blockNumber": "0x10",
+       "transactionHash": [
+        "0xcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcd"
+       ],
+       "logs": [
+        {
+         "address": "0xabababababababababababababababababababab",
+         "topics": [
+          "0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef",
+          "0x0000000000000000000000001c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c",
+          "0x0000000000000000000000002b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b"
+         ],
+         "data": "0x00000000000000000000000000000000000000000000000000000000000003e8"
+        }
+       ]
+      }
+     },
+     "throws": [],
+     "expect": {
+      "state": "unknown",
+      "transfers": []
+     },
+     "gap": {
+      "js": {
+       "state": "confirmed",
+       "transfers": [
+        {
+         "token": "0xabababababababababababababababababababab",
+         "from": "0x1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c",
+         "to": "0x2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b",
+         "amount": "1000"
+        }
+       ]
+      },
+      "why": "JS ignores an echoed hash that is not a string"
+     }
+    },
+    {
+     "id": "tx-hash-echo-empty",
+     "note": "An echoed hash that is not a hash string: fail closed.",
+     "chain": "evm:31337",
+     "txHash": "0xcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcd",
+     "minConfirmations": 1,
+     "rpc": {
+      "eth_chainId": "0x7a69",
+      "eth_blockNumber": "0x20",
+      "eth_getTransactionReceipt": {
+       "status": "0x1",
+       "blockNumber": "0x10",
+       "transactionHash": "",
+       "logs": [
+        {
+         "address": "0xabababababababababababababababababababab",
+         "topics": [
+          "0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef",
+          "0x0000000000000000000000001c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c",
+          "0x0000000000000000000000002b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b"
+         ],
+         "data": "0x00000000000000000000000000000000000000000000000000000000000003e8"
+        }
+       ]
+      }
+     },
+     "throws": [],
+     "expect": {
+      "state": "unknown",
+      "transfers": []
+     }
+    }
+   ]
+  }
+ ]
+}

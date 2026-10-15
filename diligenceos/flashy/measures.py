@@ -23,7 +23,7 @@ from diligenceos.receipt_log import GENESIS, verify_chain
 
 MEASURE = ("Receipts logged that were never revoked and never contradicted an earlier verdict on the same inputs, "
            "as a share of receipts logged")
-_PIN = re.compile(r"^ed25519:[0-9a-f]{64}$")
+_PIN = re.compile(r"^ed25519:[0-9a-f]{64}\Z")
 
 
 def valid_pin(pin) -> bool:

@@ -16,12 +16,12 @@ from cryptography.hazmat.primitives import serialization
 from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PrivateKey, Ed25519PublicKey
 
 MAX_SAFE_INT = 9007199254740991
-HEX32 = re.compile(r"^[0-9a-f]{64}$")
-HEX64 = re.compile(r"^[0-9a-f]{128}$")
-AMOUNT = re.compile(r"^(0|[1-9][0-9]*)$")
-ADDR = re.compile(r"^0x[0-9a-f]{40}$")
-TXHASH = re.compile(r"^0x[0-9a-f]{64}$")
-ISO_MS = re.compile(r"^\d{4}-\d\d-\d\dT\d\d:\d\d:\d\d(\.\d{1,3})?Z$")
+HEX32 = re.compile(r"^[0-9a-f]{64}\Z")
+HEX64 = re.compile(r"^[0-9a-f]{128}\Z")
+AMOUNT = re.compile(r"^(0|[1-9][0-9]*)\Z")
+ADDR = re.compile(r"^0x[0-9a-f]{40}\Z")
+TXHASH = re.compile(r"^0x[0-9a-f]{64}\Z")
+ISO_MS = re.compile(r"^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}(\.[0-9]{1,3})?Z\Z")
 
 DOMAIN_INVOICE = "30e-demo/invoice/1"
 DOMAIN_RECEIPT = "30e-demo/receipt/1"

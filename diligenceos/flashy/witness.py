@@ -22,8 +22,8 @@ from diligenceos.signing import Signer, verify_signature
 SCHEMA = "diligenceos.flashy-witness-receipt/1"
 WITNESS_RECEIPT_DOMAIN = "diligenceos.flashy-witness-receipt/1"
 ENTRY_KEYS = frozenset("seq prev ts kind data hash sig".split())
-TOKEN = re.compile(r"^[A-Za-z0-9_]{1,64}$")
-HEX_ID = re.compile(r"^[0-9a-f]{64}$")
+TOKEN = re.compile(r"^[A-Za-z0-9_]{1,64}\Z")
+HEX_ID = re.compile(r"^[0-9a-f]{64}\Z")
 
 STATEMENT = (
     "This receipt witnesses the integrity and contents of a spend-authorization plane's signed log: "

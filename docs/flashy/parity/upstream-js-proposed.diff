@@ -1,0 +1,53 @@
+--- a/src/invoice.js
++++ b/src/invoice.js
+@@ -1,7 +1,7 @@
+ // Seller side of an agent-to-agent sale: signed invoice -> payment verified on-chain by the SELLER ->
+ // deliverable released with a signed receipt. The buyer's say-so about payment counts for nothing.
+ import { hashOf, signDoc, verifyDoc } from './canon.js'
+-import { lc } from './evm.js'
++import { ADDR, lc } from './evm.js'
+ import { ALLOWED_CHAINS } from './chain.js'
+ 
+ const INVOICE_KEYS = ['ver', 'invoiceId', 'seller', 'payee', 'chain', 'asset', 'amount', 'deliverableHash', 'expiresAt', 'sellerKey', 'sig']
+@@ -15,7 +15,9 @@
+ export function verifyInvoice(inv, pinnedSellerPub, now) {
+   if (!inv || typeof inv !== 'object' || Object.keys(inv).sort().join() !== [...INVOICE_KEYS].sort().join()) return false // closed schema
+   if (inv.ver !== '30e-demo-invoice/1' || inv.sellerKey !== pinnedSellerPub) return false
+-  if (typeof inv.amount !== 'string' || !/^(0|[1-9][0-9]*)$/.test(inv.amount) || !ALLOWED_CHAINS[inv.chain]) return false
++  if (typeof inv.amount !== 'string' || !/^[1-9][0-9]*$/.test(inv.amount) || !ALLOWED_CHAINS[inv.chain]) return false // positive integer string
++  if (typeof inv.payee !== 'string' || !ADDR.test(inv.payee) || typeof inv.asset !== 'string' || !ADDR.test(inv.asset)) return false
++  if (typeof inv.expiresAt !== 'string' || !/^\d{4}-\d\d-\d\dT\d\d:\d\d:\d\d(\.\d{1,3})?Z$/.test(inv.expiresAt)) return false // Date.parse alone accepts "2030" and "Jan 1 2030"
+   const { sig, ...body } = inv
+   return verifyDoc(pinnedSellerPub, INV, body, sig) && Date.parse(inv.expiresAt) > now.getTime()
+ }
+--- a/src/chain.js
++++ b/src/chain.js
+@@ -51,21 +51,23 @@
+     if (!r || typeof r !== 'object') return { state: 'unknown', confirmations: 0n, transfers: [] }
+     const status = r.status
+     if (status !== '0x1' && status !== '0x0') return { state: 'unknown', confirmations: 0n, transfers: [] } // undefined is NOT success
+-    const tip = await this.blockNumber()
++    let tip
++    try { tip = await this.blockNumber() } catch { return { state: 'unknown', confirmations: 0n, transfers: [] } } // unreadable is unknown, never a throw
+     const blk = decodeUint(r.blockNumber)
+     if (blk === null) return { state: 'unknown', confirmations: 0n, transfers: [] }
+     const confirmations = tip - BigInt(blk) + 1n
+     const transfers = []
+     for (const l of Array.isArray(r.logs) ? r.logs : []) {
+-      if (l && Array.isArray(l.topics) && l.topics[0] === TOPIC_TRANSFER && l.topics.length === 3) {
+-        const amount = decodeUint(l.data)
++      if (l && l.removed !== true && Array.isArray(l.topics) && l.topics[0] === TOPIC_TRANSFER && l.topics.length === 3) {
++        const amount = typeof l.data === 'string' && /^0x[0-9a-f]{64}$/.test(l.data) ? decodeUint(l.data) : null // Transfer data is exactly one 32-byte word
+         const padded = (t) => typeof t === 'string' && /^0x0{24}[0-9a-f]{40}$/.test(t)
+         const from = '0x' + String(l.topics[1]).slice(26), to = '0x' + String(l.topics[2]).slice(26)
+-        if (amount !== null && padded(l.topics[1]) && padded(l.topics[2]) && ADDR.test(from) && ADDR.test(to)) transfers.push({ token: lc(l.address), from, to, amount })
++        if (amount !== null && padded(l.topics[1]) && padded(l.topics[2]) && ADDR.test(from) && ADDR.test(to) && ADDR.test(lc(l.address) ?? '')) transfers.push({ token: lc(l.address), from, to, amount })
+       }
+     }
++    const present = 'transactionHash' in r
+     const echoed = typeof r.transactionHash === 'string' ? r.transactionHash.toLowerCase() : undefined
+-    if (echoed !== undefined && echoed !== String(txHash).toLowerCase()) return { state: 'unknown', confirmations: 0n, transfers: [] }
++    if (present && (echoed === undefined || echoed !== String(txHash).toLowerCase())) return { state: 'unknown', confirmations: 0n, transfers: [] } // an echoed hash that is not the requested one (or not a string) is no answer
+     if (status === '0x0') return { state: 'failed', confirmations, transfers: [], txHash: echoed }
+     return { state: confirmations >= BigInt(minConfirmations) ? 'confirmed' : 'pending', confirmations, transfers, txHash: echoed }
+   }

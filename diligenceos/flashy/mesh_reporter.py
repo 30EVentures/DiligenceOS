@@ -21,9 +21,9 @@ import urllib.request
 
 STATUSES = ("PLANNING", "PRESENTING", "BUILDING", "ACTIVE", "TESTING", "DEPLOYING", "REVIEWING", "INCIDENT", "IDLE")
 DEFAULT_BASE = "https://api.flashyos.com"
-_ORG = re.compile(r"^[A-Za-z0-9_-]{3,64}$")
-_NAME = re.compile(r"^[a-z0-9]+(-[a-z0-9]+)*$")
-_TOKEN = re.compile(r"^[\x21-\x7e]{8,512}$")
+_ORG = re.compile(r"^[A-Za-z0-9_-]{3,64}\Z")
+_NAME = re.compile(r"^[a-z0-9]+(-[a-z0-9]+)*\Z")
+_TOKEN = re.compile(r"^[\x21-\x7e]{8,512}\Z")
 
 
 def read_config(env=None):

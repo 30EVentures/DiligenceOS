@@ -210,8 +210,13 @@ class RpcClient:
         return msg["result"]
 
 
+def _word(hexstr):
+    """A log's data field for Transfer: exactly one 32-byte unsigned integer, 0x + 64 lowercase hex digits."""
+    return int(hexstr, 16) if isinstance(hexstr, str) and re.match(r"^0x[0-9a-f]{64}\Z", hexstr) else None
+
+
 def _uint(hexstr):
-    if isinstance(hexstr, str) and re.match(r"^0x[0-9a-f]{1,64}$", hexstr):
+    if isinstance(hexstr, str) and re.match(r"^0x[0-9a-f]{1,64}\Z", hexstr):
         return int(hexstr, 16)
     return None
 
@@ -230,8 +235,10 @@ def tx_outcome(rpc, chain: str, tx_hash: str, min_confirmations: int) -> dict:
             return {"state": "pending", "transfers": []}
         if not isinstance(r, dict) or r.get("status") not in ("0x1", "0x0"):
             return unknown  # missing or odd status is UNKNOWN, never success
-        if "transactionHash" in r and r["transactionHash"] != tx_hash:
-            return unknown
+        if "transactionHash" in r:      # a hash is the same hash in any letter case; anything else echoed is not an answer
+            echoed = r["transactionHash"]
+            if not isinstance(echoed, str) or echoed.lower() != str(tx_hash).lower():
+                return unknown
         tip, blk = _uint(rpc("eth_blockNumber", [])), _uint(r.get("blockNumber"))
         if tip is None or blk is None:
             return unknown
@@ -248,7 +255,7 @@ def tx_outcome(rpc, chain: str, tx_hash: str, min_confirmations: int) -> dict:
         t = lg.get("topics")
         if not (isinstance(t, list) and len(t) == 3 and t[0] == TOPIC_TRANSFER and all(isinstance(x, str) for x in t)):
             continue
-        amount = _uint(lg.get("data"))
+        amount = _word(lg.get("data"))
         a_from, a_to, token = "0x" + t[1][26:], "0x" + t[2][26:], str(lg.get("address")).lower()
         zeros = "0x" + "0" * 24
         if (amount is None or not (t[1].startswith(zeros) and t[2].startswith(zeros) and len(t[1]) == 66 == len(t[2]))

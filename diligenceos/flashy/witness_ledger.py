@@ -27,9 +27,9 @@ from diligenceos.signing import Signer, verify_signature
 LEDGER_DOMAIN = "diligenceos.witness-ledger/1"
 MEASURE = "Plane logs submitted for witnessing that verified end to end and were signed, as a share of logs submitted"
 OUTCOMES = ("WITNESSED", "REFUSED")
-_CODE = re.compile(r"^[A-Z_]{2,40}$")
-_HEX = re.compile(r"^[0-9a-f]{64}$")
-_ID = re.compile(r"^sha256:[0-9a-f]{64}$")
+_CODE = re.compile(r"^[A-Z_]{2,40}\Z")
+_HEX = re.compile(r"^[0-9a-f]{64}\Z")
+_ID = re.compile(r"^sha256:[0-9a-f]{64}\Z")
 _KEYS = frozenset("seq kind outcome code plane_log_key receipt_id head_hash entry_count logged_at prev_hash entry_hash issuer signature".split())
 
 
