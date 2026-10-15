@@ -30,7 +30,7 @@ OUTCOMES = ("WITNESSED", "REFUSED")
 _CODE = re.compile(r"^[A-Z_]{2,40}$")
 _HEX = re.compile(r"^[0-9a-f]{64}$")
 _ID = re.compile(r"^sha256:[0-9a-f]{64}$")
-_KEYS = frozenset("seq kind outcome code receipt_id head_hash entry_count logged_at prev_hash entry_hash issuer signature".split())
+_KEYS = frozenset("seq kind outcome code plane_log_key receipt_id head_hash entry_count logged_at prev_hash entry_hash issuer signature".split())
 
 
 class LedgerCorrupt(Exception):
@@ -56,6 +56,7 @@ def verify_ledger(entries, pinned_issuer, expected_head=None) -> list[str]:
             ok = (
                 type(e["seq"]) is int and e["seq"] == i and e["kind"] == "witnessing" and e["outcome"] in OUTCOMES
                 and isinstance(e["code"], str) and _CODE.fullmatch(e["code"])
+                and (e["plane_log_key"] is None or (isinstance(e["plane_log_key"], str) and _HEX.fullmatch(e["plane_log_key"])))
                 and (e["receipt_id"] is None or (isinstance(e["receipt_id"], str) and _ID.fullmatch(e["receipt_id"])))
                 and (e["head_hash"] is None or (isinstance(e["head_hash"], str) and _HEX.fullmatch(e["head_hash"])))
                 and (e["entry_count"] is None or (type(e["entry_count"]) is int and e["entry_count"] >= 0))
@@ -111,11 +112,31 @@ class WitnessLedger:
     def head(self) -> str:
         return self._entries[-1]["entry_hash"] if self._entries else GENESIS
 
-    def witness(self, plane_entries, pinned_pub, *, issued_at, cap_base_units=None, now=None):
-        """(receipt | None, ledger entry). A refusal is recorded, never raised and never signed."""
+    def remembered(self, plane_log_key):
+        """(count, head) of the last log this witness signed for under `plane_log_key`, or None on first sight."""
+        for e in reversed(self._entries):
+            if e["outcome"] == "WITNESSED" and e["plane_log_key"] == plane_log_key:
+                return e["entry_count"], e["head_hash"]
+        return None
+
+    def witness(self, plane_entries, pinned_pub, *, issued_at, cap_base_units=None, now=None, pinned_count=None, pinned_head=None):
+        """(receipt | None, ledger entry). A refusal is recorded, never raised and never signed.
+
+        Every witnessing pins the head and count it last signed for this plane key (a cut tail is invisible to a
+        hash chain), and the caller's own pin too if given; the caller cannot relax what the ledger remembers."""
         receipt, code = None, "OK"
         presence.note("witnessing")
         try:
+            pins = []
+            memory = self.remembered(pinned_pub) if isinstance(pinned_pub, str) else None
+            if memory is not None:
+                pins.append(memory)
+            if pinned_count is not None or pinned_head is not None:
+                pins.append((pinned_count, pinned_head))
+            for count, head in pins:
+                checked = witness.verify_plane_log(plane_entries, pinned_pub, pinned_count=count, pinned_head=head)
+                if not checked["ok"]:
+                    raise witness.PlaneLogInvalid(checked["code"], checked.get("at"))
             receipt = witness.witness_receipt(plane_entries, pinned_pub, self.signer, issued_at=issued_at, cap_base_units=cap_base_units)
         except witness.PlaneLogInvalid as exc:
             code = exc.code if isinstance(exc.code, str) and _CODE.fullmatch(exc.code) else "UNKNOWN"
@@ -128,6 +149,7 @@ class WitnessLedger:
         entry = {
             "seq": len(self._entries), "kind": "witnessing",
             "outcome": "WITNESSED" if receipt else "REFUSED", "code": code,
+            "plane_log_key": pinned_pub if isinstance(pinned_pub, str) and _HEX.fullmatch(pinned_pub) else None,
             "receipt_id": receipt["id"] if receipt else None,
             "head_hash": receipt["head_hash"] if receipt else None,
             "entry_count": receipt["entry_count"] if receipt else None,

@@ -39,8 +39,13 @@ class PlaneLogInvalid(Exception):
         self.code, self.at = code, at
 
 
-def verify_plane_log(entries, pinned_pub, *, allow_empty: bool = False) -> dict:
-    """Pure; never raises. {ok, count, head} or {ok:False, code[, at]}. An EMPTY log fails."""
+def verify_plane_log(entries, pinned_pub, *, allow_empty: bool = False, pinned_count=None, pinned_head=None) -> dict:
+    """Pure; never raises. {ok, count, head} or {ok:False, code[, at]}. An EMPTY log fails.
+
+    A hash chain cannot see a cut tail: a log with its last entries removed is still a valid chain. If you
+    remember an earlier head, pass it (`pinned_count`, `pinned_head`, both or neither): a log shorter than
+    that is TAIL_CUT, and one whose entry at that count is not that head is HISTORY_REWRITTEN. A pin that
+    is not a positive int and a lowercase 64-hex hash is BAD_PIN, never ignored."""
     def bad(code, at=None):
         r = {"ok": False, "code": code}
         if at is not None:
@@ -49,9 +54,14 @@ def verify_plane_log(entries, pinned_pub, *, allow_empty: bool = False) -> dict:
 
     if not (isinstance(pinned_pub, str) and HEX32.match(pinned_pub)):
         return bad("UNPINNED_KEY")
+    pinned = pinned_count is not None or pinned_head is not None
+    if pinned and not (type(pinned_count) is int and pinned_count >= 1 and isinstance(pinned_head, str) and HEX32.match(pinned_head)):
+        return bad("BAD_PIN")
     if not isinstance(entries, list):
         return bad("NOT_A_LOG")
     if not entries:
+        if pinned:
+            return bad("TAIL_CUT")
         return {"ok": True, "count": 0, "head": None} if allow_empty else bad("EMPTY_LOG")
     prev = None
     for i, e in enumerate(entries):
@@ -70,6 +80,11 @@ def verify_plane_log(entries, pinned_pub, *, allow_empty: bool = False) -> dict:
         except (CanonError, KeyError, TypeError):
             return bad("MALFORMED", i)
         prev = e["hash"]
+    if pinned:
+        if len(entries) < pinned_count:
+            return bad("TAIL_CUT")
+        if entries[pinned_count - 1]["hash"] != pinned_head:
+            return bad("HISTORY_REWRITTEN")
     return {"ok": True, "count": len(entries), "head": prev}
 
 
