@@ -110,37 +110,49 @@ def summarize(entries) -> dict:
 
 
 def check_daily_caps(entries, cap_base_units: int) -> dict:
-    """Cross-check that no agent's authorizations in one UTC day exceed `cap_base_units`.
+    """Cross-check that no agent's reserved authorizations in one UTC day ever exceeded `cap_base_units`.
 
     Assumes `entries` already passed verify_plane_log. Integers only. Attribution: an
     `authorization_issued` entry carries no agent, so it is joined to the `request_received` entry
-    with the same requestHash (the plane's own record of who asked). Grouped per (agent, chain)
-    because base units of different chains are not comparable. Netting: an authorization the plane
-    itself logged as released (`expired_unused`, or `outcome` with reservation `released`) is not
-    counted, matching the plane's ledger. Any authorization this check cannot attribute or read
-    fails the check (fail closed). Returns {ok, violations, problems}.
+    with the same requestHash (the plane's own record of who asked). Grouped per (agent, chain, UTC day
+    of the ISSUE), because base units of different chains are not comparable.
+
+    The cap is judged at the moment of each issuance, walking the log in order: what counts is the total
+    reserved at that moment, so an overspend that a later release happens to repay is still an overspend
+    (netting releases after the fact would hide it). A release (`expired_unused`, or an `outcome` whose
+    reservation is `released`) gives the amount back to the day the authorization was ISSUED, once, and
+    only if it comes after the issuance; a release for an unknown authorization changes nothing. The
+    reported `total_base_units` is the highest total reserved at any moment of that day. Any authorization
+    this check cannot attribute or read fails the check (fail closed). Returns {ok, violations, problems}.
     """
     if type(cap_base_units) is not int or cap_base_units < 0:
         raise ValueError("cap_base_units must be a non-negative integer of base units")
     requests: dict = {}
-    released: set = set()
     for e in entries:
         d = e.get("data") if isinstance(e.get("data"), dict) else {}
         if e.get("kind") == "request_received" and isinstance(d.get("requestHash"), str):
             sp = d.get("spend") if isinstance(d.get("spend"), dict) else {}
             requests.setdefault(d["requestHash"], (d.get("agent"), sp.get("chain")))
-        elif e.get("kind") == "expired_unused" and isinstance(d.get("authId"), str):
-            released.add(d["authId"])
-        elif e.get("kind") == "outcome" and d.get("reservation") == "released" and isinstance(d.get("authId"), str):
-            released.add(d["authId"])
-    totals: dict = {}
+    reserved: dict = {}      # (agent, chain, day) -> total reserved right now
+    peaks: dict = {}         # (agent, chain, day) -> highest total reserved at any moment
+    live: dict = {}          # authId -> (key, amount) while the reservation is held
+    issued_ids: set = set()
     problems: list = []
     for e in entries:
-        if e.get("kind") != "authorization_issued":
-            continue
         d = e["data"] if isinstance(e.get("data"), dict) else {}
+        kind = e.get("kind")
+        if kind == "expired_unused" or (kind == "outcome" and d.get("reservation") == "released"):
+            held = live.pop(d.get("authId"), None) if isinstance(d.get("authId"), str) else None
+            if held is not None:
+                reserved[held[0]] -= held[1]
+            continue
+        if kind != "authorization_issued":
+            continue
         auth_id = d.get("authId")
         label = auth_id if isinstance(auth_id, str) and TOKEN.match(auth_id.replace("-", "_")) else f"seq:{e.get('seq')}"
+        if isinstance(auth_id, str) and auth_id in issued_ids:
+            problems.append({"code": "DUPLICATE_AUTHORIZATION", "auth": label})   # one id cannot reserve twice
+            continue
         who = requests.get(d.get("requestHash"))
         if not (who and isinstance(who[0], str) and HEX_ID.match(who[0]) and isinstance(who[1], str) and TOKEN.match(who[1].replace(":", "_"))):
             problems.append({"code": "UNATTRIBUTED_AUTHORIZATION", "auth": label})
@@ -152,13 +164,16 @@ def check_daily_caps(entries, cap_base_units: int) -> dict:
         if ts is None:
             problems.append({"code": "BAD_TS", "auth": label})
             continue
-        if auth_id in released:
-            continue
         key = (who[0], who[1], ts.astimezone(timezone.utc).date().isoformat())
-        totals[key] = totals.get(key, 0) + int(d["amount"])
+        amount = int(d["amount"])
+        reserved[key] = reserved.get(key, 0) + amount
+        peaks[key] = max(peaks.get(key, 0), reserved[key])
+        if isinstance(auth_id, str):
+            live[auth_id] = (key, amount)
+            issued_ids.add(auth_id)
     violations = [
         {"agent": a, "chain": c, "day": day, "total_base_units": str(t), "cap_base_units": str(cap_base_units)}
-        for (a, c, day), t in sorted(totals.items()) if t > cap_base_units
+        for (a, c, day), t in sorted(peaks.items()) if t > cap_base_units
     ]
     return {"ok": not violations and not problems, "violations": violations, "problems": problems}
 
