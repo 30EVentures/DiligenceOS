@@ -433,6 +433,24 @@ def _is_loopback(host: str) -> bool:
         return False  # a hostname we cannot prove is local, "" and 0.0.0.0 included
 
 
+def configure_exposure(host, environ=None) -> list[str]:
+    """Tell the API whether it is reachable from other machines, and return what to say about it at startup.
+    Anything that is not exactly a loopback spelling counts as exposed."""
+    env = os.environ if environ is None else environ
+    exposed = not (isinstance(host, str) and host == host.strip() and _is_loopback(host))
+    api.set_exposed(exposed)
+    if not exposed:
+        return []
+    setting = env.get(api.VERDICT_AUTH_VAR)
+    if setting is None:
+        return [f"{api.VERDICT_AUTH_VAR} is not set and this server is not bound to loopback, so verdict requests now require a signed caller "
+                f"(mint credentials with `python -m diligenceos delegate --scopes verdict ...`). Set {api.VERDICT_AUTH_VAR}=open to change that."]
+    if api.verdict_auth_mode(env) == "open":
+        return ["WARNING: the verdict endpoint is OPEN on a non-loopback address: anyone who can reach it can add entries to the signed log. "
+                f"Remove {api.VERDICT_AUTH_VAR}=open, or put a proxy that authenticates callers in front."]
+    return []
+
+
 def tls_warning(host: str, environ=None) -> str | None:
     """The startup warning for a bind address, or None. Pure: no sockets, no I/O.
 
@@ -461,6 +479,8 @@ def serve(host: str | None = None, port: int | None = None) -> None:
     warning = tls_warning(host)
     if warning:
         print(warning, file=sys.stderr)
+    for note in configure_exposure(host):
+        print(note, file=sys.stderr)
     if api._presence is not None:
         api._presence.default().start()   # no-op unless the three FLASHYOS_* variables are set
     with make_server(host, port, app) as server:

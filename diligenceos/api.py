@@ -59,15 +59,25 @@ _SUBJECT_KEYS = frozenset({"name", "registration_id"})
 _TRANSACTION_KEYS = frozenset({"amount_minor", "currency"})
 
 
+_EXPOSED = False   # set by the web server at startup: True when it is bound to anything but loopback
+
+
+def set_exposed(value: bool) -> None:
+    global _EXPOSED
+    _EXPOSED = bool(value)
+
+
 def verdict_auth_mode(environ=None) -> str:
-    """"open" (the default, for a server on this machine) or "signed" (every verdict request carries a
-    signed auth envelope, scope 'verdict'). DILIGENCEOS_VERDICT_AUTH=open is the only way to get open
-    when the variable is set at all: any other value, an empty one included, is read as signed, so a
-    typo closes the door instead of opening it."""
+    """"open" or "signed" (every verdict request carries a signed auth envelope, scope 'verdict').
+
+    Set DILIGENCEOS_VERDICT_AUTH=open to get open: any other value, an empty one included, is read as signed, so a
+    typo closes the door instead of opening it. When the variable is not set at all the default follows the bind
+    address: open on loopback (a server on this machine), signed on anything else (every verdict appends to the
+    signed log, so an open public endpoint lets anyone grow it)."""
     value = (os.environ if environ is None else environ).get(VERDICT_AUTH_VAR)
-    if value is None or value.strip().lower() == "open":
-        return "open"
-    return "signed"
+    if value is None:
+        return "signed" if _EXPOSED else "open"
+    return "open" if value.strip().lower() == "open" else "signed"
 
 
 def _unknown_verdict_field(data: dict):

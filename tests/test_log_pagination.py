@@ -265,6 +265,8 @@ class TlsWarningTest(unittest.TestCase):
         class Boom(Exception):
             pass
 
+        from diligenceos import api
+        self.addCleanup(api.set_exposed, False)   # serve() records that this server is exposed; do not leak that into other tests
         stderr = io.StringIO()
         with mock.patch.dict("os.environ", {}, clear=False) as env, \
                 mock.patch("sys.stderr", stderr), \
@@ -273,6 +275,7 @@ class TlsWarningTest(unittest.TestCase):
             with self.assertRaises(Boom):  # reached make_server: the warning did not stop startup
                 webapp.serve("0.0.0.0", 0)
         self.assertIn("no TLS", stderr.getvalue())
+        self.assertIn("require a signed caller", stderr.getvalue())     # and says the verdict endpoint is closed by default there
 
 
 if __name__ == "__main__":
