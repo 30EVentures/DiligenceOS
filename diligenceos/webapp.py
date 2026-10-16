@@ -19,6 +19,7 @@ from wsgiref.simple_server import make_server
 
 from diligenceos import api
 from diligenceos.pipeline import run_diligence
+from diligenceos.sdn_ingest import SdnUnavailable
 from diligenceos.store import Store
 from diligenceos.types import CheckStatus, Verdict, VerdictResult
 from diligenceos.witness import check_witness_config
@@ -335,11 +336,16 @@ def _app(environ, start_response):
                 status="400 Bad Request",
             )
 
+        try:
+            sanctions_list = store.sanctions_list()
+        except SdnUnavailable as exc:
+            return _html_response(start_response, "One verdict, before any transaction, hire, or contract.",
+                                  _form_body(error=f"Refusing to screen against less than was recorded: {exc}"), status="503 Service Unavailable")
         api._presence_note("issuing")
         result = run_diligence(
             name=name,
             registration_id=registration_id,
-            sanctions_list=store.sanctions_list(),
+            sanctions_list=sanctions_list,
             registry_lookup=store.registry_lookup(),
             ledger=store.ledger,
             document_text=document_text,

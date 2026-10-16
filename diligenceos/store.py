@@ -14,6 +14,7 @@ from pathlib import Path
 
 from diligenceos.identity import RegistryLookup, RegistryRecord
 from diligenceos.sanctions import SanctionsEntry, SanctionsList
+from diligenceos.sdn_ingest import SdnUnavailable, load_verified_sdn
 from diligenceos.receipt_log import LogCorruptError, ReceiptLog
 from diligenceos.signing import Signer
 from diligenceos.witness import SELF_WITNESS_MESSAGE, SelfWitnessError, verify_cosignature
@@ -119,8 +120,30 @@ class Store:
         self._ledger.record(DeliveryRecord(subject=subject, on_time=on_time, note=note))
         self._maybe_save()
 
+    def _sdn(self):
+        """(SanctionsList, meta) of the downloaded official list beside the store, or (None, None). Raises SdnUnavailable
+        if one was downloaded and is no longer what was recorded (screening must stop rather than use less)."""
+        if self.persist_path is None:
+            return None, None
+        return load_verified_sdn(self.persist_path.parent)
+
     def sanctions_list(self) -> SanctionsList:
-        return SanctionsList(entries=tuple(self._sanctions_entries))
+        sdn, meta = self._sdn()
+        mine = tuple(self._sanctions_entries)
+        if sdn is None:
+            return SanctionsList(entries=mine, label=f"{len(mine)} names loaded by the operator; no official sanctions list is loaded")
+        label = f"OFAC SDN list retrieved {meta['retrieved_at'][:10]} ({meta['entries']} SDN entries)"
+        if mine:
+            label += f", plus {len(mine)} added by the operator"
+        return SanctionsList(entries=sdn.entries + mine, label=label)
+
+    def digest_input(self) -> dict:
+        """What a receipt's data_digest covers: the operator's data, plus the identity of the downloaded list if any."""
+        _, meta = self._sdn()
+        data = self.to_dict()
+        if meta is not None:
+            data["sanctions_source"] = {"sha256": meta["sha256"], "entries": meta["entries"], "retrieved_at": meta["retrieved_at"], "source": meta["source"]}
+        return data
 
     def registry_lookup(self) -> RegistryLookup:
         return self._registry.get

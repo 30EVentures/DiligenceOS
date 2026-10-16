@@ -24,6 +24,7 @@ class SanctionsEntry:
 @dataclass(frozen=True)
 class SanctionsList:
     entries: tuple[SanctionsEntry, ...] = ()
+    label: str | None = None   # what this list is ("OFAC SDN list retrieved ..."); a pass says so when it is set
 
     def source_text(self) -> str:
         """Canonical dump of the list — the text a sanctions Evidence cites."""
@@ -32,13 +33,25 @@ class SanctionsList:
             sort_keys=True, separators=(",", ":"), ensure_ascii=False,
         )
 
+    def _index(self) -> dict:
+        """normalized form -> the first entry that has it, built once per list. Official lists write a person as
+        'SURNAME, Given' (one comma); that entry is also known by 'Given SURNAME'. Nothing else is derived: no fuzzy matching."""
+        cached = self.__dict__.get("_idx")
+        if cached is None:
+            cached = {}
+            for entry in self.entries:
+                for candidate in (entry.name, *entry.aliases):
+                    forms = [normalize_name(candidate)]
+                    if candidate.count(",") == 1:
+                        surname, given = candidate.split(",")
+                        forms.append(normalize_name(f"{given} {surname}"))
+                    for form in forms:
+                        cached.setdefault(form, entry)
+            object.__setattr__(self, "_idx", cached)
+        return cached
+
     def match(self, name: str) -> SanctionsEntry | None:
-        needle = normalize_name(name)
-        for entry in self.entries:
-            names = (entry.name, *entry.aliases)
-            if any(needle == normalize_name(candidate) for candidate in names):
-                return entry
-        return None
+        return self._index().get(normalize_name(name))
 
 
 def load_sanctions_list(path: str | Path) -> SanctionsList:
@@ -57,7 +70,11 @@ def load_sanctions_list(path: str | Path) -> SanctionsList:
 def screen_subject(name: str, sanctions_list: SanctionsList) -> Finding:
     match = sanctions_list.match(name)
     if match is None:
-        return Finding(category=CATEGORY, status=CheckStatus.PASS)
+        # A pass is only as good as the list behind it, so it says what that was (one line; the label is data).
+        detail = None
+        if sanctions_list.label:
+            detail = f"screened against {len(sanctions_list.entries)} entries: {' '.join(sanctions_list.label.split())[:200]}"
+        return Finding(category=CATEGORY, status=CheckStatus.PASS, detail=detail)
     return Finding(
         category=CATEGORY,
         status=CheckStatus.FLAG,
