@@ -166,6 +166,15 @@ class AnEditedDocumentIsNotTheDocumentTest(unittest.TestCase):
         for junk in (None, [], "x", 5, {}):
             self.assertFalse(pe.verify_payment_evidence(junk, OPERATOR.issuer_id))
 
+    def test_a_document_that_claims_to_approve_a_spend_is_refused_even_if_correctly_signed(self):
+        from diligenceos.receipt import digest
+        for field, value in (("approves_spend", True), ("witness_spend_envelope_base_units", "1")):
+            body = {k: v for k, v in self.doc.items() if k not in ("id", "signature")}
+            body[field] = value
+            rid = digest(body)
+            forged = {**body, "id": rid, "signature": OPERATOR.sign(pe.EVIDENCE_DOMAIN, rid)}
+            self.assertFalse(pe.verify_payment_evidence(forged, OPERATOR.issuer_id), field)
+
     def test_a_document_checked_against_other_artifacts_reports_what_differs(self):
         other = Flow(amount="2000000")
         problems = pe.recheck_payment_evidence(self.doc, other.request, other.authorization, other.log, pins=other.pins, rpc=other.rpc)
