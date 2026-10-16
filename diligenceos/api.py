@@ -17,6 +17,7 @@ from diligenceos.spend import try_spend
 from diligenceos.receipt_log import LogCorruptError
 from diligenceos.signing import LOG_HEAD_DOMAIN, SignerError, head_message, verify_signature
 from diligenceos.receipt import RULES, SCHEMA, digest, unsanitized_fields_doc, issue_receipt, verify_receipt
+from diligenceos.sdn_ingest import SdnUnavailable
 from diligenceos.store import Store
 
 try:  # presence on the mesh is optional and must never be able to stop the API from loading
@@ -187,7 +188,7 @@ def _capabilities():
             "shape": {"error": {"code": "string", "message": "string", "field": "optional"}},
             "codes": [
                 "invalid_json", "invalid_request", "policy_widening", "not_found",
-                "method_not_allowed", "body_too_large", "log_unavailable", "signer_unavailable", "unauthenticated", "forbidden",
+                "method_not_allowed", "body_too_large", "log_unavailable", "signer_unavailable", "sanctions_unavailable", "unauthenticated", "forbidden",
             ],
         },
     }
@@ -438,11 +439,15 @@ def _verdict(body: bytes, store: Store):
         transaction = Money.from_dict(raw_tx).to_dict()
 
     name, reg = subject["name"].strip(), subject["registration_id"].strip()
+    try:
+        sanctions_list = store.sanctions_list()
+    except SdnUnavailable as exc:
+        return _error(503, "sanctions_unavailable", str(exc))   # never screen against less than was recorded
     _presence_note("issuing")
     result = run_diligence(
         name=name,
         registration_id=reg,
-        sanctions_list=store.sanctions_list(),
+        sanctions_list=sanctions_list,
         registry_lookup=store.registry_lookup(),
         ledger=store.ledger,
         document_text=document_text,
@@ -451,7 +456,7 @@ def _verdict(body: bytes, store: Store):
         "subject": {"name": name, "registration_id": reg},
         "document_text": document_text,
         "transaction": transaction,
-        "data_digest": digest(store.to_dict()),
+        "data_digest": digest(store.digest_input()),
     }
     try:
         log = store.log

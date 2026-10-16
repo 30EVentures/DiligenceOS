@@ -4,6 +4,7 @@
     python -m diligenceos delegate --subject ID --scopes spend [--key F] [--chain F] ...
     python -m diligenceos sign-request --key F --path /v1/spend [--chain F] BODYFILE|-
     python -m diligenceos witness --url U --issuer ID --key F --state F [--submit]
+    python -m diligenceos refresh-sanctions [--url U] [--encoding E] [--min-entries N] [--dest DIR]
 
 Everything prints JSON on stdout; errors go to stderr with exit status 2
 (`witness` exits 3 when it finds the log inconsistent with what it saw before).
@@ -23,7 +24,7 @@ from diligenceos.policy import Policy
 from diligenceos.signing import Signer, SignerError
 from diligenceos.types import Money, Verdict
 
-COMMANDS = ("keygen", "delegate", "sign-request", "witness")
+COMMANDS = ("keygen", "delegate", "sign-request", "witness", "refresh-sanctions")
 
 
 def _operator_key_path() -> Path:
@@ -134,6 +135,20 @@ def _witness(args) -> int:
     return code
 
 
+def _refresh_sanctions(args) -> int:
+    """The one place DiligenceOS goes to the network for data, and only when a person runs this."""
+    from diligenceos import sdn_ingest, webapp
+
+    dest = Path(args.dest).expanduser() if args.dest else webapp._data_path().parent
+    try:
+        meta = sdn_ingest.refresh_sdn(dest, url=args.url, encoding=args.encoding, min_entries=args.min_entries)
+    except sdn_ingest.SdnRefreshError as exc:
+        print(f"sanctions refresh refused: {exc.code} (nothing was changed)", file=sys.stderr)
+        return 2
+    print(json.dumps(meta, indent=2, sort_keys=True))
+    return 0
+
+
 def main(argv: list[str]) -> int:
     parser = argparse.ArgumentParser(prog="python -m diligenceos")
     sub = parser.add_subparsers(dest="command", required=True)
@@ -169,6 +184,14 @@ def main(argv: list[str]) -> int:
     p.add_argument("--state", required=True, help="where this witness remembers heads")
     p.add_argument("--submit", action="store_true", help="also POST the cosignature to the server")
     p.set_defaults(run=_witness)
+
+    p = sub.add_parser("refresh-sanctions", help="download the official sanctions list (human-run; the only command that fetches data)")
+    from diligenceos.sdn_ingest import DEFAULT_MIN_ENTRIES, DEFAULT_SDN_URL
+    p.add_argument("--url", default=DEFAULT_SDN_URL, help="https URL of SDN.CSV (default: OFAC's published file)")
+    p.add_argument("--encoding", default="utf-8", help="the file's text encoding if it is not UTF-8, e.g. cp1252 (it is stored as UTF-8)")
+    p.add_argument("--min-entries", type=int, default=DEFAULT_MIN_ENTRIES, help="refuse a file with fewer entries (an error page, the wrong file)")
+    p.add_argument("--dest", help="directory to save into (default: beside the store)")
+    p.set_defaults(run=_refresh_sanctions)
 
     try:
         args = parser.parse_args(argv)
