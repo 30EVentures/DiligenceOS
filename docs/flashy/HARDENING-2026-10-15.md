@@ -16,6 +16,11 @@ Tests: **698 before, 792 after** (`python -m unittest discover -s tests`, all OK
 5. **I cannot confirm where the real agent token lives.** I can say it is in no tracked file, no untracked file and no commit of this repo, in any of its 9 worktrees [RAN], that none of the three env vars is set in my shell, and that the only credential-bearing path I found is `~/.flashy/` (dir 0700, `config.json` 0600), outside every repo. I did not read it. Whether your secret store holds the token is yours to confirm.
 6. **Not done:** `~/FlashyDemo` was not edited (the JS fixes are a proposed diff); the seal witness is not wired into the witness ledger; the main log still has no server-side high-water mark (proposal below); the verdict API is still open by default (carried over).
 
+> **Update 2026-10-16:** the JS diff was applied to `~/FlashyDemo` on a new local branch `parity-fixes` (72e6351, not pushed), with
+> `test/parity-fixes.test.js` (JS suite 37 -> 40, the 3 new tests fail without the fix). The 21 recorded JS gaps are removed from the
+> corpus builder, so the parity tests now require the JS spine to answer all 140 cases exactly as required. They need that branch checked
+> out in `~/FlashyDemo`; on an unpatched demo repo the JS half of `test_parity.py` fails, by design.
+
 ## NEEDS CALEB
 1. Delete or keep local-only `flashy-demo-p3` and `mesh-ready-r1`; do not push them (history names a sibling product). `mesh-ready` carries the same content cleanly.
 2. Approve (or not) applying `docs/flashy/parity/upstream-js-proposed.diff` to `~/FlashyDemo`. Verified on a scratch copy: corpus 0 differences, JS suite 37/37.

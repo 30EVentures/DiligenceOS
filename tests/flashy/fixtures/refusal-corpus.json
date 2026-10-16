@@ -829,12 +829,6 @@
      "now_ms": 1791979200000,
      "expect": {
       "valid": false
-     },
-     "gap": {
-      "js": {
-       "valid": true
-      },
-      "why": "JS verifyInvoice allows '0' (the regex does); Python refuses BAD_AMOUNT"
      }
     },
     {
@@ -1605,12 +1599,6 @@
      "now_ms": 1791979200000,
      "expect": {
       "valid": false
-     },
-     "gap": {
-      "js": {
-       "valid": true
-      },
-      "why": "JS verifyInvoice uses Date.parse, which accepts many forms; Python accepts only YYYY-MM-DDTHH:MM:SS.mmmZ"
      }
     },
     {
@@ -1633,12 +1621,6 @@
      "now_ms": 1791979200000,
      "expect": {
       "valid": false
-     },
-     "gap": {
-      "js": {
-       "valid": true
-      },
-      "why": "JS verifyInvoice uses Date.parse, which accepts many forms; Python accepts only YYYY-MM-DDTHH:MM:SS.mmmZ"
      }
     },
     {
@@ -1661,12 +1643,6 @@
      "now_ms": 1791979200000,
      "expect": {
       "valid": false
-     },
-     "gap": {
-      "js": {
-       "valid": true
-      },
-      "why": "JS verifyInvoice uses Date.parse, which accepts many forms; Python accepts only YYYY-MM-DDTHH:MM:SS.mmmZ"
      }
     },
     {
@@ -1689,12 +1665,6 @@
      "now_ms": 1791979200000,
      "expect": {
       "valid": false
-     },
-     "gap": {
-      "js": {
-       "valid": true
-      },
-      "why": "JS verifyInvoice uses Date.parse, which accepts many forms; Python accepts only YYYY-MM-DDTHH:MM:SS.mmmZ"
      }
     },
     {
@@ -1717,12 +1687,6 @@
      "now_ms": 1791979200000,
      "expect": {
       "valid": false
-     },
-     "gap": {
-      "js": {
-       "valid": true
-      },
-      "why": "JS verifyInvoice uses Date.parse, which accepts many forms; Python accepts only YYYY-MM-DDTHH:MM:SS.mmmZ"
      }
     },
     {
@@ -1745,12 +1709,6 @@
      "now_ms": 1791979200000,
      "expect": {
       "valid": false
-     },
-     "gap": {
-      "js": {
-       "valid": true
-      },
-      "why": "JS verifyInvoice does not check the shape of payee or asset (it matches transfers by string equality later)"
      }
     },
     {
@@ -1773,12 +1731,6 @@
      "now_ms": 1791979200000,
      "expect": {
       "valid": false
-     },
-     "gap": {
-      "js": {
-       "valid": true
-      },
-      "why": "JS verifyInvoice does not check the shape of payee or asset (it matches transfers by string equality later)"
      }
     },
     {
@@ -1801,12 +1753,6 @@
      "now_ms": 1791979200000,
      "expect": {
       "valid": false
-     },
-     "gap": {
-      "js": {
-       "valid": true
-      },
-      "why": "JS verifyInvoice does not check the shape of payee or asset (it matches transfers by string equality later)"
      }
     },
     {
@@ -1829,12 +1775,6 @@
      "now_ms": 1791979200000,
      "expect": {
       "valid": false
-     },
-     "gap": {
-      "js": {
-       "valid": true
-      },
-      "why": "JS verifyInvoice does not check the shape of payee or asset (it matches transfers by string equality later)"
      }
     },
     {
@@ -1857,12 +1797,6 @@
      "now_ms": 1791979200000,
      "expect": {
       "valid": false
-     },
-     "gap": {
-      "js": {
-       "valid": true
-      },
-      "why": "JS verifyInvoice does not check the shape of payee or asset (it matches transfers by string equality later)"
      }
     },
     {
@@ -1885,12 +1819,6 @@
      "now_ms": 1791979200000,
      "expect": {
       "valid": false
-     },
-     "gap": {
-      "js": {
-       "valid": true
-      },
-      "why": "JS verifyInvoice does not check the shape of payee or asset (it matches transfers by string equality later)"
      }
     },
     {
@@ -1913,12 +1841,6 @@
      "now_ms": 1791979200000,
      "expect": {
       "valid": false
-     },
-     "gap": {
-      "js": {
-       "valid": true
-      },
-      "why": "JS verifyInvoice does not check the shape of payee or asset (it matches transfers by string equality later)"
      }
     }
    ]
@@ -2546,13 +2468,6 @@
      "expect": {
       "state": "unknown",
       "transfers": []
-     },
-     "gap": {
-      "js": {
-       "state": "THREW",
-       "transfers": []
-      },
-      "why": "JS txOutcome throws on an unreadable tip instead of returning unknown"
      }
     },
     {
@@ -2967,20 +2882,6 @@
      "expect": {
       "state": "confirmed",
       "transfers": []
-     },
-     "gap": {
-      "js": {
-       "state": "confirmed",
-       "transfers": [
-        {
-         "token": "0xabababababababababababababababababababab",
-         "from": "0x1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c",
-         "to": "0x2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b",
-         "amount": "62"
-        }
-       ]
-      },
-      "why": "JS decodeUint accepts any 1-64 hex digits for log data; Transfer data is exactly one 32-byte word"
      }
     },
     {
@@ -3211,20 +3112,6 @@
      "expect": {
       "state": "confirmed",
       "transfers": []
-     },
-     "gap": {
-      "js": {
-       "state": "confirmed",
-       "transfers": [
-        {
-         "token": null,
-         "from": "0x1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c",
-         "to": "0x2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b",
-         "amount": "1000"
-        }
-       ]
-      },
-      "why": "JS pushes a transfer whose token is undefined instead of dropping the log"
      }
     },
     {
@@ -3257,20 +3144,6 @@
      "expect": {
       "state": "confirmed",
       "transfers": []
-     },
-     "gap": {
-      "js": {
-       "state": "confirmed",
-       "transfers": [
-        {
-         "token": "0x1234",
-         "from": "0x1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c",
-         "to": "0x2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b",
-         "amount": "1000"
-        }
-       ]
-      },
-      "why": "JS does not check the emitting address's shape"
      }
     },
     {
@@ -3304,20 +3177,6 @@
      "expect": {
       "state": "confirmed",
       "transfers": []
-     },
-     "gap": {
-      "js": {
-       "state": "confirmed",
-       "transfers": [
-        {
-         "token": "0xabababababababababababababababababababab",
-         "from": "0x1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c",
-         "to": "0x2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b",
-         "amount": "1000"
-        }
-       ]
-      },
-      "why": "JS ignores the removed flag"
      }
     },
     {
@@ -3628,20 +3487,6 @@
      "expect": {
       "state": "unknown",
       "transfers": []
-     },
-     "gap": {
-      "js": {
-       "state": "confirmed",
-       "transfers": [
-        {
-         "token": "0xabababababababababababababababababababab",
-         "from": "0x1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c",
-         "to": "0x2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b",
-         "amount": "1000"
-        }
-       ]
-      },
-      "why": "JS ignores an echoed hash that is not a string"
      }
     },
     {
@@ -3674,20 +3519,6 @@
      "expect": {
       "state": "unknown",
       "transfers": []
-     },
-     "gap": {
-      "js": {
-       "state": "confirmed",
-       "transfers": [
-        {
-         "token": "0xabababababababababababababababababababab",
-         "from": "0x1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c",
-         "to": "0x2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b",
-         "amount": "1000"
-        }
-       ]
-      },
-      "why": "JS ignores an echoed hash that is not a string"
      }
     },
     {
@@ -3722,20 +3553,6 @@
      "expect": {
       "state": "unknown",
       "transfers": []
-     },
-     "gap": {
-      "js": {
-       "state": "confirmed",
-       "transfers": [
-        {
-         "token": "0xabababababababababababababababababababab",
-         "from": "0x1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c",
-         "to": "0x2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b",
-         "amount": "1000"
-        }
-       ]
-      },
-      "why": "JS ignores an echoed hash that is not a string"
      }
     },
     {
