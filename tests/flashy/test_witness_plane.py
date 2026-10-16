@@ -198,7 +198,7 @@ class WitnessReceiptTest(unittest.TestCase):
             lambda x: x.update(statement="This receipt approves spend."),
             lambda x: x.update(plane_log_key="00" * 32),
             lambda x: x.update(extra=1),
-            lambda x: x.update(signature=x["signature"][:-2] + "00"),
+            lambda x: x.update(signature=x["signature"][:-2] + ("01" if x["signature"].endswith("00") else "00")),   # never the unchanged value (1 run in 256)
             lambda x: x.pop("signature"),
             lambda x: x.update(issuer=Signer.generate().issuer_id),
         ]
