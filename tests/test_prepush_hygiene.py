@@ -150,6 +150,10 @@ class Commits(unittest.TestCase):
         self.commit("a.txt", "fine\n", author=("Someone Else", "someone@example.com"))
         self.assertIn("history: commit author", [f["rule"] for f in pc.scan_history(self.dir, f"{self.base}..HEAD")])
 
+    def test_the_right_email_under_another_name_is_found(self):
+        self.commit("a.txt", "fine\n", author=("Someone Else", "30eventures@gmail.com"))
+        self.assertIn("history: commit author", [f["rule"] for f in pc.scan_history(self.dir, f"{self.base}..HEAD")])
+
     def test_the_noreply_form_of_the_public_identity_is_accepted(self):
         self.commit("a.txt", "fine\n", author=("30E Ventures", "233154122+30EVentures@users.noreply.github.com"))
         self.assertEqual(pc.scan_history(self.dir, f"{self.base}..HEAD"), [])

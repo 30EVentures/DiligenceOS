@@ -108,6 +108,12 @@ class WitnessAgreesWithTheFixedPlane(unittest.TestCase):
         self.assertFalse(r["ok"])
         self.assertEqual([p["code"] for p in r["problems"]], ["DUPLICATE_AUTHORIZATION"])
 
+    def test_a_later_small_issuance_does_not_hide_the_peak(self):
+        # 160 reserved at 23:59:30 (cap 100); both are given back; a small issuance follows the same day. The peak is what happened.
+        r = caps(issue("r1", "a1", 100, N) + issue("r2", "a2", 60, LATE) + release("a1", LATE) + release("a2", LATE) + issue("r3", "a3", 10, LATE))
+        self.assertFalse(r["ok"])
+        self.assertEqual([v["total_base_units"] for v in r["violations"]], ["160"])
+
     def test_without_releases_nothing_changes(self):
         self.assertTrue(caps(issue("r1", "a1", 60, N) + issue("r2", "a2", 40, LATE))["ok"])
         self.assertEqual([v["total_base_units"] for v in caps(issue("r1", "a1", 60, N) + issue("r2", "a2", 41, LATE))["violations"]], ["101"])
