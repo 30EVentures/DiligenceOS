@@ -335,6 +335,7 @@ def _app(environ, start_response):
                 status="400 Bad Request",
             )
 
+        api._presence_note("issuing")
         result = run_diligence(
             name=name,
             registration_id=registration_id,
@@ -454,6 +455,8 @@ def serve(host: str | None = None, port: int | None = None) -> None:
     warning = tls_warning(host)
     if warning:
         print(warning, file=sys.stderr)
+    if api._presence is not None:
+        api._presence.default().start()   # no-op unless the three FLASHYOS_* variables are set
     with make_server(host, port, app) as server:
         print(f"DiligenceOS running at http://{host}:{port}", file=sys.stderr)
         server.serve_forever()

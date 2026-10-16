@@ -11,7 +11,7 @@ from diligenceos.signing import Signer, verify_signature
 
 SCHEMA = "diligenceos.delegation/1"
 DOMAIN = "diligenceos.delegation/1"
-SCOPES = frozenset({"spend", "revoke"})
+SCOPES = frozenset({"spend", "revoke", "verdict"})
 MAX_CHAIN = 4
 CLOCK_SKEW_SECONDS = 300  # how far apart two parties' clocks may be before a timestamp is not believed
 

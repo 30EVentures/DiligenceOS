@@ -5,3 +5,11 @@ venv/
 *.egg-info/
 .pytest_cache/
 .DS_Store
+
+# credentials and keys never belong in the repo
+.env
+.env.*
+!.env.example
+*.key
+*.pem
+.flashy/
