@@ -186,25 +186,59 @@ class RpcError(Exception):
     pass
 
 
-class RpcClient:
-    """Minimal JSON-RPC over HTTP. Loopback only: this demo build never talks to a real network."""
+READ_METHODS = frozenset({"eth_chainId", "eth_blockNumber", "eth_getTransactionReceipt"})
 
-    def __init__(self, url: str, timeout: float = 5.0) -> None:
-        u = urlparse(url)
-        if u.scheme != "http" or u.hostname not in LOOPBACK:
-            raise ValueError("RPC endpoint must be http on loopback (demo build: localhost only)")
-        self.url, self.timeout, self._id = url, timeout, 0
+
+class _NoRedirect(urllib.request.HTTPRedirectHandler):
+    def redirect_request(self, *args, **kwargs):
+        return None
+
+
+class RpcClient:
+    """Minimal JSON-RPC over HTTP.
+
+    By default loopback only: this build never talks to a real network unless asked to. `allow_remote=True` (exactly True) also
+    accepts an https URL, and then it is READ-ONLY by construction: only eth_chainId, eth_blockNumber and eth_getTransactionReceipt
+    can be sent (nothing that signs or sends), redirects are never followed, the answer is cut off at 1 MB, and the URL (which
+    often carries a provider key) never appears in an error or a representation. Which chain it is really talking to is decided
+    by `tx_outcome`, from the chain id the endpoint reports against a code-level testnet allowlist, so a mainnet endpoint is
+    refused whatever it is called."""
+
+    def __init__(self, url: str, timeout: float = 5.0, *, allow_remote=False) -> None:
+        if allow_remote is not True and allow_remote is not False:
+            raise ValueError("allow_remote must be exactly True or False")
+        self._remote = allow_remote
+        try:
+            u = urlparse(url) if isinstance(url, str) else None
+            hostname = u.hostname if u else None
+        except ValueError:
+            u = hostname = None
+        if u is None or not hostname:
+            raise ValueError("RPC endpoint must be a URL with a host")
+        if allow_remote:
+            if u.scheme != "https" or u.username or u.password or u.fragment:
+                raise ValueError("a remote RPC endpoint must be an https URL without credentials in the host part")
+        elif u.scheme != "http" or hostname not in LOOPBACK:
+            raise ValueError("RPC endpoint must be http on loopback (pass allow_remote=True for an https testnet endpoint)")
+        self._url, self.timeout, self._id = url, timeout, 0
+        self.url = url if not allow_remote else f"{u.scheme}://{u.netloc}"        # the path/query may hold a key: never exposed
+        self._opener = urllib.request.build_opener(_NoRedirect)
+
+    def __repr__(self) -> str:
+        return f"RpcClient({self.url!r}, remote={self._remote})"
 
     def __call__(self, method: str, params: list):
+        if self._remote and not (isinstance(method, str) and method in READ_METHODS):
+            raise RpcError("this endpoint is read-only: that method is not allowed")
         self._id += 1
         req = urllib.request.Request(
-            self.url, data=json.dumps({"jsonrpc": "2.0", "id": self._id, "method": method, "params": params}).encode(),
+            self._url, data=json.dumps({"jsonrpc": "2.0", "id": self._id, "method": method, "params": params}).encode(),
             headers={"content-type": "application/json"}, method="POST")
         try:
-            with urllib.request.urlopen(req, timeout=self.timeout) as resp:
+            with self._opener.open(req, timeout=self.timeout) as resp:
                 msg = json.loads(resp.read(1_000_000))
-        except (urllib.error.URLError, OSError, ValueError) as exc:
-            raise RpcError(str(exc)) from exc
+        except (urllib.error.URLError, OSError, ValueError, TimeoutError) as exc:
+            raise RpcError(f"rpc request failed ({type(exc).__name__})") from None
         if not isinstance(msg, dict) or "error" in msg or "result" not in msg:
             raise RpcError("rpc returned an error or no result")
         return msg["result"]

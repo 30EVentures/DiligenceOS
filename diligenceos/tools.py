@@ -5,6 +5,10 @@
     python -m diligenceos sign-request --key F --path /v1/spend [--chain F] BODYFILE|-
     python -m diligenceos witness --url U --issuer ID --key F --state F [--submit]
     python -m diligenceos refresh-sanctions [--url U] [--encoding E] [--min-entries N] [--dest DIR]
+    python -m diligenceos verify-receipt FILE --pin ISSUER_ID [--now ISO]     (offline; what a stranger runs)
+    python -m diligenceos verify-evidence FILE --pin ISSUER_ID                (offline; a payment evidence record)
+    python -m diligenceos recheck-evidence FILE --pin ID --request F --authorization F --plane-log F --pins F --chain F   (offline)
+    python -m diligenceos publish-kit --key F --out DIR --profile-url U --api-url U   (writes files to host; publishes nothing)
 
 Everything prints JSON on stdout; errors go to stderr with exit status 2
 (`witness` exits 3 when it finds the log inconsistent with what it saw before).
@@ -24,7 +28,7 @@ from diligenceos.policy import Policy
 from diligenceos.signing import Signer, SignerError
 from diligenceos.types import Money, Verdict
 
-COMMANDS = ("keygen", "delegate", "sign-request", "witness", "refresh-sanctions")
+COMMANDS = ("keygen", "delegate", "sign-request", "witness", "refresh-sanctions", "verify-receipt", "verify-evidence", "recheck-evidence", "publish-kit")
 
 
 def _operator_key_path() -> Path:
@@ -135,6 +139,125 @@ def _witness(args) -> int:
     return code
 
 
+_PIN = __import__("re").compile(r"^ed25519:[0-9a-f]{64}\Z")
+
+
+def _pin_and_file(args):
+    if not _PIN.match(args.pin or ""):
+        raise ValueError("--pin must be the issuer id you pinned: ed25519: followed by 64 lowercase hex characters")
+    return json.loads(Path(args.file).expanduser().read_text(encoding="utf-8"))
+
+
+def _verify_receipt(args) -> int:
+    """One file, one pinned key, one answer. Offline: no server, no network. Never echoes text from the file."""
+    from diligenceos.receipt import verify_receipt
+
+    receipt = _pin_and_file(args)
+    now = args.now or datetime.now(timezone.utc).isoformat()
+    try:
+        if datetime.fromisoformat(now).tzinfo is None:
+            raise ValueError
+    except ValueError:
+        raise ValueError("--now must be an ISO-8601 time with a timezone") from None
+    check = verify_receipt(receipt, now=now, trusted_issuers=[args.pin])
+    why = []
+    if not check.valid:
+        why.append("it has been changed, or it is not a DiligenceOS receipt")
+    if check.valid and not check.signed:
+        why.append("it is not signed")
+    if check.valid and check.signed and check.trusted is not True:
+        why.append("it was not signed by the key you pinned")
+    if check.valid and isinstance(receipt, dict) and receipt.get("expires") is None:
+        why.append("it has no expiry (a receipt that never expires proves nothing about now)")
+    if check.valid and check.expired:
+        why.append("it has expired")
+    if why:
+        print("NOT VERIFIED: " + "; ".join(why) + ".")
+        return 1
+    print("VERIFIED: intact, signed by the key you pinned, not expired.")
+    print(f"  verdict {receipt['verdict']}, trust score {receipt['trust_score']}, expires {receipt['expires']}, id {receipt['id']}")
+    if isinstance(receipt.get("transaction"), dict):
+        print(f"  transaction {receipt['transaction'].get('amount_minor')} {receipt['transaction'].get('currency')} (minor units)")
+    print("  Not checked offline: whether it has since been revoked (see the issuer's /v1/revocations and its signed log).")
+    return 0
+
+
+def _verify_evidence(args) -> int:
+    from diligenceos.flashy.payment_evidence import verify_payment_evidence
+
+    doc = _pin_and_file(args)
+    if not verify_payment_evidence(doc, args.pin):
+        print("NOT VERIFIED: it has been changed, is not a payment evidence record, or was not signed by the key you pinned.")
+        return 1
+    print("VERIFIED: a payment evidence record, intact and signed by the key you pinned.")
+    print(f"  {doc['amount']} of {doc['asset']} on {doc['chain']} ({doc['finality']}), from {doc['payer_address']} to {doc['payee_address']}")
+    print(f"  transaction {doc['tx_hash']} with {doc['confirmations']} confirmation(s); authorized by the {doc['plane']} plane ({doc['authorized_how']}), "
+          f"through {doc['grant_depth'] + 1} grant(s) from root {doc['grant_root_key']}")
+    print("  This record does not approve or authorize any spend. It says only that a payment authorized elsewhere was also made.")
+    print("  To check it against the underlying documents, re-run the recheck with the request, authorization, plane log and chain.")
+    return 0
+
+
+def _with_default_key(args):
+    if args.key is None:
+        args.key = str(_operator_key_path())
+    return args
+
+
+def _recheck_evidence(args) -> int:
+    """Re-derive a payment evidence record from the documents it was made from. Offline: the chain is read from a file."""
+    from diligenceos.flashy.payment_evidence import recheck_payment_evidence, verify_payment_evidence
+
+    def load(path):
+        return json.loads(Path(path).expanduser().read_text(encoding="utf-8"))
+
+    doc = _pin_and_file(args)
+    request, authorization, plane_log = load(args.request), load(args.authorization), load(args.plane_log)
+    pins, chain = load(args.pins), load(args.chain)
+    if not isinstance(chain, dict):
+        raise ValueError("--chain must be a JSON object {chainId, blockNumber, receipt}")
+    optional = {}
+    if args.invoice:
+        optional["invoice"] = load(args.invoice)
+    if args.diligence_receipt:
+        optional["diligence_receipt"] = load(args.diligence_receipt)
+        optional["diligence_trusted_issuers"] = list(args.diligence_trusted or [])
+    if not verify_payment_evidence(doc, args.pin):
+        print("NOT VERIFIED: the record has been changed, is not a payment evidence record, or was not signed by the key you pinned.")
+        return 1
+
+    def rpc(method, params):
+        return {"eth_chainId": chain.get("chainId"), "eth_blockNumber": chain.get("blockNumber"), "eth_getTransactionReceipt": chain.get("receipt")}[method]
+
+    minimum = doc.get("min_confirmations") if type(doc.get("min_confirmations")) is int else 1
+    problems = recheck_payment_evidence(doc, request, authorization, plane_log, pins=pins, rpc=rpc, min_confirmations=minimum,
+                                        expected_payer=args.expected_payer, **optional)
+    if not problems:
+        print("CONSISTENT: the record is signed by the key you pinned and is exactly what these documents show.")
+        return 0
+    if problems[0].startswith("refused:"):
+        print(f"REFUSED: {problems[0][8:]}: these documents do not support such a record.")
+    else:
+        print("DIFFERS: the record disagrees with the documents in: " + ", ".join(problems) + ".")
+    return 1
+
+
+def _publish_kit(args) -> int:
+    """Write the files a person hosts so strangers can learn the key to pin. Needs an EXISTING key (never makes one)."""
+    from diligenceos import publish_kit
+
+    key_path = Path(args.key).expanduser()
+    if not key_path.is_file():
+        raise ValueError(f"no key at {key_path}: the kit is made from an existing issuer key and never creates one")
+    charter = Path(args.charter).expanduser() if args.charter else Path(__file__).resolve().parent.parent / "docs" / "flashy" / "mesh" / "flashyos-charter.draft.json"
+    if not args.profile_url or not args.api_url:
+        raise ValueError("--profile-url and --api-url are required")
+    result = publish_kit.build_kit(Path(args.out).expanduser(), Signer.load_or_create(key_path), charter_text=charter.read_text(encoding="utf-8"),
+                                   profile_url=args.profile_url, api_url=args.api_url)
+    print(json.dumps(result, indent=2, sort_keys=True))
+    return 0
+
+
 def _refresh_sanctions(args) -> int:
     """The one place DiligenceOS goes to the network for data, and only when a person runs this."""
     from diligenceos import sdn_ingest, webapp
@@ -184,6 +307,35 @@ def main(argv: list[str]) -> int:
     p.add_argument("--state", required=True, help="where this witness remembers heads")
     p.add_argument("--submit", action="store_true", help="also POST the cosignature to the server")
     p.set_defaults(run=_witness)
+
+    for name, fn, what in (("verify-receipt", _verify_receipt, "check a verdict receipt offline against a key you pinned"),
+                           ("verify-evidence", _verify_evidence, "check a payment evidence record offline against a key you pinned")):
+        p = sub.add_parser(name, help=what)
+        p.add_argument("file", help="the JSON file to check")
+        p.add_argument("--pin", help="the issuer id you pinned, ed25519:<64 hex> (get it from the operator, not from the file)")
+        if name == "verify-receipt":
+            p.add_argument("--now", help="judge expiry at this ISO-8601 time with a timezone (default: now)")
+        p.set_defaults(run=fn, **({} if name == "verify-receipt" else {"now": None}))
+
+    p = sub.add_parser("recheck-evidence", help="re-derive a payment evidence record from the documents it was made from (offline)")
+    p.add_argument("file", help="the payment evidence record")
+    p.add_argument("--pin", help="the issuer id you pinned, ed25519:<64 hex>")
+    for name in ("request", "authorization", "plane-log", "pins", "chain"):
+        p.add_argument(f"--{name}", required=True, help={"pins": "JSON {plane_pub, log_pub, root_pubs, approver_pubs?, seller_pub?}: keys YOU pinned",
+                                                          "chain": "JSON {chainId, blockNumber, receipt}: what the chain endpoint returned"}.get(name, f"the {name} JSON"))
+    p.add_argument("--expected-payer", help="the payer address from your own registry")
+    p.add_argument("--invoice", help="the signed invoice, if the record names one")
+    p.add_argument("--diligence-receipt", help="the DiligenceOS receipt, if the record names one")
+    p.add_argument("--diligence-trusted", action="append", help="an issuer id you trust for that receipt (repeatable)")
+    p.set_defaults(run=_recheck_evidence)
+
+    p = sub.add_parser("publish-kit", help="write the files to host so strangers can learn the key to pin (publishes nothing)")
+    p.add_argument("--key", default=None, help="the issuer key file (default: the operator key)")
+    p.add_argument("--out", required=True, help="a new or empty directory")
+    p.add_argument("--profile-url", help="https URL of the public profile page")
+    p.add_argument("--api-url", help="https URL where the API will be reachable")
+    p.add_argument("--charter", help="charter JSON (default: the draft in docs/flashy/mesh)")
+    p.set_defaults(run=lambda a: _publish_kit(_with_default_key(a)))
 
     p = sub.add_parser("refresh-sanctions", help="download the official sanctions list (human-run; the only command that fetches data)")
     from diligenceos.sdn_ingest import DEFAULT_MIN_ENTRIES, DEFAULT_SDN_URL

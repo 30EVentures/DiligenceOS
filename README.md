@@ -48,6 +48,19 @@ agents reading receipts), and escape them before rendering. The same
 statement is machine-readable at `untrusted_fields` in `/v1/capabilities` and
 in the signed `/v1/manifest`.
 
+## Checking things as a stranger
+
+Everything below is offline: no server, no network, one file and the key you pinned.
+
+```
+python -m diligenceos verify-receipt receipt.json --pin <issuer id>        # VERIFIED / NOT VERIFIED, and why
+python -m diligenceos verify-evidence evidence.json --pin <issuer id>      # a payment evidence record (docs/flashy/PAYMENT-EVIDENCE.md)
+python -m diligenceos recheck-evidence evidence.json --pin <issuer id> --request ... --pins ...   # re-derive it from the documents
+python -m diligenceos publish-kit --out DIR --profile-url URL --api-url URL   # writes files for you to host; publishes nothing
+```
+
+Get the issuer id from the operator, not from the file or the server being checked. `deploy/DEPLOY.md` lists what a host must do.
+
 ## The sanctions list
 
 Out of the box a verdict screens against a tiny sample list, and every `sanctions` pass says so
