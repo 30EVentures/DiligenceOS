@@ -48,6 +48,26 @@ agents reading receipts), and escape them before rendering. The same
 statement is machine-readable at `untrusted_fields` in `/v1/capabilities` and
 in the signed `/v1/manifest`.
 
+## The sanctions list
+
+Out of the box a verdict screens against a tiny sample list, and every `sanctions` pass says so
+(`screened against N entries: ... no official sanctions list is loaded`). To screen against
+OFAC's published SDN list, a person runs, once and again whenever they want it refreshed:
+
+```
+.venv/bin/python -m diligenceos refresh-sanctions
+```
+
+That is the only command that fetches data; the server and the tests never touch the network.
+It refuses (exit 2, nothing changed) unless the file is https, bounded, text, and has at least
+1000 entries, and it saves `sdn.csv` plus `sdn.meta.json` (source, time, bytes, sha256, entry
+count) beside the store. The server screens against that file only while it is exactly what
+was recorded; if it has been edited, truncated or removed, verdicts stop with
+`503 sanctions_unavailable` instead of quietly using less. Every pass then names the list and
+its date. Matching is exact on a normalised name or alias, plus the official 'SURNAME, Given'
+form read as 'Given SURNAME'; there is no fuzzy matching, so a transliteration or a variant
+spelling is **not** caught. If the file is not UTF-8 pass `--encoding cp1252` (it is stored as UTF-8).
+
 ## Witnessing the log
 
 The server's own log check (`/v1/log/verify`) can't catch the operator
@@ -96,8 +116,9 @@ Opens a local web front end at `http://127.0.0.1:8000` — enter a subject
 name, a registration id, and optional contract text, get a verdict back.
 Visit `/data` to add sanctions entries, registry records, or delivery
 records of your own — additions are checkable immediately and persist
-across restarts in `~/.diligenceos/store.json`. Still not real registries
-or sanctions data — everything starts from a bundled sample dataset. See
+across restarts in `~/.diligenceos/store.json`. Registry data is still whatever you
+enter; sanctions screening starts from a bundled 3-name SAMPLE and says so in every pass
+(see below). See
 `CLAUDE.md` for how to run tests and the batch (JSON in, JSON out) mode.
 
 Writing to `/data` requires `DILIGENCEOS_ADMIN_TOKEN` to be set before the
