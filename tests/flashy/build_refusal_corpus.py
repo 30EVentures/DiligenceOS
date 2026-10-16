@@ -74,7 +74,7 @@ def invoices():
     for label, amount in (("number", 1000), ("null", None), ("list", ["1"]), ("bool", True)):
         cases.append(inv_case(f"inv-amount-type-{label}", f"Amount is a {label}, not a string.", signed({**BODY, "amount": amount}), False))
     cases.append(inv_case("inv-amount-zero", "A zero amount: a valid integer string, but an invoice for nothing.", signed({**BODY, "amount": "0"}), False,
-                          gap=gap("js", {"valid": True}, "JS verifyInvoice allows '0' (the regex does); Python refuses BAD_AMOUNT")))
+                          gap=None))
 
     # chain allowlist
     for label, chain in (("unlisted", "evm:1"), ("mainnet", "evm:8453"), ("trailing-space", "evm:84532 "), ("upper", "EVM:84532"), ("empty", ""),
@@ -105,14 +105,14 @@ def invoices():
     for label, exp in (("year-only", "2030"), ("date-only", "2030-01-01"), ("no-zone", "2030-01-01T00:00:00"), ("offset", "2030-01-01T00:00:00.000+00:00"),
                        ("english", "Jan 1 2030")):
         cases.append(inv_case(f"inv-expiry-loose-{label}", f"{exp!r} is not the spine's timestamp form (UTC, milliseconds, Z).", signed({**BODY, "expiresAt": exp}), False,
-                              gap=gap("js", {"valid": True}, "JS verifyInvoice uses Date.parse, which accepts many forms; Python accepts only YYYY-MM-DDTHH:MM:SS.mmmZ")))
+                              gap=None))
 
     # payee / asset shape
     for label, field, value in (("payee-uppercase", "payee", "0x" + PAYEE[2:].upper()), ("payee-short", "payee", "0x1234"), ("payee-null", "payee", None),
                                 ("asset-uppercase", "asset", "0x" + ASSET[2:].upper()), ("asset-short", "asset", "0xabc"), ("asset-number", "asset", 5),
                                 ("payee-trailing-newline", "payee", PAYEE + "\n")):
         cases.append(inv_case(f"inv-{label}", f"{field} is not 0x + 40 lowercase hex.", signed({**BODY, field: value}), False,
-                              gap=gap("js", {"valid": True}, "JS verifyInvoice does not check the shape of payee or asset (it matches transfers by string equality later)")))
+                              gap=None))
     return cases
 
 
@@ -172,7 +172,7 @@ def txs():
         r = omit(receipt(), "blockNumber") if blk == "<missing>" else receipt(blockNumber=blk)
         cs.append(tx_case(f"tx-block-number-{label}", "The receipt's block number is unreadable.", "unknown", rcpt=r))
     cs.append(tx_case("tx-tip-unreadable", "The chain tip does not decode.", "unknown", tip="latest",
-                      gap=gap("js", {"state": "THREW", "transfers": []}, "JS txOutcome throws on an unreadable tip instead of returning unknown")))
+                      gap=None))
     cs.append(tx_case("tx-rpc-error-on-receipt", "The endpoint errors on getTransactionReceipt.", "unknown", throws=["eth_getTransactionReceipt"]))
 
     # Transfer log parsing
@@ -194,19 +194,16 @@ def txs():
                         ("number", 1000), ("null", None)):
         g = None
         if label == "63-hex-digits":
-            g = gap("js", {"state": "confirmed", "transfers": [dict(TRANSFER, amount=str(int(data, 16)))]},
-                    "JS decodeUint accepts any 1-64 hex digits for log data; Transfer data is exactly one 32-byte word")
+            g = None
         cs.append(tx_case(f"tx-data-{label}", "Transfer data that is not one canonical 32-byte unsigned integer.", "confirmed", rcpt=receipt(logs=[log(data=data)]), gap=g))
     cs.append(tx_case("tx-data-max-uint256", "The largest uint256 is still a number.", "confirmed",
                       [dict(TRANSFER, amount=str(2**256 - 1))], rcpt=receipt(logs=[log(data="0x" + "ff" * 32)])))
     cs.append(tx_case("tx-log-address-missing", "A log with no emitting address.", "confirmed", rcpt=receipt(logs=[omit(log(), "address")]),
-                      gap=gap("js", {"state": "confirmed", "transfers": [{"token": None, "from": PAYER, "to": PAYEE, "amount": "1000"}]},
-                              "JS pushes a transfer whose token is undefined instead of dropping the log")))
+                      gap=None))
     cs.append(tx_case("tx-log-address-malformed", "The emitting address is not 0x + 40 hex.", "confirmed", rcpt=receipt(logs=[log(address="0x1234")]),
-                      gap=gap("js", {"state": "confirmed", "transfers": [{"token": "0x1234", "from": PAYER, "to": PAYEE, "amount": "1000"}]},
-                              "JS does not check the emitting address's shape")))
+                      gap=None))
     cs.append(tx_case("tx-log-removed", "A log flagged removed (reorged out) must not count.", "confirmed", rcpt=receipt(logs=[log(removed=True)]),
-                      gap=gap("js", {"state": "confirmed", "transfers": [TRANSFER]}, "JS ignores the removed flag")))
+                      gap=None))
     cs.append(tx_case("tx-logs-not-a-list", "logs is a string.", "confirmed", rcpt=receipt(logs="x")))
     cs.append(tx_case("tx-logs-missing", "No logs field.", "confirmed", rcpt=omit(receipt(), "logs")))
     cs.append(tx_case("tx-two-transfers-one-bad", "One good transfer and one with bad upper bytes: only the good one counts.", "confirmed", [TRANSFER],
@@ -222,7 +219,7 @@ def txs():
     cs.append(tx_case("tx-hash-echo-absent", "No echoed hash: nothing to compare, and the chain was still asked for this hash.", "confirmed", [TRANSFER], rcpt=omit(receipt(), "transactionHash")))
     for label, echo in (("number", 5), ("null", None), ("list", ["0x" + "cd" * 32]), ("empty", "")):
         cs.append(tx_case(f"tx-hash-echo-{label}", "An echoed hash that is not a hash string: fail closed.", "unknown", rcpt=receipt(transactionHash=echo),
-                          gap=None if isinstance(echo, str) else gap("js", {"state": "confirmed", "transfers": [TRANSFER]}, "JS ignores an echoed hash that is not a string")))
+                          gap=None if isinstance(echo, str) else None))
     return cs
 
 
