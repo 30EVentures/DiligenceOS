@@ -799,3 +799,33 @@ Not done, said plainly: no destination-address binding (a receipt names a subjec
 account), no consumption of the receipt (a caller's atomic spent-set), no revocation fetching
 or freshness of the revocation view. See `docs/design/proceed-gate-and-mcp.md` on the design
 branch for the `spend-auth` proposal that would close the first two.
+
+## 2026-11-17: `diligenceos-mcp`, a stdio MCP server (specs/mcp-server)
+
+- **A client of the running HTTP server, not a second store.** Two processes on one data
+  directory fork the log, so the MCP process calls `DILIGENCEOS_URL` (default
+  `http://127.0.0.1:8000`) and holds no store, key or log of its own. No redirects are followed;
+  only http(s) URLs are accepted.
+- **No dependency added.** MCP over stdio is newline-delimited JSON-RPC; implemented in
+  `diligenceos/mcp.py` with the standard library. Run: `python3 -m diligenceos mcp`.
+- **Pilot subset only.** Eleven read-only tools plus `diligence_verdict` (the one that appends to
+  the log, marked `[S]`). `/v1/spend`, `/v1/revoke`, `/v1/log/cosign`, `/data/*`, key generation
+  and delegation minting are not exposed: they need a signed request or are operator-only, and a
+  tool argument must never be a key. A server run with `DILIGENCEOS_VERDICT_AUTH=signed` makes
+  `diligence_verdict` return the 401; the tool does not hold a key to answer it.
+- **Closed inputs, checked before anything is sent.** Unknown fields, wrong types, bool-as-int
+  and out-of-range values are refused locally with `invalid_request`.
+- **Signed is not sanitized, so outputs fail closed.** A string is returned bare only if it is a
+  hash/key/signature (`sha256:`/`ed25519:` plus hex), a strict UTC timestamp, a closed enum under
+  its own key (verdict, decision, status, category, error code, kind), or a version label the
+  server itself defines (`schema`, `rules`). Everything else, including error messages, reasons
+  and any field added later, is wrapped as `{"untrusted": {...}}` and delimited in the text block
+  with a per-response random token. Tradeoff accepted: `diligence_capabilities` and the manifest
+  come back mostly wrapped, because the server cannot prove those strings are inert.
+- **Evidence.** `tests/mcp_injection_corpus.json` (62 cases, 92% refusals) and `tests/test_mcp.py`
+  (includes a real stdio subprocess against a real HTTP server). Mutation checks: disabling the
+  wrapper fails 12 tests, disabling the closed schema fails 10.
+
+Not done, said plainly: no `diligence_spend`, `_revoke` or `_authorize_release` (the last waits
+on the spend-auth proposal); the server has not been run against a real MCP client; the
+delimiters reduce, and do not remove, the chance a model follows hostile text.

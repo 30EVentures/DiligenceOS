@@ -105,6 +105,14 @@ most 500 entries per call; see `after_seq` / `limit` in `/v1/capabilities`)
 and checks the whole of it against the signed head, so a long log costs more
 requests but no weaker a check.
 
+## Agents: the MCP server
+
+`python3 -m diligenceos mcp` speaks MCP over stdio and calls the running HTTP server named by
+`DILIGENCEOS_URL` (default `http://127.0.0.1:8000`). It exposes read-only tools plus
+`diligence_verdict` (which appends a signed receipt to the log, permanently). It never takes a
+key as an argument. Every string that came from a caller or a third party is returned wrapped
+and delimited as data. See `specs/mcp-server/spec.md`.
+
 ## Deployment: TLS is not provided
 
 The built-in server is plain HTTP (stdlib `wsgiref`) and has no TLS. Bound to

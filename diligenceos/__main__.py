@@ -1,4 +1,4 @@
-"""python3 -m diligenceos [request.json | keygen | delegate | sign-request ...]
+"""python3 -m diligenceos [request.json | mcp | keygen | delegate | sign-request ...]
 
 No argument: starts the local web front end (blocks; see diligenceos.webapp).
 One argument: batch mode, unchanged since Slice 9 — runs the pipeline once
@@ -47,6 +47,11 @@ def main(argv: list[str]) -> int:
 
         webapp.serve()
         return 0
+
+    if argv[1] == "mcp" and len(argv) == 2:
+        from diligenceos import mcp
+
+        return mcp.main()
 
     from diligenceos import tools
 
