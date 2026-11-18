@@ -14,6 +14,7 @@ from pathlib import Path
 
 from diligenceos.identity import RegistryLookup, RegistryRecord
 from diligenceos.sanctions import SanctionsEntry, SanctionsList
+from diligenceos.registry_ingest import load_verified_record, snapshot_identities
 from diligenceos.sdn_ingest import SdnUnavailable, load_verified_sdn
 from diligenceos.receipt_log import LogCorruptError, ReceiptLog
 from diligenceos.signing import Signer
@@ -143,10 +144,23 @@ class Store:
         data = self.to_dict()
         if meta is not None:
             data["sanctions_source"] = {"sha256": meta["sha256"], "entries": meta["entries"], "retrieved_at": meta["retrieved_at"], "source": meta["source"]}
+        if self.persist_path is not None:
+            snapshots = snapshot_identities(self.persist_path.parent)
+            if snapshots:  # only when there are any, so a store without snapshots keeps its digest
+                data["registry_snapshots"] = snapshots
         return data
 
     def registry_lookup(self) -> RegistryLookup:
-        return self._registry.get
+        """An operator-entered record wins; otherwise a verified snapshot fetched by `refresh-registry`.
+        Raises RegistryUnavailable (from the lookup) if a snapshot exists and is no longer what was recorded."""
+        mine = self._registry
+        if self.persist_path is None:
+            return mine.get
+        folder = self.persist_path.parent
+
+        def lookup(registration_id: str):
+            return mine.get(registration_id) or load_verified_record(folder, registration_id)
+        return lookup
 
     @property
     def ledger(self) -> Ledger:

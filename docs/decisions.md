@@ -829,3 +829,26 @@ branch for the `spend-auth` proposal that would close the first two.
 Not done, said plainly: no `diligence_spend`, `_revoke` or `_authorize_release` (the last waits
 on the spend-auth proposal); the server has not been run against a real MCP client; the
 delimiters reduce, and do not remove, the chance a model follows hostile text.
+
+## 2026-11-18: a real company register behind `identity` (specs/registry-adapter)
+
+- **Companies House, free tier, human-run.** Same shape as the sanctions refresh: one command
+  fetches one profile, saves raw bytes plus `{source, retrieved_at, bytes, sha256}`, and the server
+  uses it only while it is exactly what was recorded. Licensed data stays a Phase 1 decision.
+- **The key is an environment variable, never an argument, never saved.** The command-line
+  parser has no `--api-key`; a test asserts it. Errors carry a code only.
+- **A damaged snapshot is `503 registry_unavailable`, not "no record".** "No record" is a HOLD a
+  person can read; a snapshot someone edited to say `active` must never become a pass.
+- **Stale is a FLAG.** A register entry can change the day after it is fetched; past 30 days the
+  finding says to refresh instead of passing.
+- **Operator-entered records still win**, so an owner can correct or override, and their findings
+  are unchanged (no provenance text).
+- **`data_digest` covers snapshot identities only when any exist**, so every existing store keeps
+  its digest.
+- Chosen without asking: UK register first (free, matches the `UK...` ids already in the sample);
+  the registration id must be the 8-character company number.
+
+Not done, said plainly: never run against the live service (tests use a fake fetch and a synthetic
+profile shaped like the response, not a recording); the raw snapshot is not served to
+counterparties, so a stranger cannot yet re-fetch the exact bytes behind the digest; one
+register in one country; no officer or ownership data; no fuzzy name matching.

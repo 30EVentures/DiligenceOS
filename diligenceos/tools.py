@@ -4,6 +4,7 @@
     python -m diligenceos delegate --subject ID --scopes spend [--key F] [--chain F] ...
     python -m diligenceos sign-request --key F --path /v1/spend [--chain F] BODYFILE|-
     python -m diligenceos witness --url U --issuer ID --key F --state F [--submit]
+    python -m diligenceos refresh-registry NUMBER [--dest DIR]   (key from COMPANIES_HOUSE_API_KEY)
     python -m diligenceos refresh-sanctions [--url U] [--encoding E] [--min-entries N] [--dest DIR]
     python -m diligenceos verify-receipt FILE --pin ISSUER_ID [--now ISO]     (offline; what a stranger runs)
     python -m diligenceos verify-evidence FILE --pin ISSUER_ID                (offline; a payment evidence record)
@@ -28,7 +29,7 @@ from diligenceos.policy import Policy
 from diligenceos.signing import Signer, SignerError
 from diligenceos.types import Money, Verdict
 
-COMMANDS = ("keygen", "delegate", "sign-request", "witness", "refresh-sanctions", "verify-receipt", "verify-evidence", "recheck-evidence", "publish-kit")
+COMMANDS = ("keygen", "delegate", "sign-request", "witness", "refresh-sanctions", "refresh-registry", "verify-receipt", "verify-evidence", "recheck-evidence", "publish-kit")
 
 
 def _operator_key_path() -> Path:
@@ -272,6 +273,22 @@ def _refresh_sanctions(args) -> int:
     return 0
 
 
+def _refresh_registry(args) -> int:
+    """Fetches one company profile. Human-run; the key comes from the environment, never an argument."""
+    import os as _os
+
+    from diligenceos import registry_ingest, webapp
+
+    dest = Path(args.dest).expanduser() if args.dest else webapp._data_path().parent
+    try:
+        meta = registry_ingest.refresh_company(dest, args.number, api_key=_os.environ.get(registry_ingest.KEY_VAR))
+    except registry_ingest.RegistryRefreshError as exc:
+        print(f"registry refresh refused: {exc.code} (nothing was changed)", file=sys.stderr)
+        return 2
+    print(json.dumps(meta, indent=2, sort_keys=True))
+    return 0
+
+
 def main(argv: list[str]) -> int:
     parser = argparse.ArgumentParser(prog="python -m diligenceos")
     sub = parser.add_subparsers(dest="command", required=True)
@@ -344,6 +361,11 @@ def main(argv: list[str]) -> int:
     p.add_argument("--min-entries", type=int, default=DEFAULT_MIN_ENTRIES, help="refuse a file with fewer entries (an error page, the wrong file)")
     p.add_argument("--dest", help="directory to save into (default: beside the store)")
     p.set_defaults(run=_refresh_sanctions)
+
+    p = sub.add_parser("refresh-registry", help="fetch one UK company profile (human-run; key from COMPANIES_HOUSE_API_KEY)")
+    p.add_argument("number", help="8-character company number, e.g. 09456213 or SC123456")
+    p.add_argument("--dest", help="directory to save into (default: beside the store)")
+    p.set_defaults(run=_refresh_registry)
 
     try:
         args = parser.parse_args(argv)

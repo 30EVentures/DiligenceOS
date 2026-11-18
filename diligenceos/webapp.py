@@ -19,6 +19,7 @@ from wsgiref.simple_server import make_server
 
 from diligenceos import api
 from diligenceos.pipeline import run_diligence
+from diligenceos.registry_ingest import RegistryUnavailable
 from diligenceos.sdn_ingest import SdnUnavailable
 from diligenceos.store import Store
 from diligenceos.types import CheckStatus, Verdict, VerdictResult
@@ -342,14 +343,18 @@ def _app(environ, start_response):
             return _html_response(start_response, "One verdict, before any transaction, hire, or contract.",
                                   _form_body(error=f"Refusing to screen against less than was recorded: {exc}"), status="503 Service Unavailable")
         api._presence_note("issuing")
-        result = run_diligence(
-            name=name,
-            registration_id=registration_id,
-            sanctions_list=sanctions_list,
-            registry_lookup=store.registry_lookup(),
-            ledger=store.ledger,
-            document_text=document_text,
-        )
+        try:
+            result = run_diligence(
+                name=name,
+                registration_id=registration_id,
+                sanctions_list=sanctions_list,
+                registry_lookup=store.registry_lookup(),
+                ledger=store.ledger,
+                document_text=document_text,
+            )
+        except RegistryUnavailable as exc:
+            return _html_response(start_response, "One verdict, before any transaction, hire, or contract.",
+                                  _form_body(error=f"Refusing to use a damaged registry snapshot: {exc}"), status="503 Service Unavailable")
         return _html_response(start_response, _DEMO_NOTE, _result_body(name, registration_id, result))
 
     if method == "POST" and path == "/data/sanctions":
