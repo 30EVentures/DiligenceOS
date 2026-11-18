@@ -829,3 +829,28 @@ branch for the `spend-auth` proposal that would close the first two.
 Not done, said plainly: no `diligence_spend`, `_revoke` or `_authorize_release` (the last waits
 on the spend-auth proposal); the server has not been run against a real MCP client; the
 delimiters reduce, and do not remove, the chance a model follows hostile text.
+
+## 2026-11-18: DRAFT, not accepted: `request/2` (branch `request-v2-draft`)
+
+Drafted from `docs/proposals/request-replay-and-audience.md`. **Not merged; the owner decides.**
+The proposal left three choices open; the draft picked the recommended ones so there is
+something to judge, and each is a one-line change to undo:
+
+- **Nonces: option 1** (persist). One `fsync`ed append per authenticated request to `nonces.jsonl`
+  beside the store, written *before* the request is accepted; pruned to the 600 s window on load.
+  If it cannot be written the request is refused (fail closed), not accepted unrecorded.
+- **Hard cut to `request/2`.** `request/1` envelopes (no `audience`) are refused. Breaks every
+  existing signed-request client; `sign-request` now requires `--audience`.
+- **Audience = the server's issuer id**, or `DILIGENCEOS_AUDIENCE` if set. Gap in the proposal,
+  found while drafting: it names two deployments *sharing an `issuer.key`* as the threat, and an
+  issuer-id audience cannot tell those apart (they have the same id). That is why the override
+  exists; without it the audience only separates servers with different keys.
+- **Beyond the proposal:** the signed message also covers a digest of `auth.chain`, closing
+  the demonstrated "captured request re-presented with a wider credential" hole (STATE.md P-3).
+
+Not touched on purpose: the lone-surrogate 500 on the authenticated routes. The known-failure
+conformance case for it still fails the same way (its bogus envelope gained an `audience`, so it
+still reaches the same code); fixing it needs the owner's yes.
+Not done: the reference verifier in `tests/test_manifest.py` was not rewritten (its sufficiency
+test still passes, because it checks the manifest's stated constants, not a from-scratch
+re-implementation of the request signature); no migration window.

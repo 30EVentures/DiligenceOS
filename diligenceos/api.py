@@ -188,9 +188,9 @@ def _capabilities():
         },
         "auth": {
             "envelope": {
-                "signer": "ed25519 id of the request key", "chain": "[delegation, ...] (empty = the operator)",
-                "issued_at": "iso8601, within 300s of the server", "nonce": "string; refused if seen again while the server runs (not remembered across a restart)",
-                "signature": "over {path, body without auth, issued_at, nonce}, domain diligenceos.request/1",
+                "signer": "ed25519 id of the request key", "audience": "issuer id of the server this is for (GET /v1/issuer; pin it out of band), or the deployment's DILIGENCEOS_AUDIENCE if the operator set one; refused if it is not this server's", "chain": "[delegation, ...] (empty = the operator)",
+                "issued_at": "iso8601, within 300s of the server", "nonce": "string; refused if seen again within 600 seconds, across restarts (kept beside the store)",
+                "signature": "over {path, body without auth, issued_at, nonce, audience, digest of chain}, domain diligenceos.request/2",
             },
             "delegation": "diligenceos.delegation/1: scopes, policy?, budget_id?, expires; each link may only narrow",
         },
@@ -592,6 +592,15 @@ def _decide(body: bytes, store: Store):
     })
 
 
+AUDIENCE_VAR = "DILIGENCEOS_AUDIENCE"
+
+
+def _audience(issuer_id: str) -> str:
+    """Who a signed request must be addressed to: this server's issuer id, or, when two deployments share a key
+    (staging cloned from production), the operator-set DILIGENCEOS_AUDIENCE that tells them apart."""
+    return os.environ.get(AUDIENCE_VAR) or issuer_id
+
+
 def _authenticate(path: str, data: dict, store: Store, scope: str):
     """(AuthResult, None) or (None, error response). Strips `auth` from `data`, which
     must therefore be a dict; the signature covers everything else in it."""
@@ -603,7 +612,7 @@ def _authenticate(path: str, data: dict, store: Store, scope: str):
     except SignerError as exc:
         return None, _signer_unavailable(exc)
     result = authenticate(
-        path, data, auth, root_issuers=root, now=_now(),
+        path, data, auth, audience=_audience(root[0]), root_issuers=root, now=_now(),
         revocations=store.revocations, remember_nonce=store.remember_nonce,
     )
     if not result.ok:

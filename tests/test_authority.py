@@ -112,11 +112,11 @@ class AuthTest(unittest.TestCase):
                                        expires=LATER, issued_at=NOW)]
 
     def auth(self, signer, chain, path="/v1/spend", body=None, **kw):
-        return sign_request(signer, chain, path, body if body is not None else self.body, now=NOW, **kw)
+        return sign_request(signer, chain, path, body if body is not None else self.body, now=NOW, **{"audience": self.op.issuer_id, **kw})
 
     def run_auth(self, auth, path="/v1/spend", body=None, now=NOW, seen=None):
         return authenticate(path, body if body is not None else self.body, auth,
-                            root_issuers=[self.op.issuer_id], now=now, remember_nonce=seen)
+                            audience=self.op.issuer_id, root_issuers=[self.op.issuer_id], now=now, remember_nonce=seen)
 
     def test_operator_and_delegate_authenticate(self):
         r = self.run_auth(self.auth(self.op, []))
@@ -171,7 +171,7 @@ class ApiAuthTest(unittest.TestCase):
         return status, json.loads(out)
 
     def signed(self, signer, chain, path, body):
-        return {**body, "auth": sign_request(signer, chain, path, body)}
+        return {**body, "auth": sign_request(signer, chain, path, body, audience=self.store.signer.issuer_id)}
 
     def cred(self, signer=None, scopes=("spend",), hours=6, **kw):
         exp = (datetime.now(timezone.utc) + timedelta(hours=hours)).replace(microsecond=0).isoformat()
@@ -438,7 +438,7 @@ class ToolsTest(unittest.TestCase):
         body_file = self.dir / "body.json"
         body_file.write_text(json.dumps({"budget_id": "q4", "receipt": json.loads(out_)}))
         code, out, _ = self.run_tool("sign-request", "--key", agent_key, "--chain", str(chain_file),
-                                     "--path", "/v1/spend", str(body_file))
+                                     "--path", "/v1/spend", "--audience", store.signer.issuer_id, str(body_file))
         self.assertEqual(code, 0)
         status, _, resp = api.handle("POST", "/v1/spend", out.encode(), store)
         self.assertEqual((status, json.loads(resp)["decision"]), (200, "ALLOW"))
@@ -446,7 +446,7 @@ class ToolsTest(unittest.TestCase):
     def test_bad_inputs_exit_2_without_a_traceback(self):
         cases = (
             ("delegate", "--key", str(self.dir / "missing.key"), "--subject", "x", "--scopes", "spend"),
-            ("sign-request", "--key", str(self.dir / "k"), "--path", "/v1/spend", str(self.dir / "nope.json")),
+            ("sign-request", "--key", str(self.dir / "k"), "--path", "/v1/spend", "--audience", "x", str(self.dir / "nope.json")),
         )
         for argv in cases:
             code, _, err = self.run_tool(*argv)
@@ -454,7 +454,7 @@ class ToolsTest(unittest.TestCase):
             self.assertTrue(err.startswith("error:"), err)
         Signer.load_or_create(self.dir / "k")
         (self.dir / "auth.json").write_text('{"auth": {}}')
-        self.assertEqual(self.run_tool("sign-request", "--key", str(self.dir / "k"), "--path", "/p",
+        self.assertEqual(self.run_tool("sign-request", "--key", str(self.dir / "k"), "--path", "/p", "--audience", "x",
                                        str(self.dir / "auth.json"))[0], 2)
         code, _, err = self.run_tool("delegate", "--key", str(self.dir / "k"), "--subject", "x",
                                      "--scopes", "spend", "--max-amount", "5")

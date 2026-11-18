@@ -26,7 +26,7 @@ def call(store, payload=None, *, raw=None, method="POST", path="/v1/verdict"):
 
 def signed(store, body, *, signer=None, chain=(), path="/v1/verdict", **kw):
     signer = signer or store.signer
-    return {**body, "auth": sign_request(signer, list(chain), path, body, **kw)}
+    return {**body, "auth": sign_request(signer, list(chain), path, body, **{"audience": store.signer.issuer_id, **kw})}
 
 
 def credential(store, scopes=("verdict",), **kw):

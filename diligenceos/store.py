@@ -295,15 +295,51 @@ class Store:
         self._spend.setdefault(budget_id, {})[receipt_id] = {**amount.to_dict(), "caller": caller}
         self._maybe_save()
 
+    def _nonce_file(self) -> Path | None:
+        return self.persist_path.with_name("nonces.jsonl") if self.persist_path else None
+
+    def _load_nonces(self, moment: datetime, window_seconds: int) -> None:
+        """Once per process: read the nonces a previous run accepted, keep those still inside the window, and
+        rewrite the file with only those. A line that cannot be read is skipped: a crash mid-append can only
+        damage the last line, and a nonce is written *before* its request is accepted, so that request never ran."""
+        self._nonces_loaded = True
+        path = self._nonce_file()
+        if path is None or not path.exists():
+            return
+        kept: dict[str, datetime] = {}
+        for line in path.read_text(encoding="utf-8").splitlines():
+            try:
+                row = json.loads(line)
+                at = datetime.fromisoformat(row["at"])
+                n = row["nonce"]
+                if isinstance(n, str) and at.tzinfo is not None and (moment - at).total_seconds() < window_seconds:
+                    kept[n] = at
+            except (ValueError, KeyError, TypeError):
+                continue
+        self._nonces.update(kept)
+        tmp = path.with_name(path.name + ".tmp")
+        tmp.write_text("".join(json.dumps({"nonce": n, "at": t.isoformat()}) + "\n" for n, t in kept.items()), encoding="utf-8")
+        os.replace(tmp, path)
+
     def remember_nonce(self, nonce: str, now: str, window_seconds: int = 600) -> bool:
-        """True if `nonce` was already seen inside the window; otherwise records it.
+        """True if `nonce` was already seen inside the window; otherwise records it, durably (beside the store when
+        there is one), before returning False. If it cannot be recorded this raises, and the request is refused.
         Entries older than the window are dropped (auth already rejects stale requests)."""
         moment = datetime.fromisoformat(now)
+        if not getattr(self, "_nonces_loaded", False):
+            self._load_nonces(moment, window_seconds)
         self._nonces = {
             n: t for n, t in self._nonces.items() if (moment - t).total_seconds() < window_seconds
         }
         if nonce in self._nonces:
             return True
+        path = self._nonce_file()
+        if path is not None:
+            path.parent.mkdir(parents=True, exist_ok=True)
+            with open(path, "a", encoding="utf-8") as fh:
+                fh.write(json.dumps({"nonce": nonce, "at": moment.isoformat()}) + "\n")
+                fh.flush()
+                os.fsync(fh.fileno())
         self._nonces[nonce] = moment
         return False
 

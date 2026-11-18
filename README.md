@@ -23,8 +23,14 @@ be narrowed as it is passed on:
 .venv/bin/python -m diligenceos delegate --subject <id> --scopes spend \
     --max-amount 30000000 --currency USD --min-trust 70 --budget q4 > chain.json
 .venv/bin/python -m diligenceos sign-request --key agent.key --chain chain.json \
-    --path /v1/spend body.json | curl -s -X POST localhost:8000/v1/spend --data-binary @-
+    --path /v1/spend --audience <the server's issuer id> body.json | curl -s -X POST localhost:8000/v1/spend --data-binary @-
 ```
+
+A signed request (`diligenceos.request/2`) names its audience (the server's issuer id, or the
+operator-set `DILIGENCEOS_AUDIENCE`; pin it, don't just copy `GET /v1/issuer`) and covers a digest
+of the credential chain, so it can't be replayed at another server or with a wider credential.
+Nonces are written beside the store (`nonces.jsonl`) before a request is accepted, so a replay
+after a restart is refused too. This is a hard cut: `request/1` envelopes are refused.
 
 ## Discovering and verifying without trusting the server
 
