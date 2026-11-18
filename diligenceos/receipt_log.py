@@ -97,6 +97,11 @@ class ReceiptLog:
             # have the shape this class reads; a hash-valid entry without these is corruption.
             if not all(isinstance(e.get(k), str) for k in ("receipt_id", "inputs_digest", "outcome_digest")):
                 raise LogCorruptError(f"receipt log entry {e.get('seq')!r} is not a well-formed receipt entry")
+        for e in (e for e in self._entries if e.get("kind") == "spend"):
+            # Same reason: a hash-valid spend entry that is not this shape is corruption, and spend is money.
+            if not (all(isinstance(e.get(k), str) for k in ("budget_id", "spent_receipt_id", "currency"))
+                    and type(e.get("amount_minor")) is int and e["amount_minor"] >= 0):
+                raise LogCorruptError(f"receipt log entry {e.get('seq')!r} is not a well-formed spend entry")
         self._by_receipt = {e["receipt_id"]: e for e in receipts}
         self._first_by_inputs: dict[str, dict] = {}
         for e in receipts:
@@ -118,6 +123,9 @@ class ReceiptLog:
 
     def revocation_entries(self) -> list[dict]:
         return [e for e in self._entries if e.get("kind") == "revocation"]
+
+    def spend_entries(self) -> list[dict]:
+        return [e for e in self._entries if e.get("kind") == "spend"]
 
     def head_at(self, length: int) -> str | None:
         """The head hash when the log had `length` entries, or None if it never did."""
@@ -161,6 +169,25 @@ class ReceiptLog:
             "target_id": target_id,
             "reason": reason,
             "revoked_by": revoked_by,
+            "logged_at": now or datetime.now(timezone.utc).replace(microsecond=0).isoformat(),
+            "prev_hash": self.head,
+        }
+        self._seal_and_write(entry, signer)
+        return entry
+
+    def append_spend(
+        self, budget_id: str, receipt_id: str, amount: dict, caller: str | None,
+        *, now: str | None = None, signer: Signer | None = None,
+    ) -> dict:
+        """A committed spend, in the signed log: who spent how much of which budget on which receipt."""
+        entry = {
+            "seq": len(self._entries),
+            "kind": "spend",
+            "budget_id": budget_id,
+            "spent_receipt_id": receipt_id,
+            "amount_minor": amount["amount_minor"],
+            "currency": amount["currency"],
+            "caller": caller,
             "logged_at": now or datetime.now(timezone.utc).replace(microsecond=0).isoformat(),
             "prev_hash": self.head,
         }

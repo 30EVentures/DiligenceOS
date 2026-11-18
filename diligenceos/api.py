@@ -155,7 +155,7 @@ def _capabilities():
                     "decision": "ALLOW|ESCALATE|DENY", "reasons": ["string"], "spent_minor": "int",
                     "remaining_minor": "int", "already_committed": "bool", "effective_policy": "policy",
                 },
-                "note": "commits on ALLOW; cumulative per budget_id; idempotent per receipt id",
+                "note": "commits on ALLOW as a signed kind=spend log entry (appended before the index is updated; a log that cannot be read is a 503, not a guess); cumulative per budget_id; idempotent per receipt id",
             },
             "GET /v1/manifest": {"response": "{manifest, issuer, signature}: who runs this, the key to pin, and how to verify every signed document"},
             "GET /v1/issuer": {"response": {"issuer": "ed25519:<hex>", "algorithm": "ed25519"}},
@@ -719,10 +719,15 @@ def _spend(body: bytes, store: Store):
         trusted = _server_trusted_issuers(store)  # server config only; see docs/decisions.md
     except SignerError as exc:
         return _signer_unavailable(exc)
-    result = try_spend(
-        store, budget_id.strip(), data["receipt"], policy, now=_now(), sources=sources,
-        trusted_issuers=trusted, caller=auth.caller,
-    )
+    try:
+        result = try_spend(
+            store, budget_id.strip(), data["receipt"], policy, now=_now(), sources=sources,
+            trusted_issuers=trusted, caller=auth.caller,
+        )
+    except LogCorruptError as exc:
+        return _log_unavailable(exc)   # spend is money: no commit, and no answer, from an unreadable history
+    except SignerError as exc:
+        return _signer_unavailable(exc)
     return _json(200, {
         "decision": result.decision.outcome.value,
         "reasons": list(result.decision.reasons),

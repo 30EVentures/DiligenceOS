@@ -829,3 +829,12 @@ branch for the `spend-auth` proposal that would close the first two.
 Not done, said plainly: no `diligence_spend`, `_revoke` or `_authorize_release` (the last waits
 on the spend-auth proposal); the server has not been run against a real MCP client; the
 delimiters reduce, and do not remove, the chance a model follows hostile text.
+
+## 2026-11-18: DRAFT, not accepted: spends in the signed log (branch `spend-log-draft`)
+
+Committed spends become signed `kind=spend` log entries, appended before the index is updated and
+counted as the union of both on first use, the same shape as revocations (Slice 26) with one
+difference: **revocations fall back to the index when the log is unreadable, spends refuse** (503),
+because an under-counted spend lets a budget be overspent and a revocation fallback cannot.
+Delegation issuance is not logged: see `specs/spend-log/spec.md` for why that is a decision, not a build.
+Not merged; the owner decides.

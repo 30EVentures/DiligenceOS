@@ -38,6 +38,7 @@ class Store:
         self._cosignatures: dict[str, dict[str, dict]] = {}  # head hash -> witness -> doc
         self._nonces: dict[str, datetime] = {}  # in memory only; see specs/slice-25
         self._revocations_reconciled = False
+        self._spend_reconciled = False
 
     @classmethod
     def seeded_from_sample(cls, persist_path: Path | None = None) -> "Store":
@@ -275,15 +276,40 @@ class Store:
         }
         self._maybe_save()
 
+    def _reconcile_spend(self) -> None:
+        """Count the union of the index and the signed log's spend entries, once per process.
+
+        commit_spend() appends to the log first and saves the index second, so a crash between them leaves a
+        spend that is logged but not in store.json; and someone who can edit store.json but not the issuer
+        key could zero a budget's spend. The union can only add to what was spent, never remove it, so a
+        budget cannot be overspent that way. Raises LogCorruptError if the log cannot be trusted: spend is
+        money, so unlike revocations the caller does not fall back to the index alone."""
+        if self._spend_reconciled:
+            return
+        healed = False
+        for entry in self.log.spend_entries():
+            budget, rid = entry["budget_id"], entry["spent_receipt_id"]
+            if rid not in self._spend.get(budget, {}):
+                self._spend.setdefault(budget, {})[rid] = {
+                    "amount_minor": entry["amount_minor"], "currency": entry["currency"], "caller": entry.get("caller"),
+                }
+                healed = True
+        self._spend_reconciled = True
+        if healed:
+            self._maybe_save()
+
     def spend_entry(self, budget_id: str, receipt_id: str) -> Money | None:
+        self._reconcile_spend()
         entry = self._spend.get(budget_id, {}).get(receipt_id)
         return Money.from_dict(entry) if entry else None
 
     def spent_under_another_budget(self, budget_id: str, receipt_id: str) -> bool:
         """True if this receipt already paid under a budget other than `budget_id`."""
+        self._reconcile_spend()
         return any(b != budget_id and receipt_id in entries for b, entries in self._spend.items())
 
     def spent(self, budget_id: str, currency: str) -> int:
+        self._reconcile_spend()
         return sum(
             e["amount_minor"] for e in self._spend.get(budget_id, {}).values()
             if e["currency"] == currency
@@ -292,6 +318,10 @@ class Store:
     def commit_spend(
         self, budget_id: str, receipt_id: str, amount: Money, caller: str | None = None
     ) -> None:
+        """The spend is appended to the signed log *first*: if the log or key is unusable this raises
+        (LogCorruptError / SignerError) and nothing is committed, rather than recording an unattested spend."""
+        self._reconcile_spend()
+        self.log.append_spend(budget_id, receipt_id, amount.to_dict(), caller, signer=self.signer)
         self._spend.setdefault(budget_id, {})[receipt_id] = {**amount.to_dict(), "caller": caller}
         self._maybe_save()
 
