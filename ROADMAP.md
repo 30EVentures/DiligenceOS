@@ -128,6 +128,9 @@ a page. Every slice from here is checked against four questions:
       heads and refuses (exit 3) a history that isn't an append-only
       extension of the last one, cosigning what it accepts. Only useful once
       someone other than the operator runs it.
+- [x] `diligenceos-mcp` (`specs/mcp-server`): stdio MCP server, closed inputs,
+      untrusted output wrapped and delimited, refusal-first injection corpus.
+      Pilot subset only; spend/revoke tools wait on the spend-auth proposal.
 
 ## Later (not started, not scoped)
 
