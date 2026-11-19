@@ -131,6 +131,9 @@ a page. Every slice from here is checked against four questions:
 - [x] `diligenceos-mcp` (`specs/mcp-server`): stdio MCP server, closed inputs,
       untrusted output wrapped and delimited, refusal-first injection corpus.
       Pilot subset only; spend/revoke tools wait on the spend-auth proposal.
+- [x] Registry adapter (`specs/registry-adapter`): Companies House snapshot
+      behind `identity` (human-run `refresh-registry`, provenance, staleness,
+      fails closed). Not run against the live service.
 
 ## Later (not started, not scoped)
 
