@@ -79,7 +79,7 @@ class HostileDocumentsTest(unittest.TestCase):
         cls.receipt, cls.link, cls.log, cls.head = fixtures()
         cls.cosig = cosign_head(WITNESS, OP.issuer_id, 3, cls.log.head)
         cls.body = {"budget_id": "b", "receipt": cls.receipt, "policy": POLICY.to_dict()}
-        cls.env = sign_request(AGENT, [cls.link], "/v1/spend", cls.body, now=NOW)
+        cls.env = sign_request(AGENT, [cls.link], "/v1/spend", cls.body, audience=OP.issuer_id, now=NOW)
 
     def each(self, seed, fn):
         rnd = random.Random(seed)
@@ -108,10 +108,10 @@ class HostileDocumentsTest(unittest.TestCase):
 
     def test_authentication_never_raises_on_a_mangled_envelope(self):
         self.each(4, lambda rnd: authenticate(
-            "/v1/spend", copy.deepcopy(self.body), mutate(rnd, self.env), root_issuers=[OP.issuer_id],
+            "/v1/spend", copy.deepcopy(self.body), mutate(rnd, self.env), audience=OP.issuer_id, root_issuers=[OP.issuer_id],
             now=NOW, revocations={}, remember_nonce=lambda n, t: False))
         # An envelope with nothing wrong must still be accepted, or "never raises" proves nothing.
-        ok = authenticate("/v1/spend", copy.deepcopy(self.body), copy.deepcopy(self.env), root_issuers=[OP.issuer_id], now=NOW, revocations={})
+        ok = authenticate("/v1/spend", copy.deepcopy(self.body), copy.deepcopy(self.env), audience=OP.issuer_id, root_issuers=[OP.issuer_id], now=NOW, revocations={})
         self.assertTrue(ok.ok, ok.errors)
 
     def test_log_and_witness_checks_never_raise(self):

@@ -160,10 +160,10 @@ class MachineReadableClaimsAreNotLargerThanTheCodeTest(unittest.TestCase):
         status, manifest = call(Store(), "GET", "/v1/manifest")
         self.assertEqual(status, 200)
         doc = manifest["manifest"]["documents"]["request_auth"]
-        self.assertIn("memory only", doc["freshness"])
-        self.assertIn("restart", doc["freshness"])
-        self.assertIn("credential chain", doc["not_covered"])
-        self.assertIn("audience", doc["not_covered"])
+        self.assertIn("including after a restart", doc["freshness"])
+        self.assertIn("audience", doc["message"])
+        self.assertIn("chain", doc["message"])
+        self.assertNotIn("not_covered", doc)
         self.assertNotIn("single-use", json.dumps(call(Store(), "GET", "/v1/capabilities")[1]))
 
     def test_the_description_is_still_true(self):
@@ -176,14 +176,16 @@ class MachineReadableClaimsAreNotLargerThanTheCodeTest(unittest.TestCase):
         self.assertNotEqual(first, 401)
         self.assertEqual(again[0], 401)
         self.assertIn("replay", json.loads(again[2])["error"]["message"])
-        # ... and not across a restart (the limit the manifest now states; proposal P-3 in STATE.md).
+        # ... and across a restart too (the nonce is written beside the store before the request is accepted).
         with tempfile.TemporaryDirectory() as d:
             path = Path(d) / "store.json"
             a = Store.load_or_seed(path)
             signed = as_operator(a, "/v1/spend", body)
-            api.handle("POST", "/v1/spend", json.dumps(signed).encode(), a)
+            self.assertNotEqual(api.handle("POST", "/v1/spend", json.dumps(signed).encode(), a)[0], 401)
             b = Store.load_or_seed(path)
-            self.assertNotEqual(api.handle("POST", "/v1/spend", json.dumps(signed).encode(), b)[0], 401)
+            again = api.handle("POST", "/v1/spend", json.dumps(signed).encode(), b)
+            self.assertEqual(again[0], 401)
+            self.assertIn("replay", json.loads(again[2])["error"]["message"])
 
 
 if __name__ == "__main__":

@@ -245,10 +245,10 @@ def _set_decide_api(case: dict) -> dict:
     if endpoint == "spend" and isinstance(payload, dict):
         if ctx.get("auth") == "bogus":  # a well-formed envelope that no key signed
             now = datetime.now(timezone.utc).replace(microsecond=0).isoformat()
-            payload = {**payload, "auth": {"signer": "ed25519:" + "0" * 64, "chain": [], "issued_at": now,
-                                           "nonce": "n", "signature": "ed25519:" + "0" * 128}}
+            payload = {**payload, "auth": {"signer": "ed25519:" + "0" * 64, "audience": store.signer.issuer_id, "chain": [],
+                                           "issued_at": now, "nonce": "n", "signature": "ed25519:" + "0" * 128}}
         else:
-            payload = {**payload, "auth": sign_request(store.signer, [], path, payload)}
+            payload = {**payload, "auth": sign_request(store.signer, [], path, payload, audience=store.signer.issuer_id)}
     status, out = _http(store, path, payload)
     if status != 200:
         err = out.get("error", {})

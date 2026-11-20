@@ -82,7 +82,7 @@ def _sign_request(args) -> int:
     body = _read_json(args.body)
     if not isinstance(body, dict) or "auth" in body:
         raise ValueError("body must be a JSON object without an `auth` key")
-    print(json.dumps({**body, "auth": sign_request(signer, chain, args.path, body)}))
+    print(json.dumps({**body, "auth": sign_request(signer, chain, args.path, body, audience=args.audience)}))
     return 0
 
 
@@ -314,6 +314,7 @@ def main(argv: list[str]) -> int:
     p.add_argument("--key", required=True, help="the caller's key file")
     p.add_argument("--path", required=True, help="endpoint path, e.g. /v1/spend")
     p.add_argument("--chain", help="credential chain (JSON file or -); omit for the operator")
+    p.add_argument("--audience", required=True, help="issuer id (ed25519:...) of the server this request is for; pin it, do not just copy GET /v1/issuer")
     p.add_argument("body", help="request body JSON file, or - for stdin")
     p.set_defaults(run=_sign_request)
 
