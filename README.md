@@ -87,6 +87,25 @@ its date. Matching is exact on a normalised name or alias, plus the official 'SU
 form read as 'Given SURNAME'; there is no fuzzy matching, so a transliteration or a variant
 spelling is **not** caught. If the file is not UTF-8 pass `--encoding cp1252` (it is stored as UTF-8).
 
+## The company register
+
+Out of the box `identity` can only match a record typed in at `/data`, so a real company is a
+HOLD. To check a UK company against Companies House (free; you need your own API key), a person
+runs, per company:
+
+```
+COMPANIES_HOUSE_API_KEY=... .venv/bin/python -m diligenceos refresh-registry 09456213
+```
+
+The key comes from the environment only (never an argument) and is never saved or printed. The
+response is saved beside the store as `registry/<number>.json` with `registry/<number>.meta.json`
+(source, time, bytes, sha256). A verdict for that registration id passes identity only if the
+snapshot is exactly what was recorded, names the source, date and digest in the finding, and is
+under 30 days old; older is a FLAG ("refresh it"). A damaged snapshot stops the verdict with
+`503 registry_unavailable`, never "no record". A record an operator typed in still wins. Only the
+8-character company number is looked up, so the registration id must be that number. This is
+the only other command that fetches data; the server and the tests never touch the network.
+
 ## Witnessing the log
 
 The server's own log check (`/v1/log/verify`) can't catch the operator

@@ -1,7 +1,7 @@
 # Proposal: nonces that survive a restart, and an audience in the signed request
 
-Status: **drafted on branch `request-v2-draft`, not merged (2026-11-18): option 1 for nonces, a hard cut to `request/2`, audience = issuer id or an operator-set deployment id, plus the credential-chain digest. Awaiting the owner. Original status: proposal only, no code.** It changes what a valid signed request is, so
-it waits for the owner's go-ahead. Audit item: `mine-diligenceos.md` §10 item 6.
+Status: **implemented and accepted 2026-11-20 (drafted 2026-11-18 on `request-v2-draft`): option 1 for nonces, a hard cut to `request/2`, audience = issuer id or an operator-set deployment id, plus the credential-chain digest. Original status: proposal only, no code.** It changed what a valid signed request is, so
+it waited for the owner's go-ahead. Audit item: `mine-diligenceos.md` §10 item 6.
 
 ## The problem (two parts, both reproduced against `main` at 4205487)
 

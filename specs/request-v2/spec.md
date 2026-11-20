@@ -1,7 +1,7 @@
-# DRAFT: signed requests that name their audience and survive a restart (request/2)
+# Signed requests that name their audience and survive a restart (request/2)
 
-Status: drafted on branch `request-v2-draft`; **not for merge until the owner decides** the three
-open choices in `docs/proposals/request-replay-and-audience.md` (see `docs/decisions.md`, 2026-11-18).
+Status: accepted by the owner 2026-11-20 and merged, with the three choices in
+`docs/proposals/request-replay-and-audience.md` as drafted (see `docs/decisions.md`, 2026-11-18).
 
 ## Goal
 
