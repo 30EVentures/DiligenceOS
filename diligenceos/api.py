@@ -17,6 +17,7 @@ from diligenceos.spend import try_spend
 from diligenceos.receipt_log import LogCorruptError
 from diligenceos.signing import LOG_HEAD_DOMAIN, SignerError, head_message, verify_signature
 from diligenceos.receipt import RULES, SCHEMA, digest, unsanitized_fields_doc, issue_receipt, verify_receipt
+from diligenceos.registry_ingest import RegistryUnavailable
 from diligenceos.sdn_ingest import SdnUnavailable
 from diligenceos.store import Store
 
@@ -198,7 +199,7 @@ def _capabilities():
             "shape": {"error": {"code": "string", "message": "string", "field": "optional"}},
             "codes": [
                 "invalid_json", "invalid_request", "policy_widening", "not_found",
-                "method_not_allowed", "body_too_large", "log_unavailable", "signer_unavailable", "sanctions_unavailable", "unauthenticated", "forbidden",
+                "method_not_allowed", "body_too_large", "log_unavailable", "signer_unavailable", "sanctions_unavailable", "registry_unavailable", "unauthenticated", "forbidden",
             ],
         },
     }
@@ -454,14 +455,17 @@ def _verdict(body: bytes, store: Store):
     except SdnUnavailable as exc:
         return _error(503, "sanctions_unavailable", str(exc))   # never screen against less than was recorded
     _presence_note("issuing")
-    result = run_diligence(
-        name=name,
-        registration_id=reg,
-        sanctions_list=sanctions_list,
-        registry_lookup=store.registry_lookup(),
-        ledger=store.ledger,
-        document_text=document_text,
-    )
+    try:
+        result = run_diligence(
+            name=name,
+            registration_id=reg,
+            sanctions_list=sanctions_list,
+            registry_lookup=store.registry_lookup(),
+            ledger=store.ledger,
+            document_text=document_text,
+        )
+    except RegistryUnavailable as exc:
+        return _error(503, "registry_unavailable", str(exc))   # a damaged snapshot is not "no record"
     inputs = {
         "subject": {"name": name, "registration_id": reg},
         "document_text": document_text,

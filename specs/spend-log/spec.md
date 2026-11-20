@@ -1,7 +1,7 @@
-# DRAFT: committed spends are signed entries in the log
+# Committed spends are signed entries in the log
 
-Status: drafted on branch `spend-log-draft`; **not for merge until the owner decides** (it changes what the
-log holds and makes `/v1/spend` depend on the log). Delegation issuance is *not* done here (see below).
+Status: accepted by the owner 2026-11-20 and merged (it changes what the log holds and makes
+`/v1/spend` depend on the log). Delegation issuance is *not* done here (see below).
 
 ## Goal
 
