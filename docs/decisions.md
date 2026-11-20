@@ -830,6 +830,15 @@ Not done, said plainly: no `diligence_spend`, `_revoke` or `_authorize_release` 
 on the spend-auth proposal); the server has not been run against a real MCP client; the
 delimiters reduce, and do not remove, the chance a model follows hostile text.
 
+## 2026-11-18: spends in the signed log (branch `spend-log-draft`, accepted 2026-11-20)
+
+Committed spends become signed `kind=spend` log entries, appended before the index is updated and
+counted as the union of both on first use, the same shape as revocations (Slice 26) with one
+difference: **revocations fall back to the index when the log is unreadable, spends refuse** (503),
+because an under-counted spend lets a budget be overspent and a revocation fallback cannot.
+Delegation issuance is not logged: see `specs/spend-log/spec.md` for why that is a decision, not a build.
+Accepted by the owner on 2026-11-20 ("merge the draft branches"); merged.
+
 ## 2026-11-18: a real company register behind `identity` (specs/registry-adapter)
 
 - **Companies House, free tier, human-run.** Same shape as the sanctions refresh: one command
